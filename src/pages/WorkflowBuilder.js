@@ -18,7 +18,7 @@ import DelayConfig     from '../components/config/DelayConfig';
 import TemplatePicker  from '../components/TemplatePicker';
 import TestPanel       from '../components/test/TestPanel';
 
-const API = 'http://localhost:5000';
+const API = '';
 
 const palette = [
   { type: 'trigger', label: 'Keyword trigger', color: '#534AB7', bg: '#EEEDFE', border: '#AFA9EC' },

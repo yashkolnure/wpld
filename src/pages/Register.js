@@ -12,7 +12,7 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post("http://localhost:5000/api/auth/register", form);
+      await axios.post("/api/auth/register", form);
       alert("Success! Please sign in.");
       navigate("/login");
     } catch (err) {
