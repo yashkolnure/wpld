@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import WorkflowBuilder from './pages/WorkflowBuilder';
 import LandingPage from './pages/LandingPage';
 import Header from "./components/Header";
+import LoginSuccess from "./pages/LoginSuccess";
 import Footer from "./components/Footer";
 
 // Helper to determine if we are in a "Workspace" (Dashboard/Builder)
@@ -37,6 +38,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage/>} />
           <Route path="/login" element={<Login />} />
+          <Route path="/login-success" element={<LoginSuccess />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/workflow/new" element={<WorkflowBuilder />} />
