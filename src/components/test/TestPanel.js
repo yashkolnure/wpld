@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 
-const API = 'http://localhost:5000';
+const API = '';
 
 const tabStyle = (active) => ({
   flex: 1,
