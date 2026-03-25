@@ -24,7 +24,7 @@ export default function Login() {
 
   const handleGoogleLogin = () => {
     // Redirect to your backend Google Auth URL
-    window.location.href = `${process.env.REACT_APP_API_URL || ""}/api/auth/google`;
+    window.location.href = '/api/auth/google';
   };
 
   return (
