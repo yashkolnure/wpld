@@ -1,43 +1,404 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+<head>
+  <!-- ============================================================
+       BASIC META
+  ============================================================ -->
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+  <!-- ============================================================
+       PRIMARY SEO META TAGS
+  ============================================================ -->
+  <title>WPLeads – Build WhatsApp Bots Without Code | Free Forever</title>
+  <meta
+    name="description"
+    content="WPLeads lets you build WhatsApp automation bots without writing code. Keyword triggers, visual flow builder, interactive messages & CRM. Free plan forever."
+  />
+  <meta
+    name="keywords"
+    content="whatsapp automation, whatsapp bot builder, whatsapp business automation, whatsapp chatbot, no-code whatsapp bot, whatsapp workflow automation, whatsapp crm, whatsapp keyword triggers, meta business api, whatsapp interactive messages"
+  />
+  <meta name="author" content="WPLeads" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#25d366" />
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-  </body>
+  <!-- Canonical -->
+  <link rel="canonical" href="https://wpleads.in/" />
+
+  <!-- ============================================================
+       OPEN GRAPH — Facebook, LinkedIn, WhatsApp link previews
+  ============================================================ -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://wpleads.in/" />
+  <meta property="og:site_name" content="WPLeads" />
+  <meta property="og:title" content="WPLeads – Build WhatsApp Bots Without Code" />
+  <meta
+    property="og:description"
+    content="Drag keyword triggers, message nodes, and branches onto a canvas. Your WhatsApp automation goes live instantly — no developer needed. Free forever."
+  />
+  <!-- OG Image: recommended 1200x630px — use a green branded image with WPLeads logo -->
+  <meta property="og:image" content="https://wpleads.in/og-image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="WPLeads – WhatsApp Bot Builder Without Code" />
+  <meta property="og:locale" content="en_IN" />
+
+  <!-- ============================================================
+       TWITTER / X CARD
+  ============================================================ -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@wpleads" />
+  <meta name="twitter:creator" content="@wpleads" />
+  <meta name="twitter:title" content="WPLeads – Build WhatsApp Bots Without Code" />
+  <meta
+    name="twitter:description"
+    content="Keyword triggers, visual flow builder, interactive messages & built-in CRM. Your WhatsApp automation goes live in under 5 minutes. Free plan available."
+  />
+  <meta name="twitter:image" content="https://wpleads.in/og-image.jpg" />
+  <meta name="twitter:image:alt" content="WPLeads WhatsApp Bot Builder" />
+
+  <!-- ============================================================
+       FAVICONS
+       Generate all sizes at https://realfavicongenerator.net/
+  ============================================================ -->
+  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
+
+  <!-- ============================================================
+       WEB APP MANIFEST
+  ============================================================ -->
+  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="WPLeads" />
+  <meta name="application-name" content="WPLeads" />
+  <meta name="msapplication-TileColor" content="#25d366" />
+
+  <!-- ============================================================
+       PERFORMANCE — PRECONNECT & DNS PREFETCH
+  ============================================================ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- <link rel="preconnect" href="https://www.googletagmanager.com" /> -->
+
+  <!-- ============================================================
+       FONTS — DM Sans + DM Mono (matches landing page design)
+  ============================================================ -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,400&family=DM+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- ============================================================
+       STRUCTURED DATA — JSON-LD (Schema.org)
+       Validate at: https://search.google.com/test/rich-results
+  ============================================================ -->
+
+  <!-- Software Application Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "WPLeads",
+    "url": "https://wpleads.in",
+    "logo": "https://wpleads.in/logo.png",
+    "description": "WPLeads is a no-code WhatsApp Business automation platform. Build keyword triggers, visual conversation flows, and interactive message bots without writing any code. Goes live in under 5 minutes.",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Free",
+        "price": "0",
+        "priceCurrency": "INR",
+        "description": "Free forever plan with 1 active workflow and 500 message triggers per month."
+      },
+      {
+        "@type": "Offer",
+        "name": "Premium",
+        "price": "1499",
+        "priceCurrency": "INR",
+        "billingDuration": "P1M",
+        "description": "Unlimited workflows, 15,000 message triggers per month, 5 WhatsApp numbers, analytics dashboard, priority support, and free WhatsApp API setup."
+      },
+      {
+        "@type": "Offer",
+        "name": "Enterprise",
+        "description": "Unlimited workflows, unlimited WhatsApp numbers, dedicated instance, custom API, SLA guarantee, and personal account manager."
+      }
+    ],
+    "featureList": [
+      "Keyword triggers",
+      "Visual drag-and-drop flow builder",
+      "Interactive WhatsApp messages",
+      "Conversational branching logic",
+      "Built-in CRM",
+      "Enterprise-grade security",
+      "0ms response latency",
+      "Free WhatsApp API setup"
+    ],
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5",
+      "bestRating": "5",
+      "ratingCount": "3"
+    },
+    "review": [
+      {
+        "@type": "Review",
+        "author": { "@type": "Person", "name": "Priya Mehta" },
+        "reviewBody": "We went from manually replying to 200+ messages a day to zero. WPLeads paid for itself in the first week.",
+        "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" }
+      },
+      {
+        "@type": "Review",
+        "author": { "@type": "Person", "name": "James Okafor" },
+        "reviewBody": "Set up our entire customer support FAQ in 20 minutes. Response time went from hours to under 3 seconds.",
+        "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" }
+      },
+      {
+        "@type": "Review",
+        "author": { "@type": "Person", "name": "Sana Rashid" },
+        "reviewBody": "The branching logic is what sold me. Other tools only do linear flows — this one mirrors real conversations.",
+        "reviewRating": { "@type": "Rating", "ratingValue": "5", "bestRating": "5" }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Organization Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "WPLeads",
+    "url": "https://wpleads.in",
+    "logo": "https://wpleads.in/logo.png",
+    "description": "WPLeads helps businesses automate WhatsApp conversations using a no-code visual bot builder with keyword triggers, interactive messages, and a built-in CRM.",
+    "email": "hello@wpleads.in",
+    "foundingLocation": "India",
+    "sameAs": [
+      "https://twitter.com/wpleads",
+      "https://www.linkedin.com/company/wpleads",
+      "https://www.instagram.com/wpleads"
+    ]
+  }
+  </script>
+
+  <!-- WebSite + Sitelinks Search Box Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "WPLeads",
+    "url": "https://wpleads.in",
+    "description": "No-code WhatsApp Business automation platform. Build bots, automate replies, and manage leads without writing a single line of code.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://wpleads.in/search?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+
+  <!-- FAQ Schema — appears as rich results in Google Search -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is WPLeads really free forever?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The Starter plan is free forever with no credit card required. It includes 1 active workflow and 500 message triggers per month."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need coding skills to use WPLeads?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. WPLeads is a fully no-code platform. You drag keyword triggers, message nodes, and branches onto a visual canvas and your bot goes live instantly."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How fast can I go live on WPLeads?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "You can be live in under 5 minutes. Connect your WhatsApp via Meta credentials, register the webhook, build your flow, and hit Save. No developer needed."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How much does the Premium plan cost?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The Premium plan is currently available at Rs. 1,499 per month — 50% off the regular price of Rs. 2,999. It includes unlimited workflows, 15,000 message triggers, 5 WhatsApp numbers, analytics dashboard, priority support, and free WhatsApp API setup."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does WPLeads support interactive WhatsApp messages?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. WPLeads supports all native WhatsApp interactive features including button menus, image cards, attachments, and quick reply buttons."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How many messages has WPLeads sent?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "WPLeads has powered over 98 million messages sent across all customer accounts."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- BreadcrumbList Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://wpleads.in"
+      }
+    ]
+  }
+  </script>
+
+  <!-- ============================================================
+       GOOGLE ANALYTICS GA4
+       Uncomment and replace G-XXXXXXXXXX with your Measurement ID
+       Get it at: https://analytics.google.com
+  ============================================================ -->
+  <!--
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script>
+  -->
+
+  <!-- ============================================================
+       GOOGLE SEARCH CONSOLE VERIFICATION
+       Get your code at: https://search.google.com/search-console
+  ============================================================ -->
+  <!-- <meta name="google-site-verification" content="YOUR_VERIFICATION_CODE_HERE" /> -->
+
+  <!-- ============================================================
+       BING WEBMASTER TOOLS VERIFICATION
+  ============================================================ -->
+  <!-- <meta name="msvalidate.01" content="YOUR_BING_CODE_HERE" /> -->
+
+  <!-- ============================================================
+       SECURITY HEADERS (also configure these on your server)
+  ============================================================ -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+
+</head>
+
+<body>
+
+  <!-- ============================================================
+       NO-SCRIPT FALLBACK
+  ============================================================ -->
+  <noscript>
+    You need to enable JavaScript to run WPLeads. Please enable JavaScript in your browser settings and refresh the page.
+  </noscript>
+
+  <!-- ============================================================
+       REACT ROOT
+  ============================================================ -->
+  <div id="root"></div>
+
+  <!-- ============================================================
+       DEVELOPER NOTES
+       -------------------------------------------------------
+
+       1. PER-PAGE META WITH react-helmet-async
+          npm install react-helmet-async
+          Wrap <App /> in <HelmetProvider> in index.js.
+          Use <Helmet> inside each page component to override
+          title, description, canonical, and JSON-LD per route.
+          Example for /pricing:
+            <title>WPLeads Pricing – Free, Premium & Enterprise Plans</title>
+            <meta name="description" content="Compare WPLeads plans. Start free forever or upgrade to Premium at ₹1,499/mo for unlimited WhatsApp workflows." />
+            <link rel="canonical" href="https://wpleads.in/pricing" />
+
+       2. robots.txt → /public/robots.txt:
+              User-agent: *
+              Allow: /
+              Disallow: /dashboard/
+              Disallow: /admin/
+              Sitemap: https://wpleads.in/sitemap.xml
+
+       3. sitemap.xml → /public/sitemap.xml
+          Include these URLs (update lastmod regularly):
+            https://wpleads.in/            (priority: 1.0)
+            https://wpleads.in/features    (priority: 0.9)
+            https://wpleads.in/pricing     (priority: 0.9)
+            https://wpleads.in/register    (priority: 0.8)
+            https://wpleads.in/login       (priority: 0.7)
+            https://wpleads.in/contact     (priority: 0.7)
+
+       4. OG IMAGE → /public/og-image.jpg (1200×630px)
+          Design: Green (#25d366) background, WPLeads logo,
+          headline "Build WhatsApp Bots Without Code",
+          sub "Free Forever · No Code Needed".
+
+       5. manifest.json → /public/manifest.json:
+          {
+            "short_name": "WPLeads",
+            "name": "WPLeads – WhatsApp Automation",
+            "start_url": ".",
+            "display": "standalone",
+            "theme_color": "#25d366",
+            "background_color": "#ffffff",
+            "icons": [
+              { "src": "favicon-32x32.png", "sizes": "32x32", "type": "image/png" },
+              { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+            ]
+          }
+
+       6. CODE SPLITTING (Core Web Vitals — INP improvement)
+          Use React.lazy + Suspense for non-hero routes:
+            const Pricing = React.lazy(() => import('./pages/Pricing'));
+            const Features = React.lazy(() => import('./pages/Features'));
+
+       7. IMAGE OPTIMISATION (Core Web Vitals — LCP improvement)
+          Always set width + height on <img> tags.
+          Use loading="lazy" on below-fold images.
+          Serve images in WebP format where possible.
+
+       8. SUBMIT SITEMAP IN GOOGLE SEARCH CONSOLE:
+          https://search.google.com/search-console
+
+       9. TEST RICH RESULTS (FAQ + Software + Reviews):
+          https://search.google.com/test/rich-results
+
+      10. MEASURE CORE WEB VITALS:
+          https://pagespeed.web.dev/?url=https://wpleads.in
+  ============================================================ -->
+
+</body>
 </html>
