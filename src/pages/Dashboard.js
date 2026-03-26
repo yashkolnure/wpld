@@ -343,67 +343,82 @@ export default function Dashboard() {
   // ─── RENDER ──────────────────────────────────────────────────────────────────
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", fontFamily: S.font, background: S.pageBg }}>
-      <style>
-        {`
-        /* ... existing animations ... */
+      <style>{`
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&family=DM+Mono:wght@400;500;600&display=swap');
 
-/* Mobile Sidebar (Hidden by default) */
-.wpl-sidebar {
-  transform: translateX(-100%);
-}
+  @keyframes wpl-ping   { 0%,100%{opacity:1} 50%{opacity:.25} }
+  @keyframes wpl-fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes wpl-spin   { to{transform:rotate(360deg)} }
 
-/* Mobile Sidebar (When Open) */
-.wpl-sidebar.open {
-  transform: translateX(0) !important;
-}
+  * { box-sizing: border-box; }
 
-/* Main Content Adjustments */
-.wpl-main {
-  margin-left: 0 !important; /* Full width on mobile */
-  width: 100%;
-}
-
-/* Desktop override (1024px and up) */
-@media (min-width: 1024px) {
+  /* ── Sidebar ── */
   .wpl-sidebar {
-    transform: translateX(0) !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .wpl-main {
-    margin-left: 218px !important; /* Push content for sidebar */
+  .wpl-sidebar.open { transform: translateX(0) !important; }
+
+  /* ── Main content ── */
+  .wpl-main { margin-left: 0; width: 100%; }
+
+  /* ── Desktop (1024px+) ── */
+  @media (min-width: 1024px) {
+    .wpl-sidebar   { transform: translateX(0) !important; }
+    .wpl-main      { margin-left: 218px !important; width: calc(100% - 218px); }
+    .wpl-hamburger { display: none !important; }
+    .wpl-overlay   { display: none !important; }
   }
-  .wpl-hamburger {
-    display: none !important; /* Hide menu button on desktop */
+
+  /* ── Chats: stacked on mobile, side-by-side on desktop ── */
+  .chats-grid {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
   }
-  .wpl-overlay {
-    display: none !important; /* Hide backdrop on desktop */
+  .chats-list  { flex-shrink: 0; height: 260px; overflow: hidden; }
+  .chats-pane  { flex: 1; min-height: 0; }
+
+  @media (min-width: 768px) {
+    .chats-grid { display: grid; grid-template-columns: 280px 1fr; flex-direction: unset; }
+    .chats-list { height: auto; }
   }
-}
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&family=DM+Mono:wght@400;500;600&display=swap');
-        @keyframes wpl-ping   { 0%,100%{opacity:1} 50%{opacity:.25} }
-        @keyframes wpl-fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes wpl-spin   { to{transform:rotate(360deg)} }
-        * { box-sizing: border-box; }
-        .dnav:hover  { background: rgba(37,211,102,0.07) !important; color: #16a34a !important; }
-        .dnav.on     { background: linear-gradient(135deg,#25d366,#16a34a) !important; color:#fff !important; box-shadow:0 8px 20px rgba(37,211,102,0.25); }
-        .dcard       { transition: transform 0.2s, box-shadow 0.2s; }
-        .dcard:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,0.08) !important; }
-        .drow:hover  { background: #f0fdf8 !important; }
-        .dib         { transition:all 0.15s; border-radius:8px; padding:5px; border:none; cursor:pointer; background:none; }
-        .dib:hover   { background:rgba(37,211,102,0.1); color:#16a34a !important; }
-        .dib.rd:hover{ background:rgba(239,68,68,0.08); color:#dc2626 !important; }
-        .dinput:focus{ border-color:rgba(37,211,102,0.5) !important; outline:none; }
-        .dqbtn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.08) !important; }
-        .spin        { animation: wpl-spin 0.8s linear infinite; }
-        .chat-item:hover { background: #f0fdf8 !important; }
-        .reply-input:focus { border-color: rgba(37,211,102,0.4) !important; outline: none; box-shadow: 0 0 0 3px rgba(37,211,102,0.08); }
-        ::-webkit-scrollbar        { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track  { background: transparent; }
-        ::-webkit-scrollbar-thumb  { background: rgba(37,211,102,0.2); border-radius: 99px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(37,211,102,0.4); }
-      `}
-      
-      
-      </style>
+  @media (min-width: 1024px) {
+    .chats-grid { grid-template-columns: 300px 1fr; }
+  }
+
+  /* ── Tables: horizontal scroll on small screens ── */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── Overview hero: don't span 2 cols on 1-col layouts ── */
+  .hero-card { grid-column: span 1; }
+  @media (min-width: 640px) { .hero-card { grid-column: span 2; } }
+
+  /* ── Contacts search: full width on mobile ── */
+  @media (max-width: 540px) {
+    .contacts-toolbar { flex-direction: column; align-items: stretch !important; gap: 10px; }
+    .contacts-toolbar input { width: 100% !important; }
+  }
+
+  /* ── Shared style helpers ── */
+  .dnav:hover  { background: rgba(37,211,102,0.07) !important; color: #16a34a !important; }
+  .dnav.on     { background: linear-gradient(135deg,#25d366,#16a34a) !important; color:#fff !important; box-shadow:0 8px 20px rgba(37,211,102,0.25); }
+  .dcard       { transition: transform 0.2s, box-shadow 0.2s; }
+  .dcard:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,0.08) !important; }
+  .drow:hover  { background: #f0fdf8 !important; }
+  .dib         { transition:all 0.15s; border-radius:8px; padding:5px; border:none; cursor:pointer; background:none; }
+  .dib:hover   { background:rgba(37,211,102,0.1); color:#16a34a !important; }
+  .dib.rd:hover{ background:rgba(239,68,68,0.08); color:#dc2626 !important; }
+  .dinput:focus{ border-color:rgba(37,211,102,0.5) !important; outline:none; }
+  .dqbtn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.08) !important; }
+  .spin        { animation: wpl-spin 0.8s linear infinite; }
+  .chat-item:hover { background: #f0fdf8 !important; }
+  .reply-input:focus { border-color: rgba(37,211,102,0.4) !important; outline: none; box-shadow: 0 0 0 3px rgba(37,211,102,0.08); }
+  ::-webkit-scrollbar        { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  { background: rgba(37,211,102,0.2); border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(37,211,102,0.4); }
+`}</style>
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -476,12 +491,11 @@ export default function Dashboard() {
       </aside>
 
       {/* ── MAIN ── */}
-      <div className="wpl-main" style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden", marginLeft: 218 }}>
-
+      <div className="wpl-main" style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
         {/* Topbar */}
         <header style={{ height: 62, background: S.surface, borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", flexShrink: 0, zIndex: 30 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <button onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: S.textMuted, padding: 4 }}>
+           <button className="wpl-hamburger" onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: S.textMuted, padding: 4 }}>
               <Menu size={18} />
             </button>
             <h1 style={{ fontSize: 17, fontWeight: 900, color: S.textPrimary, letterSpacing: "-0.03em", textTransform: "capitalize" }}>{activeTab}</h1>
@@ -513,9 +527,7 @@ export default function Dashboard() {
 
           /* ─── CHATS (INBOX) — full height, no outer scroll ─────────────────── */
           <div style={{ flex: 1, overflow: "hidden", padding: 16 }}>
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "300px 1fr",
+           <div className="chats-grid" style={{
               height: "100%",
               background: "#fff",
               borderRadius: 20,
@@ -526,7 +538,7 @@ export default function Dashboard() {
             }}>
 
               {/* LEFT: chat list */}
-              <div style={{ borderRight: `1px solid ${S.border}`, display: "flex", flexDirection: "column", background: "#fcfdfe", minHeight: 0 }}>
+              <div className="chats-list" style={{ borderRight: `1px solid ${S.border}`, display: "flex", flexDirection: "column", background: "#fcfdfe", minHeight: 0 }}>
                 <div style={{ padding: "16px 18px", borderBottom: `1px solid ${S.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
                   <h3 style={{ fontSize: 15, fontWeight: 900, color: S.textPrimary, letterSpacing: "-0.02em" }}>Messages</h3>
                   <div style={{ width: 26, height: 26, borderRadius: 8, background: S.greenBg, display: "flex", alignItems: "center", justifyContent: "center", color: S.greenDark }}>
@@ -580,7 +592,7 @@ export default function Dashboard() {
               </div>
 
               {/* RIGHT: conversation pane */}
-              <div style={{ display: "flex", flexDirection: "column", background: "#f8fafc", minHeight: 0 }}>
+              <div className="chats-pane" style={{ display: "flex", flexDirection: "column", background: "#f8fafc", minHeight: 0 }}>
                 {selectedChat ? (
                   <>
                     {/* Chat header */}
@@ -766,7 +778,7 @@ export default function Dashboard() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16, marginBottom: 16 }}>
 
                     {/* Hero dark card */}
-                    <div style={{ gridColumn: "span 2", borderRadius: 28, padding: "32px 36px", position: "relative", overflow: "hidden", background: S.darkBg, boxShadow: "0 24px 60px rgba(6,95,86,0.22)" }}>
+                   <div className="hero-card" style={{ borderRadius: 28, padding: "32px 36px", position: "relative", overflow: "hidden", background: S.darkBg, boxShadow: "0 24px 60px rgba(6,95,86,0.22)" }}>
                       <div style={{ position: "absolute", top: -50, right: -50, width: 220, height: 220, borderRadius: "50%", background: "radial-gradient(circle,rgba(37,211,102,0.2) 0%,transparent 65%)", pointerEvents: "none" }} />
                       <p style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: S.monoFont, marginBottom: 14 }}>
                         <Activity size={10} /> Live automation
@@ -870,6 +882,7 @@ export default function Dashboard() {
                       </button>
                     </div>
                   ) : (
+                    <div className="table-scroll">
                     <table style={{ width: "100%", borderCollapse: "collapse" }}>
                       <thead>
                         <tr style={{ borderBottom: `1px solid ${S.border}` }}>
@@ -913,6 +926,7 @@ export default function Dashboard() {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   )}
                 </div>
               )}
@@ -1025,7 +1039,7 @@ export default function Dashboard() {
                   </div>
 
                   <div style={{ ...S.card, overflow: "hidden" }}>
-                    <div style={{ padding: "14px 20px", borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div className="contacts-toolbar" style={{ padding: "14px 20px", borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
                         <Search size={13} style={{ position: "absolute", left: 12, color: S.textFaint }} />
                         <input className="dinput"
@@ -1051,6 +1065,7 @@ export default function Dashboard() {
                         <p style={{ fontSize: 13, color: S.textMuted }}>No contacts found</p>
                       </div>
                     ) : (
+                      <div className="table-scroll">
                       <table style={{ width: "100%", borderCollapse: "collapse" }}>
                         <thead>
                           <tr style={{ borderBottom: `1px solid ${S.border}` }}>
@@ -1106,6 +1121,7 @@ export default function Dashboard() {
                           ))}
                         </tbody>
                       </table>
+                      </div>  
                     )}
 
                     {contactTotal > 20 && (
