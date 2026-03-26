@@ -10,6 +10,8 @@ const WaIcon = ({ size = 18, color = "currentColor" }) => (
   </svg>
 );
 
+const isMobile = window.innerWidth < 768;
+
 const CheckIcon = ({ dark }) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
     <circle cx="8" cy="8" r="8" fill={dark ? "rgba(37,211,102,0.15)" : "rgba(37,211,102,0.12)"}/>
@@ -314,7 +316,9 @@ export default function LandingPage() {
       {/* ══ HERO (Unchanged) ══ */}
       <section style={{
         minHeight:"100vh", display:"flex",alignItems:"center",
-        padding:"clamp(90px,12vw,130px) clamp(20px,5vw,60px) 60px",
+        padding: isMobile 
+            ? "clamp(120px,18vw,160px) 20px 60px"   // 👈 more top space on mobile
+            : "clamp(90px,12vw,130px) clamp(20px,5vw,60px) 60px",
         background:"linear-gradient(160deg,#f0fdf8 0%,#e8f5fd 40%,#f8f0ff 100%)",
         overflow:"hidden",position:"relative",
       }}>
