@@ -9,7 +9,7 @@ import {
   Phone, StickyNote, Download, MessageSquare, Send, RefreshCw
 } from "lucide-react";
 
-const API = "http://localhost:5004"; // adjust if your backend is on a different URL/port
+const API = ""; // adjust if your backend is on a different URL/port
 const POLL_CHATS_MS     = 8000;   // refresh chat list every 8s
 const POLL_MESSAGES_MS  = 5000;   // refresh active messages every 5s
 const POLL_WA_MS        = 30000;  // refresh WA status every 30s
