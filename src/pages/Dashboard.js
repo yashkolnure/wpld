@@ -9,7 +9,7 @@ import {
   Phone, StickyNote, Download, MessageSquare, Send, RefreshCw
 } from "lucide-react";
 
-const API = "";
+const API = "http://localhost:5004"; // adjust if your backend is on a different URL/port
 const POLL_CHATS_MS     = 8000;   // refresh chat list every 8s
 const POLL_MESSAGES_MS  = 5000;   // refresh active messages every 5s
 const POLL_WA_MS        = 30000;  // refresh WA status every 30s
@@ -57,6 +57,15 @@ export default function Dashboard() {
   const [contactTotal,   setContactTotal]   = useState(0);
   const [selectedContact,setSelectedContact]= useState(null);
   const [contactNotes,   setContactNotes]   = useState("");
+
+
+  //payments
+  const [userPlan,    setUserPlan]    = useState(null);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [payLoading,  setPayLoading]  = useState(false);
+  const [payMsg,      setPayMsg]      = useState({ text: "", type: "" });
+  const [selectedDuration, setSelectedDuration] = useState("monthly");
+
 
   // chats
   const [chats,          setChats]          = useState([]);
@@ -129,6 +138,14 @@ export default function Dashboard() {
       .catch(() => {});
   }, [activeTab]);
 
+  // ─── PLAN ────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    setPlanLoading(true);
+    axios.get(`${API}/api/payments/plan`, { headers })
+      .then(r => setUserPlan(r.data))
+      .catch(() => setUserPlan({ plan: "free", isActive: false }))
+      .finally(() => setPlanLoading(false));
+  }, []);
   // ─── CHATS (+ polling when on chats tab) ─────────────────────────────────────
   const fetchChats = useCallback(() => {
     axios.get(`${API}/api/chats`, { headers })
@@ -228,6 +245,82 @@ export default function Dashboard() {
       setWorkflows(wfs => wfs.map(w => w._id === id ? { ...w, isActive: res.data.isActive } : w));
     } catch {}
   };
+
+  const PRO_PLANS = {
+    monthly: { label: "Monthly (including GST)",   price: 1499, paise: 149900, duration: 30,  badge: null,          saving: null },
+    halfyear:{ label: "6 Months (including GST)",  price: 4999, paise: 499900, duration: 180, badge: "Save 44%",    saving: "vs ₹8,994 monthly" },
+    yearly:  { label: "Yearly (including GST)",    price: 8999, paise: 899900, duration: 365, badge: "Best value",  saving: "vs ₹17,988 monthly" },
+  };
+
+  // ─── RAZORPAY UPGRADE ─────────────────────────────────────────────────────────
+const handleUpgrade = async () => {
+  setPayLoading(true);
+  setPayMsg({ text: "", type: "" });
+  try {
+    const plan = PRO_PLANS[selectedDuration];
+
+    const { data } = await axios.post(
+      `${API}/api/payments/create-order`,
+      { amount: plan.paise, currency: "INR" },
+      { headers }
+    );
+
+    if (!window.Razorpay) {
+      await new Promise((resolve, reject) => {
+        const script   = document.createElement("script");
+        script.src     = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload  = resolve;
+        script.onerror = reject;
+        document.body.appendChild(script);
+      });
+    }
+
+    const rzp = new window.Razorpay({
+      key:         "rzp_live_R795ytd3I8Ex1o",
+      amount:      data.amount,
+      currency:    data.currency,
+      order_id:    data.orderId,
+      name:        "WPLeads",
+      description: `Pro Plan — ${plan.label}`,
+      theme:       { color: "#25d366" },
+      prefill: {
+        name:  user?.name  || "",
+        email: user?.email || "",
+      },
+      handler: async (response) => {
+        try {
+          const verify = await axios.post(
+            `${API}/api/payments/verify`,
+            {
+              razorpay_order_id:   response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature:  response.razorpay_signature,
+            },
+            { headers }
+          );
+          setUserPlan({ plan: "pro", planExpiresAt: verify.data.planExpiresAt, isActive: true });
+          setPayMsg({ text: `🎉 Upgraded to Pro (${plan.label}) successfully!`, type: "success" });
+        } catch {
+          setPayMsg({ text: "Payment received but verification failed. Contact support.", type: "error" });
+        } finally {
+          setPayLoading(false);
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          setPayLoading(false);
+          setPayMsg({ text: "Payment cancelled.", type: "error" });
+        },
+      },
+    });
+
+    rzp.open();
+
+  } catch {
+    setPayLoading(false);
+    setPayMsg({ text: "Failed to initiate payment. Try again.", type: "error" });
+  }
+};
 
   const handleDeleteWorkflow = async (id) => {
     if (!window.confirm("Delete this workflow?")) return;
@@ -468,6 +561,29 @@ export default function Dashboard() {
             </button>
           ))}
         </nav>
+        <div style={{ padding: "0 10px 10px" }}>
+  <button
+    onClick={() => navTo("upgrade")}
+    style={{
+      width: "100%", padding: "12px 14px", borderRadius: 16,
+      background: activeTab === "upgrade"
+        ? S.greenGrad
+        : "linear-gradient(135deg,rgba(37,211,102,0.12),rgba(22,163,74,0.08))",
+      border: `1px solid ${S.greenBorder}`,
+      cursor: "pointer", fontFamily: S.font, textAlign: "left",
+      transition: "all 0.2s",
+    }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+      <span style={{ fontSize: 14 }}>⚡</span>
+      <span style={{ fontSize: 12, fontWeight: 800, color: activeTab === "upgrade" ? "#fff" : S.greenDark }}>
+        Upgrade Plan
+      </span>
+    </div>
+    <p style={{ fontSize: 10, color: activeTab === "upgrade" ? "rgba(255,255,255,0.7)" : S.textMuted, lineHeight: 1.4 }}>
+      Unlock workflows, contacts & more
+    </p>
+  </button>
+</div>
 
         {/* User */}
         <div style={{ padding: "10px", borderTop: `1px solid ${S.border}`, flexShrink: 0 }}>
@@ -498,7 +614,7 @@ export default function Dashboard() {
            <button className="wpl-hamburger" onClick={() => setSidebarOpen(true)} style={{ background: "none", border: "none", cursor: "pointer", color: S.textMuted, padding: 4 }}>
               <Menu size={18} />
             </button>
-            <h1 style={{ fontSize: 17, fontWeight: 900, color: S.textPrimary, letterSpacing: "-0.03em", textTransform: "capitalize" }}>{activeTab}</h1>
+            <h1 style={{ fontSize: 17, fontWeight: 900, color: S.textPrimary, letterSpacing: "-0.03em", textTransform: "capitalize" }}>{activeTab === "upgrade" ? "Upgrade Plan" : activeTab}</h1>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {/* WA status pill */}
@@ -506,6 +622,7 @@ export default function Dashboard() {
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: waStatus?.connected ? S.green : "#d1d5db", animation: waStatus?.connected ? "wpl-ping 1.5s ease-in-out infinite" : "none" }} />
               {waStatus?.connected ? "Connected" : "Offline"}
             </div>
+            
             {activeTab === "workflows" && (
               <button onClick={() => navigate("/workflow/new")}
                 style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 16px", borderRadius: 12, background: S.greenGrad, border: "none", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: S.font, boxShadow: "0 4px 14px rgba(37,211,102,0.3)" }}>
@@ -518,11 +635,14 @@ export default function Dashboard() {
                 <RefreshCw size={13} /> Refresh
               </button>
             )}
+
+            
           </div>
         </header>
 
         {/* ── CONTENT ── */}
         {/* Chats tab gets its own full-height layout, other tabs scroll normally */}
+        
         {activeTab === "chats" ? (
 
           /* ─── CHATS (INBOX) — full height, no outer scroll ─────────────────── */
@@ -859,6 +979,114 @@ export default function Dashboard() {
                       </button>
                     ))}
                   </div>
+                  {/* ─── WPLEADS PRO UPGRADE BANNER ─── */}
+<div style={{ 
+  marginTop: 32, 
+  padding: "32px", 
+  background: "#0d1117",
+  borderRadius: 28,  
+  border: "1px solid rgba(255,255,255,0.08)",
+  position: "relative",
+  overflow: "hidden",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  flexWrap: "wrap",
+  gap: 24,
+  boxShadow: "0 20px 40px rgba(0,0,0,0.15)"
+}}>
+  {/* Decorative Glow */}
+  <div style={{ 
+    position: "absolute", 
+    bottom: "-50px", 
+    left: "-50px", 
+    width: 200, 
+  background: `linear-gradient(135deg, ${S.darkBg} 0%, #0d1117 100%) !important`,
+    height: 200, 
+    background: "radial-gradient(circle, rgba(37,211,102,0.12) 0%, transparent 70%)", 
+    pointerEvents: "none" 
+  }} />
+
+  <div style={{ position: "relative", zIndex: 1, flex: "1 1 400px" }}>
+    <div style={{ 
+      display: "inline-flex", 
+      alignItems: "center", 
+      gap: 6, 
+      padding: "6px 12px", 
+      background: "rgba(37,211,102,0.15)", 
+      borderRadius: 100, 
+      marginBottom: 16 
+    }}>
+      <Zap size={14} color={S.greenDark} fill={S.greenDark} />
+      <span style={{ fontSize: 11, fontWeight: 800, color: S.greenDark, textTransform: "uppercase", letterSpacing: "0.05em" }}>Unlock Pro Power</span>
+    </div>
+    
+    <h3 style={{ fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 12, letterSpacing: "-0.02em" }}>
+      Get a FREE Meta API with WPleads Pro.
+    </h3>
+    
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 20px", maxWidth: 500 }}>
+      {[
+        "Unlimited messages & workflows",
+        "Full Meta API integration handled by us",
+        "Unlimited contacts database",
+        "Dedicated account manager",
+        "Priority support & Analytics"
+      ].map((feat, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
+          <div style={{ width: 14, height: 14, borderRadius: "50%", background: "rgba(37,211,102,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Check size={8} color={S.greenDark} strokeWidth={4} />
+          </div>
+          {feat}
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <div style={{ 
+    position: "relative", 
+    zIndex: 1, 
+    background: "rgba(255,255,255,0.03)", 
+    padding: "24px", 
+    borderRadius: 20, 
+    border: "1px solid rgba(255,255,255,0.05)",
+    textAlign: "center",
+    minWidth: 220
+  }}>
+    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>Starting at</p>
+    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 4, marginBottom: 16 }}>
+      <span style={{ fontSize: 28, fontWeight: 900, color: "#fff" }}>₹1,499</span>
+      <span style={{ fontSize: 14, color: "rgba(255,255,255,0.4)" }}>/mo</span>
+    </div>
+    <button 
+      onClick={() => navTo("upgrade")}
+      style={{ 
+        width: "100%",
+        padding: "12px 20px", 
+        borderRadius: 12, 
+        background: "#fff", 
+        color: S.darkBg, 
+        border: "none", 
+        fontSize: 14, 
+        fontWeight: 700, 
+        cursor: "pointer", 
+        transition: "all 0.2s" 
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "scale(1.03)";
+        e.currentTarget.style.background = S.greenDark;
+        e.currentTarget.style.color = "#fff";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "scale(1)";
+        e.currentTarget.style.background = "#fff";
+        e.currentTarget.style.color = S.darkBg;
+      }}
+    >
+      Upgrade Now
+    </button>
+  </div>
+</div>
                 </div>
               )}
 
@@ -930,7 +1158,206 @@ export default function Dashboard() {
                   )}
                 </div>
               )}
+{activeTab === "upgrade" && (
+  <div style={{ animation: "wpl-fadein 0.4s ease both" }}>
 
+    {/* ── Current plan banner ── */}
+    <div style={{ borderRadius: 24, padding: "24px 28px", background: S.darkBg, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, boxShadow: "0 20px 50px rgba(6,95,86,0.2)" }}>
+      <div>
+        <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.14em", fontFamily: S.monoFont, marginBottom: 6 }}>Current plan</p>
+        {planLoading ? (
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>Loading…</div>
+        ) : (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 26, fontWeight: 900, color: "#fff", letterSpacing: "-0.03em", textTransform: "capitalize" }}>
+                {userPlan?.plan || "Free"}
+              </span>
+              <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 10, fontWeight: 700, background: userPlan?.plan === "pro" ? "rgba(37,211,102,0.2)" : "rgba(255,255,255,0.1)", color: userPlan?.plan === "pro" ? "#4ade80" : "rgba(255,255,255,0.5)" }}>
+                {userPlan?.plan === "pro" ? "Active" : "Free tier"}
+              </span>
+            </div>
+            {userPlan?.plan === "pro" && userPlan?.planExpiresAt ? (
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
+                Renews {new Date(userPlan.planExpiresAt).toLocaleDateString()}
+              </p>
+            ) : (
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>
+                100 messages/month · 1 workflow · No API setup
+              </p>
+            )}
+          </>
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 14, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: userPlan?.plan === "pro" ? S.green : "#9ca3af", animation: userPlan?.plan === "pro" ? "wpl-ping 1.5s ease-in-out infinite" : "none" }} />
+        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 600, textTransform: "capitalize" }}>
+          {userPlan?.plan || "free"} tier
+        </span>
+      </div>
+    </div>
+
+    {/* ── Pricing cards ── */}
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 20, marginBottom: 28 }}>
+
+      {/* Free card */}
+      <div style={{ ...S.card, padding: "28px" }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.14em", fontFamily: S.monoFont, marginBottom: 12 }}>Free</p>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 6 }}>
+          <span style={{ fontSize: 42, fontWeight: 900, color: S.textPrimary, letterSpacing: "-0.05em", lineHeight: 1 }}>₹0</span>
+          <span style={{ fontSize: 13, color: S.textMuted, marginBottom: 6 }}>/month</span>
+        </div>
+        <p style={{ fontSize: 12, color: S.textMuted, marginBottom: 20 }}>Good for trying out</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+          {[
+            { ok: true,  text: "100 messages/month" },
+            { ok: true,  text: "1 workflow only" },
+            { ok: true, text: "Self WhatsApp API setup" },
+            { ok: false, text: "Unlimited workflows" },
+            { ok: false, text: "Unlimited contacts" },
+            { ok: false, text: "Account manager" },
+            { ok: false, text: "Meta API integration" },
+          ].map(({ ok, text }) => (
+            <div key={text} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 18, height: 18, borderRadius: "50%", background: ok ? S.greenBg : "rgba(0,0,0,0.04)", border: `1px solid ${ok ? S.greenBorder : "rgba(0,0,0,0.08)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ fontSize: 9, color: ok ? S.greenDark : "#d1d5db" }}>{ok ? "✓" : "✕"}</span>
+              </div>
+              <span style={{ fontSize: 12, color: ok ? S.textPrimary : S.textFaint }}>{text}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: "10px 0", borderRadius: 12, background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.06)", textAlign: "center", fontSize: 12, fontWeight: 700, color: S.textMuted }}>
+          {userPlan?.plan === "free" ? "✓ Current plan" : "Free tier"}
+        </div>
+      </div>
+
+      {/* Pro card */}
+      <div style={{ borderRadius: 24, padding: "28px", position: "relative", overflow: "hidden", background: S.darkBg, boxShadow: "0 24px 60px rgba(6,95,86,0.25)" }}>
+        <div style={{ position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle,rgba(37,211,102,0.18) 0%,transparent 65%)", pointerEvents: "none" }} />
+
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.14em", fontFamily: S.monoFont }}>Pro</p>
+          {PRO_PLANS[selectedDuration].badge && (
+            <span style={{ padding: "3px 10px", borderRadius: 20, background: "rgba(37,211,102,0.2)", fontSize: 10, fontWeight: 700, color: "#4ade80" }}>
+              {PRO_PLANS[selectedDuration].badge}
+            </span>
+          )}
+        </div>
+
+        {/* Duration dropdown */}
+        <div style={{ marginBottom: 16 }}>
+          <select
+            value={selectedDuration}
+            onChange={e => setSelectedDuration(e.target.value)}
+            style={{ width: "100%", padding: "9px 14px", borderRadius: 12, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#fff", fontSize: 12, fontWeight: 600, fontFamily: S.font, cursor: "pointer", appearance: "none", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 12px center" }}>
+            <option value="monthly"  style={{ background: "#065f56" }}>Monthly</option>
+            <option value="halfyear" style={{ background: "#065f56" }}>6 Months</option>
+            <option value="yearly"   style={{ background: "#065f56" }}>Yearly</option>
+          </select>
+        </div>
+
+        {/* Price */}
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 4 }}>
+          <span style={{ fontSize: 42, fontWeight: 900, color: "#fff", letterSpacing: "-0.05em", lineHeight: 1 }}>
+            ₹{PRO_PLANS[selectedDuration].price.toLocaleString("en-IN")}
+          </span>
+          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginBottom: 6 }}>
+            /{PRO_PLANS[selectedDuration].label.toLowerCase()}
+          </span>
+        </div>
+        {PRO_PLANS[selectedDuration].saving && (
+          <p style={{ fontSize: 11, color: "#4ade80", marginBottom: 20, fontWeight: 600 }}>
+            {PRO_PLANS[selectedDuration].saving}
+          </p>
+        )}
+        {!PRO_PLANS[selectedDuration].saving && (
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 20 }}>Everything you need to scale</p>
+        )}
+
+        {/* Features */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+          {[
+            "Unlimited messages",
+            "Unlimited workflows",
+            "Unlimited contacts",
+            "1 free WhatsApp API account (Meta)",
+            "Full Meta integration handled by us",
+            "Dedicated account manager",
+            "Priority support",
+            "Advanced analytics",
+          ].map(text => (
+            <div key={text} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 18, height: 18, borderRadius: "50%", background: "rgba(37,211,102,0.2)", border: "1px solid rgba(37,211,102,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ fontSize: 9, color: "#4ade80" }}>✓</span>
+              </div>
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.8)" }}>{text}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Pay message */}
+        {payMsg.text && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, padding: "10px 14px", borderRadius: 12, background: payMsg.type === "success" ? "rgba(37,211,102,0.15)" : "rgba(239,68,68,0.12)", color: payMsg.type === "success" ? "#4ade80" : "#f87171", fontSize: 12, fontWeight: 600 }}>
+            {payMsg.type === "success" ? <Check size={13} /> : <AlertCircle size={13} />} {payMsg.text}
+          </div>
+        )}
+
+        {/* CTA button */}
+        {userPlan?.plan === "pro" ? (
+          <div style={{ width: "100%", padding: "13px 0", borderRadius: 14, background: "rgba(37,211,102,0.15)", border: "1px solid rgba(37,211,102,0.3)", color: "#4ade80", fontSize: 13, fontWeight: 800, textAlign: "center" }}>
+            ✓ You're on Pro
+          </div>
+        ) : (
+          <button onClick={handleUpgrade} disabled={payLoading}
+            style={{ width: "100%", padding: "13px 0", borderRadius: 14, background: payLoading ? "rgba(37,211,102,0.4)" : S.greenGrad, border: "none", color: "#fff", fontSize: 13, fontWeight: 800, cursor: payLoading ? "default" : "pointer", fontFamily: S.font, boxShadow: "0 8px 24px rgba(37,211,102,0.35)", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            {payLoading
+              ? <><Activity size={14} style={{ animation: "wpl-spin 0.8s linear infinite" }} /> Processing…</>
+              : `Upgrade to Pro — ₹${PRO_PLANS[selectedDuration].price.toLocaleString("en-IN")} →`}
+          </button>
+        )}
+      </div>
+    </div>
+
+    {/* ── Feature comparison table ── */}
+    <div style={{ ...S.card, overflow: "hidden" }}>
+      <div style={{ padding: "20px 24px", borderBottom: `1px solid ${S.border}` }}>
+        <h3 style={{ fontSize: 15, fontWeight: 900, color: S.textPrimary, letterSpacing: "-0.02em" }}>Full comparison</h3>
+        <p style={{ fontSize: 12, color: S.textMuted, marginTop: 3 }}>See exactly what you get on each plan</p>
+      </div>
+      <div className="table-scroll">
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 420 }}>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${S.border}` }}>
+              <th style={{ padding: "12px 24px", fontSize: 9, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", textAlign: "left", fontFamily: S.monoFont }}>Feature</th>
+              <th style={{ padding: "12px 20px", fontSize: 9, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", textAlign: "center", fontFamily: S.monoFont }}>Free</th>
+              <th style={{ padding: "12px 20px", fontSize: 9, fontWeight: 700, color: S.greenDark, textTransform: "uppercase", letterSpacing: "0.12em", textAlign: "center", fontFamily: S.monoFont }}>Pro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { feature: "Messages",              free: "100/month",   pro: "Unlimited" },
+              { feature: "Workflows",              free: "1 only",      pro: "Unlimited" },
+              { feature: "Contacts",               free: "Limited",     pro: "Unlimited" },
+              { feature: "WhatsApp API account",   free: "✕",           pro: "1 free (Meta)" },
+              { feature: "Meta integration",       free: "Self-setup",  pro: "We handle it" },
+              { feature: "Account manager",        free: "✕",           pro: "Dedicated" },
+              { feature: "Support",                free: "Community",   pro: "Priority" },
+              { feature: "Analytics",              free: "Basic",       pro: "Advanced" },
+            ].map(({ feature, free, pro }) => (
+              <tr key={feature} className="drow" style={{ borderBottom: `1px solid rgba(37,211,102,0.05)` }}>
+                <td style={{ padding: "13px 24px", fontSize: 13, fontWeight: 600, color: S.textPrimary }}>{feature}</td>
+                <td style={{ padding: "13px 20px", textAlign: "center", fontSize: 12, color: S.textMuted }}>{free}</td>
+                <td style={{ padding: "13px 20px", textAlign: "center", fontSize: 12, fontWeight: 700, color: S.greenDark }}>{pro}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+)}
               {/* ─── WHATSAPP ─── */}
               {activeTab === "whatsapp" && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 20, animation: "wpl-fadein 0.4s ease both" }}>
