@@ -286,7 +286,7 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
 
     try {
       const res = await axios.post(
-        `${API}http://localhost:5004/api/workflows/${workflowId}/simulate`,
+        `${API}/api/workflows/${workflowId}/simulate`,
         { incomingText: inputText, branchPath: [] },
         { headers }
       );
