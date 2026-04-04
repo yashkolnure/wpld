@@ -349,10 +349,75 @@ export default function LandingPage() {
               ))}
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:14,marginBottom:44}}>
-              <button onClick={()=>navigate("/register")} style={{display:"inline-flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,#25d366,#16a34a)",color:"#fff",border:"none",borderRadius:12,padding:"14px 28px",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 8px 28px rgba(37,211,102,0.3)",transition:"all 0.2s",fontFamily:"inherit"}}
-                onMouseOver={e=>e.currentTarget.style.transform="translateY(-2px)"} onMouseOut={e=>e.currentTarget.style.transform="translateY(0)"}>
-                <WaIcon size={16} color="#fff"/> Start for free
-              </button>
+<button 
+      onClick={() => window.open("https://wa.me/917498869327?text=Hi! I want to test the automation.", "_blank")} 
+      style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 12,
+      background: "#25D366", // Official WhatsApp Green
+      color: "#fff",
+      border: "none",
+      borderRadius: "50px", // Rounded pill shape for modern app feel
+      padding: "16px 36px",
+      fontSize: "15px",
+      fontWeight: 700,
+      cursor: "pointer",
+      boxShadow: "0 10px 20px -5px rgba(37,211,102,0.4)",
+      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+      fontFamily: "inherit",
+      letterSpacing: "-0.01em"
+    }}
+    onMouseOver={e => {
+      e.currentTarget.style.transform = "translateY(-3px)";
+      e.currentTarget.style.background = "#128C7E"; // Darker Teal Green on hover
+      e.currentTarget.style.boxShadow = "0 15px 25px -5px rgba(37,211,102,0.5)";
+    }} 
+    onMouseOut={e => {
+      e.currentTarget.style.transform = "translateY(0)";
+      e.currentTarget.style.background = "#25D366";
+      e.currentTarget.style.boxShadow = "0 10px 20px -5px rgba(37,211,102,0.4)";
+    }}
+  >
+    <WaIcon size={18} color="#fff" /> Test Now
+  </button>
+
+  {/* SECONDARY: TEST NOW (Clean Chat-Bubble Style) */}
+  <button 
+      onClick={() => navigate("/register")} 
+      style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 12,
+      background: "#fff",
+      color: "#075E54", // WhatsApp Deep Teal
+      border: "2px solid #25D366",
+      borderRadius: "50px",
+      padding: "16px 36px",
+      fontSize: "15px",
+      fontWeight: 700,
+      cursor: "pointer",
+      transition: "all 0.3s ease",
+      fontFamily: "inherit",
+      letterSpacing: "-0.01em"
+    }}
+    onMouseOver={e => {
+      e.currentTarget.style.background = "rgba(37,211,102,0.05)";
+      e.currentTarget.style.transform = "translateY(-3px)";
+    }} 
+    onMouseOut={e => {
+      e.currentTarget.style.background = "#fff";
+      e.currentTarget.style.transform = "translateY(0)";
+    }}
+  >
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#075E54" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+     <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+  <circle cx="8.5" cy="7" r="4" />
+  <line x1="20" y1="8" x2="20" y2="14" />
+  <line x1="17" y1="11" x2="23" y2="11" />
+    </svg>
+    Start Free
+  </button>
             </div>
           </div>
           <div style={{position:"relative",animation:"wpl-fadein 1s ease 0.15s both"}}>

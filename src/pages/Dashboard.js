@@ -90,14 +90,14 @@ export default function Dashboard() {
 
   // ─── AUTH ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    axios.get(`${API}/api/user/me`, { headers })
+    axios.get(`${API}http://localhost:5004/api/user/me`, { headers })
       .then(r => setUser(r.data))
       .catch(() => { localStorage.removeItem("token"); navigate("/login"); });
   }, []);
 
   // ─── WA STATUS (+ polling) ──────────────────────────────────────────────────
   const fetchWaStatus = useCallback(() => {
-    axios.get(`${API}/api/whatsapp/status`, { headers })
+    axios.get(`${API}http://localhost:5004/api/whatsapp/status`, { headers })
       .then(r => setWaStatus(r.data))
       .catch(() => setWaStatus({ connected: false }));
   }, []);
@@ -110,7 +110,7 @@ export default function Dashboard() {
 
   // ─── WORKFLOWS ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    axios.get(`${API}/api/workflows`, { headers })
+    axios.get(`${API}http://localhost:5004/api/workflows`, { headers })
       .then(r => setWorkflows(r.data))
       .catch(() => {})
       .finally(() => setWfLoading(false));
@@ -119,8 +119,8 @@ export default function Dashboard() {
   // ─── OVERVIEW STATS (fetched once on mount) ─────────────────────────────────
   useEffect(() => {
     Promise.all([
-      axios.get(`${API}/api/contacts/stats`, { headers }),
-      axios.get(`${API}/api/contacts?page=1&limit=1`, { headers }),
+      axios.get(`${API}http://localhost:5004/api/contacts/stats`, { headers }),
+      axios.get(`${API}http://localhost:5004/api/contacts?page=1&limit=1`, { headers }),
     ])
       .then(([sRes, cRes]) => {
         setContactStats(sRes.data);
@@ -133,7 +133,7 @@ export default function Dashboard() {
   // ─── WEBHOOK INFO ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (activeTab !== "whatsapp") return;
-    axios.get(`${API}/api/whatsapp/webhook-info`, { headers })
+    axios.get(`${API}http://localhost:5004/api/whatsapp/webhook-info`, { headers })
       .then(r => setWebhookInfo(r.data))
       .catch(() => {});
   }, [activeTab]);
@@ -141,14 +141,14 @@ export default function Dashboard() {
   // ─── PLAN ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     setPlanLoading(true);
-    axios.get(`${API}/api/payments/plan`, { headers })
+    axios.get(`${API}http://localhost:5004/api/payments/plan`, { headers })
       .then(r => setUserPlan(r.data))
       .catch(() => setUserPlan({ plan: "free", isActive: false }))
       .finally(() => setPlanLoading(false));
   }, []);
   // ─── CHATS (+ polling when on chats tab) ─────────────────────────────────────
   const fetchChats = useCallback(() => {
-    axios.get(`${API}/api/chats`, { headers })
+    axios.get(`${API}http://localhost:5004/api/chats`, { headers })
       .then(r => setChats(r.data))
       .catch(() => {});
   }, []);
@@ -159,7 +159,7 @@ export default function Dashboard() {
       return;
     }
     setChatsLoading(true);
-    axios.get(`${API}/api/chats`, { headers })
+    axios.get(`${API}http://localhost:5004/api/chats`, { headers })
       .then(r => setChats(r.data))
       .catch(() => {})
       .finally(() => setChatsLoading(false));
@@ -168,10 +168,12 @@ export default function Dashboard() {
     return () => clearInterval(chatPollRef.current);
   }, [activeTab, fetchChats]);
 
+
+  
   // ─── MESSAGES (+ polling when a chat is selected) ────────────────────────────
   const fetchMessages = useCallback(() => {
     if (!selectedChat) return;
-    axios.get(`${API}/api/chats/${selectedChat._id}/messages`, { headers })
+    axios.get(`${API}http://localhost:5004/api/chats/${selectedChat._id}/messages`, { headers })
       .then(r => setActiveMessages(r.data))
       .catch(() => {});
   }, [selectedChat]);
@@ -181,7 +183,7 @@ export default function Dashboard() {
     if (!selectedChat) { setActiveMessages([]); return; }
 
     setMessagesLoading(true);
-    axios.get(`${API}/api/chats/${selectedChat._id}/messages`, { headers })
+    axios.get(`${API}http://localhost:5004/api/chats/${selectedChat._id}/messages`, { headers })
       .then(r => setActiveMessages(r.data))
       .catch(err => console.error("Failed to load messages", err))
       .finally(() => setMessagesLoading(false));
@@ -191,18 +193,16 @@ export default function Dashboard() {
   }, [selectedChat]);
 
   // ─── AUTO-SCROLL to bottom when messages change ───────────────────────────────
-  useEffect(() => {
-    if (!chatEndRef.current) return;
-    chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [activeMessages]);
+
 
   // ─── CONTACTS ────────────────────────────────────────────────────────────────
-  useEffect(() => {
+   useEffect(() => {
     if (activeTab !== "contacts") return;
     setContactsLoading(true);
+    const contactLimit = isFree ? 50 : 20;
     Promise.all([
-      axios.get(`${API}/api/contacts?page=${contactPage}&limit=20&search=${contactSearch}`, { headers }),
-      axios.get(`${API}/api/contacts/stats`, { headers }),
+      axios.get(`${API}http://localhost:5004/api/contacts?page=${contactPage}&limit=${contactLimit}&search=${contactSearch}`, { headers }),
+      axios.get(`${API}http://localhost:5004/api/contacts/stats`, { headers }),
     ])
       .then(([cRes, sRes]) => {
         setContacts(cRes.data.contacts);
@@ -224,7 +224,7 @@ export default function Dashboard() {
     e.preventDefault();
     setWaLoading(true);
     try {
-      const res = await axios.post(`${API}/api/whatsapp/connect`, form, { headers });
+      const res = await axios.post(`${API}http://localhost:5004/api/whatsapp/connect`, form, { headers });
       setWaMsg({ text: res.data.message, type: "success" });
       setWaStatus({ connected: true, ...form });
     } catch {
@@ -234,14 +234,14 @@ export default function Dashboard() {
 
   const handleWaDisconnect = async () => {
     if (!window.confirm("Disconnect WhatsApp?")) return;
-    await axios.delete(`${API}/api/whatsapp/disconnect`, { headers });
+    await axios.delete(`${API}http://localhost:5004/api/whatsapp/disconnect`, { headers });
     setWaStatus({ connected: false });
-    setWaMsg({ text: "Disconnected successfully.", type: "success" });
+    setWaMsg({ text: "Disconnected successfully.", type: "success" }); 
   };
 
   const handleToggleWorkflow = async (id) => {
     try {
-      const res = await axios.patch(`${API}/api/workflows/${id}/toggle`, {}, { headers });
+      const res = await axios.patch(`${API}http://localhost:5004/api/workflows/${id}/toggle`, {}, { headers });
       setWorkflows(wfs => wfs.map(w => w._id === id ? { ...w, isActive: res.data.isActive } : w));
     } catch {}
   };
@@ -260,7 +260,7 @@ const handleUpgrade = async () => {
     const plan = PRO_PLANS[selectedDuration];
 
     const { data } = await axios.post(
-      `${API}/api/payments/create-order`,
+      `${API}http://localhost:5004/api/payments/create-order`,
       { amount: plan.paise, currency: "INR" },
       { headers }
     );
@@ -290,7 +290,7 @@ const handleUpgrade = async () => {
       handler: async (response) => {
         try {
           const verify = await axios.post(
-            `${API}/api/payments/verify`,
+            `${API}http://localhost:5004/api/payments/verify`,
             {
               razorpay_order_id:   response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
@@ -324,7 +324,7 @@ const handleUpgrade = async () => {
 
   const handleDeleteWorkflow = async (id) => {
     if (!window.confirm("Delete this workflow?")) return;
-    await axios.delete(`${API}/api/workflows/${id}`, { headers });
+    await axios.delete(`${API}http://localhost:5004/api/workflows/${id}`, { headers });
     setWorkflows(wfs => wfs.filter(w => w._id !== id));
   };
 
@@ -344,7 +344,7 @@ const handleUpgrade = async () => {
     setReplyText("");
     try {
       await axios.post(
-        `${API}/api/chats/${selectedChat._id}/messages`,
+        `${API}http://localhost:5004/api/chats/${selectedChat._id}/messages`,
         { text, type: "text" },
         { headers }
       );
@@ -369,7 +369,7 @@ const handleUpgrade = async () => {
   // ─── EXPORT ──────────────────────────────────────────────────────────────────
   const handleExport = async () => {
     try {
-      const res = await axios.get(`${API}/api/contacts?limit=1000`, { headers });
+      const res = await axios.get(`${API}http://localhost:5004/api/contacts?limit=1000`, { headers });
       const data = res.data.contacts;
       if (!data || data.length === 0) return alert("No contacts to export");
       const csvHeaders = ["Name", "Phone", "Messages", "Last Active", "Notes"];
@@ -394,12 +394,47 @@ const handleUpgrade = async () => {
     }
   };
 
+
+  // Add this inside the Dashboard component
+const resolveIdToLabel = (text) => {
+  if (!text || text.length < 20 || !text.includes('-')) return text;
+
+  // Search through all loaded workflows for a matching ID
+  for (const wf of workflows) {
+    if (!wf.nodes) continue;
+    for (const node of wf.nodes) {
+      const msg = node.data?.message;
+      if (!msg) continue;
+
+      // Check if it matches a Button ID
+      if (msg.buttons) {
+        const btn = msg.buttons.find(b => b.id === text);
+        if (btn) return btn.title;
+      }
+
+      // Check if it matches a List Row ID
+      if (msg.sections) {
+        for (const section of msg.sections) {
+          const row = section.rows?.find(r => r.id === text);
+          if (row) return row.title;
+        }
+      }
+      
+      // Check if it matches a Node ID (in case the bot logs Node IDs)
+      if (node.id === text) {
+        return msg.text || msg.buttonBody || msg.listBody || "Interactive Message";
+      }
+    }
+  }
+
+  return text; // Return original if no match found
+};
   // ─── SAVE CONTACT NOTES ───────────────────────────────────────────────────────
   const handleSaveNotes = async () => {
     if (!selectedContact) return;
     try {
       await axios.patch(
-        `${API}/api/contacts/${selectedContact._id}`,
+        `${API}http://localhost:5004/api/contacts/${selectedContact._id}`,
         { notes: contactNotes },
         { headers }
       );
@@ -410,8 +445,9 @@ const handleUpgrade = async () => {
     setSelectedContact(null);
   };
 
-  const activeCount = workflows.filter(w => w.isActive).length;
-  const webhookUrl  = webhookInfo?.webhookUrl || `${window.location.origin}/api/webhook`;
+  const isFree = !userPlan || userPlan.plan !== "pro";
+const activeCount = workflows.filter(w => w.isActive).length;
+  const webhookUrl  = webhookInfo?.webhookUrl || `${window.location.origin}http://localhost:5004/api/webhook`;
   const navTo = (key) => { setActiveTab(key); setSidebarOpen(false); };
 
   const S = {
@@ -624,11 +660,18 @@ const handleUpgrade = async () => {
             </div>
             
             {activeTab === "workflows" && (
-              <button onClick={() => navigate("/workflow/new")}
-                style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 16px", borderRadius: 12, background: S.greenGrad, border: "none", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: S.font, boxShadow: "0 4px 14px rgba(37,211,102,0.3)" }}>
-                <Plus size={13} /> New workflow
-              </button>
-            )}
+                <button
+                  onClick={() => {
+                    if (isFree && workflows.length >= 1) {
+                      navTo("upgrade");
+                    } else {
+                      navigate("/workflow/new");
+                    }
+                  }}
+                  style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 16px", borderRadius: 12, background: isFree && workflows.length >= 1 ? "rgba(0,0,0,0.08)" : S.greenGrad, border: "none", color: isFree && workflows.length >= 1 ? S.textMuted : "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: S.font, boxShadow: isFree && workflows.length >= 1 ? "none" : "0 4px 14px rgba(37,211,102,0.3)" }}>
+                  <Plus size={13} /> {isFree && workflows.length >= 1 ? "Upgrade for more" : "New workflow"}
+                </button>
+              )}
             {activeTab === "chats" && (
               <button onClick={fetchChats} title="Refresh chats"
                 style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 12, background: S.greenBg, border: `1px solid ${S.greenBorder}`, color: S.greenDark, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: S.font }}>
@@ -672,12 +715,12 @@ const handleUpgrade = async () => {
                     <div style={{ padding: 40, textAlign: "center", color: S.textMuted }}>
                       <Activity size={18} style={{ animation: "wpl-ping 1.5s infinite" }} />
                     </div>
-                  ) : chats.length === 0 ? (
-                    <div style={{ padding: 40, textAlign: "center", color: S.textMuted }}>
-                      <MessageSquare size={28} color="rgba(37,211,102,0.25)" style={{ marginBottom: 10 }} />
-                      <p style={{ fontSize: 12 }}>No conversations yet</p>
-                    </div>
-                  ) : chats.map(chat => (
+                    ) :chats.length === 0 ? (
+                      <div style={{ padding: 40, textAlign: "center", color: S.textMuted }}>
+                        <MessageSquare size={28} color="rgba(37,211,102,0.25)" style={{ marginBottom: 10 }} />
+                        <p style={{ fontSize: 12 }}>No conversations yet</p>
+                      </div>
+                    ) : (isFree ? chats.slice(0, 10) : chats).map(chat => (
                     <div key={chat._id}
                       onClick={() => setSelectedChat(chat)}
                       className="chat-item"
@@ -708,8 +751,17 @@ const handleUpgrade = async () => {
                       </div>
                     </div>
                   ))}
+                  {isFree && chats.length > 10 && (
+                    <div
+                      onClick={() => navTo("upgrade")}
+                      style={{ margin: "0 12px 12px", padding: "14px 16px", borderRadius: 16, background: "linear-gradient(135deg,#022c22,#065f56)", cursor: "pointer", textAlign: "center" }}>
+                      <p style={{ fontSize: 11, fontWeight: 800, color: "#4ade80", marginBottom: 3 }}>⚡ {chats.length - 10} more conversations</p>
+                      <p style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>Upgrade to Pro to view all</p>
+                    </div>
+                  )}
                 </div>
               </div>
+
 
               {/* RIGHT: conversation pane */}
               <div className="chats-pane" style={{ display: "flex", flexDirection: "column", background: "#f8fafc", minHeight: 0 }}>
@@ -737,100 +789,136 @@ const handleUpgrade = async () => {
                       </div>
                     </div>
 
-                    {/* Messages area — this is the only scrollable part */}
-                    <div
-                      ref={messagesContainer}
-                      style={{ flex: 1, overflowY: "auto", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 10 }}>
-                      {messagesLoading ? (
-                        <div style={{ textAlign: "center", marginTop: 30, color: S.textMuted }}>
-                          <Activity size={20} color={S.green} style={{ animation: "wpl-spin 0.8s linear infinite" }} />
-                        </div>
-                      ) : activeMessages.length === 0 ? (
-                        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: S.textMuted, paddingTop: 60 }}>
-                          <MessageSquare size={28} color="rgba(37,211,102,0.2)" style={{ marginBottom: 10 }} />
-                          <p style={{ fontSize: 12 }}>No messages yet</p>
-                        </div>
-                      ) : activeMessages.map((m) => {
-                        const isMe        = m.from === "bot" || m.from === "admin";
-                        const isButtonMsg = m.type === "interactive" || m.metadata?.buttons;
-                        const isOptimistic= m._id?.startsWith("opt-");
+{/* Messages area — this is the only scrollable part */}
+<div
+  ref={messagesContainer}
+  style={{ flex: 1, overflowY: "auto", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 10 }}>
+  {messagesLoading ? (
+    <div style={{ textAlign: "center", marginTop: 30, color: S.textMuted }}>
+      <Activity size={20} color={S.green} style={{ animation: "wpl-spin 0.8s linear infinite" }} />
+    </div>
+  ) : activeMessages.length === 0 ? (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: S.textMuted, paddingTop: 60 }}>
+      <MessageSquare size={28} color="rgba(37,211,102,0.2)" style={{ marginBottom: 10 }} />
+      <p style={{ fontSize: 12 }}>No messages yet</p>
+    </div>
+  ) : activeMessages.map((m) => {
+    const isMe         = m.from === "bot" || m.from === "admin";
+    const isButtonMsg  = m.type === "interactive" || m.metadata?.buttons;
+    const isOptimistic = m._id?.startsWith("opt-");
 
-                        return (
-                          <div key={m._id} style={{
-                            alignSelf: isMe ? "flex-end" : "flex-start",
-                            maxWidth: isButtonMsg ? "280px" : "72%",
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: isMe ? "flex-end" : "flex-start",
-                            opacity: isOptimistic ? 0.7 : 1,
-                            transition: "opacity 0.3s",
-                          }}>
-                            <div style={{
-                              padding: isButtonMsg ? "0" : (m.type === "image" ? "6px" : "10px 14px"),
-                              borderRadius: isMe ? "16px 16px 2px 16px" : "16px 16px 16px 2px",
-                              background: isMe ? S.greenGrad : "#fff",
-                              color: isMe ? "#fff" : S.textPrimary,
-                              fontSize: 13,
-                              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                              border: isMe ? "none" : `1px solid ${S.border}`,
-                              overflow: "hidden",
-                            }}>
+    // --- Dynamic Status Icon Helper ---
+    const renderStatusIcon = () => {
+      if (!isMe) return null; 
+      if (isOptimistic || m.status === "pending") return <Clock size={9} style={{ opacity: 0.6 }} />;
+      
+      switch (m.status) {
+        case "read":
+          return (
+            <div style={{ display: "flex", alignItems: "center", marginLeft: 1 }}>
+              <Check size={9} color="#34b7f1" strokeWidth={4} style={{ marginRight: -4 }} />
+              <Check size={9} color="#34b7f1" strokeWidth={4} />
+            </div>
+          );
+        case "delivered":
+          return (
+            <div style={{ display: "flex", alignItems: "center", marginLeft: 1 }}>
+              <Check size={9} strokeWidth={3} style={{ marginRight: -4 }} />
+              <Check size={9} strokeWidth={3} />
+            </div>
+          );
+        case "sent":
+          return <Check size={9} strokeWidth={3} />;
+        case "failed":
+          return <AlertCircle size={9} color="#ff4d4d" />;
+        default:
+          return <Check size={9} strokeWidth={3} />;
+      }
+    };
 
-                              {/* Interactive / buttons */}
-                              {isButtonMsg && (
-                                <div style={{ display: "flex", flexDirection: "column" }}>
-                                  {m.metadata?.header && <div style={{ padding: "10px 14px 4px", fontWeight: 800, fontSize: 12 }}>{m.metadata.header}</div>}
-                                  <div style={{ padding: "8px 14px 10px", whiteSpace: "pre-wrap" }}>{m.text || m.metadata?.body}</div>
-                                  {m.metadata?.footer && <div style={{ padding: "0 14px 10px", fontSize: 10, opacity: 0.6 }}>{m.metadata.footer}</div>}
-                                  <div style={{ display: "flex", flexDirection: "column", borderTop: isMe ? "1px solid rgba(255,255,255,0.1)" : "1px solid #f1f5f9" }}>
-                                    {m.metadata?.buttons?.map((btn, idx) => (
-                                      <div key={idx} style={{ padding: "10px", textAlign: "center", fontSize: 12, fontWeight: 700, color: isMe ? "#fff" : "#2563eb", borderTop: idx > 0 ? (isMe ? "1px solid rgba(255,255,255,0.1)" : "1px solid #f1f5f9") : "none", background: "rgba(0,0,0,0.02)" }}>
-                                        {btn.title}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
+    return (
+      <div key={m._id} style={{
+        alignSelf: isMe ? "flex-end" : "flex-start",
+        maxWidth: isButtonMsg ? "280px" : "72%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: isMe ? "flex-end" : "flex-start",
+        opacity: isOptimistic ? 0.7 : 1,
+        transition: "opacity 0.3s",
+      }}>
+        <div style={{
+          padding: isButtonMsg ? "0" : (m.type === "image" ? "6px" : "10px 14px"),
+          borderRadius: isMe ? "16px 16px 2px 16px" : "16px 16px 16px 2px",
+          background: isMe ? S.greenGrad : "#fff",
+          color: isMe ? "#fff" : S.textPrimary,
+          fontSize: 13,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+          border: isMe ? "none" : `1px solid ${S.border}`,
+          overflow: "hidden",
+        }}>
 
-                              {/* Image */}
-                              {m.type === "image" && (
-                                <div style={{ display: "flex", flexDirection: "column" }}>
-                                  <img src={m.media?.url || "https://placehold.co/400x300?text=Image+Expired"}
-                                    style={{ width: "100%", borderRadius: 10, display: "block" }} alt="attachment" />
-                                  {m.text && <p style={{ padding: "8px 10px 4px" }}>{m.text}</p>}
-                                </div>
-                              )}
+          {/* Interactive / buttons */}
+          {isButtonMsg && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {m.metadata?.header && <div style={{ padding: "10px 14px 4px", fontWeight: 800, fontSize: 12 }}>{m.metadata.header}</div>}
+              <div style={{ padding: "8px 14px 10px", whiteSpace: "pre-wrap" }}>{m.text || m.metadata?.body}</div>
+              {m.metadata?.footer && <div style={{ padding: "0 14px 10px", fontSize: 10, opacity: 0.6 }}>{m.metadata.footer}</div>}
+              <div style={{ display: "flex", flexDirection: "column", borderTop: isMe ? "1px solid rgba(255,255,255,0.1)" : "1px solid #f1f5f9" }}>
+                {m.metadata?.buttons?.map((btn, idx) => (
+                  <div key={idx} style={{ padding: "10px", textAlign: "center", fontSize: 12, fontWeight: 700, color: isMe ? "#fff" : "#2563eb", borderTop: idx > 0 ? (isMe ? "1px solid rgba(255,255,255,0.1)" : "1px solid #f1f5f9") : "none", background: "rgba(0,0,0,0.02)" }}>
+                    {btn.title}
+                  </div>
+                ))}
+              </div>
+              {/* Status in Buttons Footer */}
+              <div style={{ padding: "4px 12px 8px", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 4, fontSize: 9, opacity: 0.7 }}>
+                 {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                 {renderStatusIcon()}
+              </div>
+            </div>
+          )}
 
-                              {/* Button reply */}
-                              {(m.type === "button_reply" || m.type === "list_reply") && (
-                                <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "2px 0" }}>
-                                  <div style={{ width: 14, height: 14, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <Check size={10} />
-                                  </div>
-                                  <span style={{ fontWeight: 600 }}>{m.text}</span>
-                                </div>
-                              )}
+          {/* Image */}
+          {m.type === "image" && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <img src={m.media?.url || "https://placehold.co/400x300?text=Image+Expired"}
+                style={{ width: "100%", borderRadius: 10, display: "block" }} alt="attachment" />
+              {m.text && <p style={{ padding: "8px 10px 4px" }}>{m.text}</p>}
+            </div>
+          )}
 
-                              {/* Text */}
-                              {m.type === "text" && !isButtonMsg && (
-                                <p style={{ margin: 0, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{m.text}</p>
-                              )}
+          {/* Button reply */}
+          {(m.type === "button_reply" || m.type === "list_reply") && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "2px 0" }}>
+              <div style={{ width: 14, height: 14, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Check size={10} />
+              </div>
+              <span style={{ fontWeight: 600 }}>{resolveIdToLabel(m.text)}</span>
+            </div>
+          )}
 
-                              {/* Timestamp */}
-                              {!isButtonMsg && (
-                                <div style={{ fontSize: 9, textAlign: "right", marginTop: 4, opacity: 0.55, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 3 }}>
-                                  {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                  {isMe && <Check size={9} />}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+          
 
-                      {/* Scroll anchor */}
-                      <div ref={chatEndRef} />
-                    </div>
+          {/* Standard Text */}
+          {m.type === "text" && !isButtonMsg && (
+            <p style={{ margin: 0, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{resolveIdToLabel(m.text)}</p>
+          )}
+
+          {/* Timestamp & Status Ticks (for non-interactive messages) */}
+          {!isButtonMsg && (
+            <div style={{ fontSize: 9, textAlign: "right", marginTop: 4, opacity: 0.7, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 3 }}>
+              {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {renderStatusIcon()}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  })}
+
+  {/* Scroll anchor */}
+  <div ref={chatEndRef} />
+</div>
 
                     {/* Reply bar */}
                     <div style={{ padding: "12px 16px", background: "#fff", borderTop: `1px solid ${S.border}`, display: "flex", gap: 10, alignItems: "flex-end", flexShrink: 0 }}>
@@ -1534,7 +1622,7 @@ const handleUpgrade = async () => {
                                   <button className="dib rd" title="Delete" style={{ color: S.textFaint }}
                                     onClick={() => {
                                       if (window.confirm("Delete contact?"))
-                                        axios.delete(`${API}/api/contacts/${c._id}`, { headers })
+                                        axios.delete(`${API}http://localhost:5004/api/contacts/${c._id}`, { headers })
                                           .then(() => {
                                             setContacts(prev => prev.filter(x => x._id !== c._id));
                                             setContactTotal(t => t - 1);
@@ -1551,7 +1639,24 @@ const handleUpgrade = async () => {
                       </div>  
                     )}
 
-                    {contactTotal > 20 && (
+                    {isFree && contactTotal > 50 && (
+                      <div
+                        onClick={() => navTo("upgrade")}
+                        style={{ margin: "12px 16px", padding: "18px 20px", borderRadius: 16, background: "linear-gradient(135deg,#022c22,#065f56)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 800, color: "#4ade80", marginBottom: 3 }}>
+                            ⚡ {contactTotal - 50}+ contacts hidden
+                          </p>
+                          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
+                            Upgrade to Pro to view all {contactTotal} contacts
+                          </p>
+                        </div>
+                        <div style={{ padding: "8px 16px", borderRadius: 10, background: S.greenGrad, fontSize: 12, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", flexShrink: 0 }}>
+                          Get Pro →
+                        </div>
+                      </div>
+                    )}
+                    {!isFree && contactTotal > 20 && (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", borderTop: `1px solid ${S.border}` }}>
                         <p style={{ fontSize: 11, color: S.textMuted }}>Page <strong style={{ color: S.textPrimary }}>{contactPage}</strong> of {Math.ceil(contactTotal / 20)}</p>
                         <div style={{ display: "flex", gap: 8 }}>

@@ -90,7 +90,7 @@ export default function WorkflowBuilder() {
     setLoading(true);
     setLoadError('');
 
-    axios.get(`${API}/api/workflows/${urlId}`, { headers })
+    axios.get(`${API}http://localhost:5004/api/workflows/${urlId}`, { headers })
       .then(res => {
         const wf = res.data;
         setName(wf.name);
@@ -109,6 +109,7 @@ export default function WorkflowBuilder() {
         // Restore edges with animated style
         const rfEdges = (wf.edges || []).map(e => ({
           ...e,
+          sourceHandle: e.sourceHandle,
           animated: true,
           style: e.style || { stroke: '#6366f1' },
         }));
@@ -135,10 +136,23 @@ export default function WorkflowBuilder() {
     setShowPicker(false);
   }, [setNodes, setEdges]);
 
-  const onConnect = useCallback(
-    (params) => setEdges(eds => addEdge({ ...params, animated: true, style: { stroke: '#6366f1' } }, eds)),
-    [setEdges]
-  );
+const onConnect = useCallback(
+  (params) => {
+    // params contains: source, target, sourceHandle, targetHandle
+    setEdges((eds) => 
+      addEdge(
+        { 
+          ...params, 
+          animated: true, 
+          style: { stroke: '#6366f1' },
+          // sourceHandle is captured here automatically, but you can log it to debug
+        }, 
+        eds
+      )
+    );
+  },
+  [setEdges]
+);
 
   const onNodeClick  = useCallback((_, node) => setSelectedId(node.id), []);
   const onPaneClick  = useCallback(() => setSelectedId(null), []);
@@ -179,47 +193,63 @@ export default function WorkflowBuilder() {
     setSelectedId(null);
   }, [selectedId, setNodes, setEdges]);
 
-  const saveWorkflow = useCallback(async () => {
-    const trigger = nodes.find(n => n.type === 'trigger');
-    if (!trigger)              return alert('Add a keyword trigger node first.');
-    if (!trigger.data.keyword) return alert('Set a keyword on the trigger node.');
+const saveWorkflow = useCallback(async () => {
+  const trigger = nodes.find(n => n.type === 'trigger');
+  if (!trigger)              return alert('Add a keyword trigger node first.');
+  if (!trigger.data.keyword) return alert('Set a keyword on the trigger node.');
 
-    setSaving(true);
-    try {
-      const schemaNodes = nodes.map(n => ({
-        id:       n.id,
-        type:     n.type === 'trigger' ? 'trigger'
-                : n.type === 'delay'   ? 'delay'
-                : 'message',
-        position: n.position,
-        data:     n.type === 'trigger' ? { keyword: n.data.keyword, matchType: n.data.matchType }
-                : n.type === 'delay'   ? { delayMinutes: n.data.delayMinutes }
-                : { message: n.data.message },
-      }));
+  setSaving(true);
+  try {
+    const schemaNodes = nodes.map(n => ({
+      id:       n.id,
+      type:     n.type === 'trigger' ? 'trigger'
+              : n.type === 'delay'   ? 'delay'
+              : 'message',
+      position: n.position,
+      data:     n.type === 'trigger' ? { keyword: n.data.keyword, matchType: n.data.matchType }
+              : n.type === 'delay'   ? { delayMinutes: n.data.delayMinutes }
+              : { message: n.data.message },
+    }));
 
-      let res;
-      if (savedId) {
-        res = await axios.put(
-          `${API}/api/workflows/${savedId}`,
-          { name, nodes: schemaNodes, edges },
-          { headers }
-        );
-      } else {
-        res = await axios.post(
-          `${API}/api/workflows`,
-          { name, nodes: schemaNodes, edges },
-          { headers }
-        );
-        setSavedId(res.data._id);
-      }
+    // ✅ ADD THIS — explicitly map edges to include sourceHandle
+const schemaEdges = edges.map(e => {
+  // Logic: If the wire is coming from a button node, it MUST have a sourceHandle
+  const sourceNode = nodes.find(n => n.id === e.source);
+  if (sourceNode?.type === 'button' && !e.sourceHandle) {
+    console.warn(`Edge ${e.id} is missing a sourceHandle!`);
+  }
 
-      alert('Workflow saved! You can now use the Test panel.');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Save failed');
-    } finally {
-      setSaving(false);
+  return {
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    sourceHandle: e.sourceHandle || null,
+  };
+});
+
+    let res;
+    if (savedId) {
+      res = await axios.put(
+        `${API}http://localhost:5004/api/workflows/${savedId}`,
+        { name, nodes: schemaNodes, edges: schemaEdges },  // ← schemaEdges not edges
+        { headers }
+      );
+    } else {
+      res = await axios.post(
+        `${API}http://localhost:5004/api/workflows`,
+        { name, nodes: schemaNodes, edges: schemaEdges },  // ← schemaEdges not edges
+        { headers }
+      );
+      setSavedId(res.data._id);
     }
-  }, [nodes, edges, name, headers, savedId]);
+
+    alert('Workflow saved! You can now use the Test panel.');
+  } catch (err) {
+    alert(err.response?.data?.message || 'Save failed');
+  } finally {
+    setSaving(false);
+  }
+}, [nodes, edges, name, headers, savedId]);
 
   // ── Loading state ──
   if (loading) {

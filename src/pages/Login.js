@@ -12,7 +12,7 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post("/api/auth/login", form);
+      const res = await axios.post("http://localhost:5004/api/auth/login", form);
       localStorage.setItem("token", res.data.token);
       navigate("/dashboard");
     } catch (err) {
@@ -24,7 +24,7 @@ export default function Login() {
 
   const handleGoogleLogin = () => {
     // Redirect to your backend Google Auth URL
-    window.location.href = '/api/auth/google';
+    window.location.href = 'http://localhost:5004/api/auth/google';
   };
 
   return (

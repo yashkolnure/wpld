@@ -65,16 +65,18 @@ const collectMessages = (nodes, edges, startNodeId) => {
   const nodesToSend = [];
   let currentId     = startNodeId;
 
-  while (true) {
+while (true) {
     const node = nodeMap[currentId];
     if (!node) break;
+
+    // push current node (skip trigger)
     if (node.type !== 'trigger') nodesToSend.push(node);
 
     const outgoing = edges.filter(e => e.source === currentId);
     if (!outgoing.length) break;
 
+    // branch point — stop and show choices
     if (outgoing.length > 1) {
-      // Branch point — stop and show choices
       return {
         nodesToSend,
         pendingBranches: getBranches(nodes, edges, currentId),
@@ -82,22 +84,12 @@ const collectMessages = (nodes, edges, startNodeId) => {
       };
     }
 
+    // single edge — move to next node
     const nextNode = nodeMap[outgoing[0].target];
     if (!nextNode) break;
 
-    // If this next node itself leads to a branch, send it first then show choices
-    const nextOutgoing = edges.filter(e => e.source === nextNode.id);
-    nodesToSend.push(nextNode);
+    // ✅ just move forward — top of loop handles the push
     currentId = nextNode.id;
-
-    if (nextOutgoing.length > 1) {
-      return {
-        nodesToSend,
-        pendingBranches: getBranches(nodes, edges, nextNode.id),
-        pendingNodeId:   nextNode.id,
-      };
-    }
-    if (!nextOutgoing.length) break;
   }
 
   return { nodesToSend, pendingBranches: null, pendingNodeId: null };
@@ -294,7 +286,7 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
 
     try {
       const res = await axios.post(
-        `${API}/api/workflows/${workflowId}/simulate`,
+        `${API}http://localhost:5004/api/workflows/${workflowId}/simulate`,
         { incomingText: inputText, branchPath: [] },
         { headers }
       );
