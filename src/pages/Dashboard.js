@@ -1006,8 +1006,17 @@ const activeCount = workflows.filter(w => w.isActive).length;
                       </div>
                       <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginBottom: 24 }}>workflows active right now</p>
                       <div style={{ display: "flex", gap: 10 }}>
-                        <button onClick={(handleNewWorkflow) => navigate("/workflow/new")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 18px", borderRadius: 12, background: "#fff", border: "none", color: S.greenDeep, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: S.font }}>
-                          <Plus size={13} /> New workflow
+                        <button 
+                          onClick={() => {
+                            if (isFree && workflows.length >= 1) {
+                              navTo("upgrade");
+                            } else {
+                              navigate("/workflow/new");
+                            }
+                          }} 
+                          style={{  display: "flex", alignItems: "center", gap: 8, padding: "9px 18px", borderRadius: 12, background: "#fff", border: "none", color: S.greenDeep, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: S.font  }}
+                        >
+                          <Plus size={13} /> {isFree && workflows.length >= 1 ? "Upgrade for more" : "New workflow"}
                         </button>
                         <button onClick={() => navTo("workflows")} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 18px", borderRadius: 12, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: S.font }}>
                           View all <ExternalLink size={11} />
