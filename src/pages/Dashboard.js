@@ -328,6 +328,15 @@ const handleUpgrade = async () => {
     setWorkflows(wfs => wfs.filter(w => w._id !== id));
   };
 
+  const handleNewWorkflow = () => {
+  if (isFree && workflows.length >= 1) {
+    // Optional: add a friendly alert
+    alert("Free plan users can only create 1 workflow. Please upgrade to Pro for unlimited automations!");
+    navTo("upgrade");
+  } else {
+    navigate("/workflow/new");
+  }
+};
   // ─── SEND REPLY ──────────────────────────────────────────────────────────────
   const handleSendReply = async () => {
     const text = replyText.trim();
@@ -661,7 +670,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
             
             {activeTab === "workflows" && (
                 <button
-                  onClick={() => {
+                  onClick={(handleNewWorkflow) => {
                     if (isFree && workflows.length >= 1) {
                       navTo("upgrade");
                     } else {
