@@ -285,29 +285,42 @@ function FormBuilder() {
 /* ─── ROOT COMPONENT ─── */
 export default function MyLeads() {
   const [tab, setTab] = useState("builder");
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate(); // Ensure you're using react-router-dom
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    const headers = { Authorization: `Bearer ${token}` };
+
+    axios.get(`${API}/api/user/me`, { headers })
+      .then(r => {
+        setUser(r.data);
+        setLoading(false);
+      })
+      .catch(() => {
+        localStorage.removeItem("token");
+        navigate("/login");
+      });
+  }, [navigate]);
+
+  if (loading) return <div style={{ padding: "50px", textAlign: "center" }}>Verifying Session...</div>;
+
+  // Pass the user._id down to components
   return (
     <div style={{ background: COLORS.bg, minHeight: "100vh", padding: "24px", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+        {/* ... Header Code ... */}
         
-        {/* Header Tab System */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", flexWrap: "wrap", gap: "20px" }}>
-            <div>
-                <h1 style={{ margin: 0, fontSize: "24px", fontWeight: 800, color: COLORS.textMain }}>wpleads <span style={{ color: COLORS.primary }}>Forms</span></h1>
-                <p style={{ margin: 0, fontSize: "14px", color: COLORS.textMuted }}>Build and manage your lead capture forms</p>
-            </div>
-
-            <div style={{ background: "#fff", padding: "4px", borderRadius: "10px", border: `1px solid ${COLORS.border}`, display: "flex", gap: "4px" }}>
-                <button onClick={() => setTab("builder")} style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: tab === "builder" ? COLORS.primary : "transparent", color: tab === "builder" ? "#fff" : COLORS.textMuted, cursor: "pointer", fontWeight: 600, fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Layout size={16} /> Builder
-                </button>
-                <button onClick={() => setTab("leads")} style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: tab === "leads" ? COLORS.primary : "transparent", color: tab === "leads" ? "#fff" : COLORS.textMuted, cursor: "pointer", fontWeight: 600, fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-                    <ClipboardList size={16} /> Leads
-                </button>
-            </div>
-        </div>
-
-        {tab === "builder" ? <FormBuilder /> : <LeadsTable />}
+        {tab === "builder" 
+          ? <FormBuilder userId={user._id || user.id} /> 
+          : <LeadsTable userId={user._id || user.id} />
+        }
       </div>
     </div>
   );
