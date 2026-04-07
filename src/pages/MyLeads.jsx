@@ -171,24 +171,7 @@ function LeadsTable({ userId }) {
                 onBlur={(e) => e.target.style.borderColor = COLORS.border}
               />
             </div>
-            <button style={{ 
-              padding: "10px 20px", 
-              background: COLORS.primary, 
-              color: "#fff", 
-              border: "none", 
-              borderRadius: "10px", 
-              fontSize: "14px", 
-              fontWeight: 600, 
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              transition: "all 0.2s"
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = COLORS.primaryHover}
-            onMouseLeave={(e) => e.currentTarget.style.background = COLORS.primary}>
-              <Download size={16} /> Export
-            </button>
+    
           </div>
         </div>
         
