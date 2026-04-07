@@ -270,8 +270,8 @@ function LeadsTable({ userId }) {
                       fontWeight: 600,
                       transition: "all 0.2s"
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = COLORS.primary, e.currentTarget.style.color = "#fff"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = COLORS.primaryLight, e.currentTarget.style.color = COLORS.primary}>
+                  onMouseEnter={(e) => { e.currentTarget.style.background = COLORS.primary; e.currentTarget.style.color = "#fff"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = COLORS.primaryLight; e.currentTarget.style.color = COLORS.primary; }}>
                       View <ChevronRight size={16}/>
                     </button>
                   </td>
@@ -356,8 +356,9 @@ function SortableItem({ field, isSelected, onSelect, onRemove }) {
           alignItems: "center",
           transition: "all 0.2s"
         }}
-        onMouseEnter={(e) => e.currentTarget.style.background = COLORS.danger, e.currentTarget.style.color = "#fff"}
-        onMouseLeave={(e) => e.currentTarget.style.background = "#FEE2E2", e.currentTarget.style.color = COLORS.danger}>
+        // Change this:
+onMouseEnter={(e) => { e.currentTarget.style.background = COLORS.danger; e.currentTarget.style.color = "#fff"; }}
+onMouseLeave={(e) => { e.currentTarget.style.background = "#FEE2E2"; e.currentTarget.style.color = COLORS.danger; }}>
         <Trash2 size={16} />
       </button>
     </div>
@@ -416,6 +417,15 @@ function FormBuilder({ userId }) {
   return (
     <div className="builder-grid">
       <style>{`
+      .btn-action-view:hover {
+  background: ${COLORS.primary} !important;
+  color: #fff !important;
+}
+
+.btn-danger-trash:hover {
+  background: ${COLORS.danger} !important;
+  color: #fff !important;
+}
         .builder-grid { 
           display: grid; 
           grid-template-columns: 280px 1fr 320px; 
