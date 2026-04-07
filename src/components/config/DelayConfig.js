@@ -4,7 +4,8 @@ export default function DelayConfig({ data, onChange }) {
       <label style={labelStyle}>Wait duration (minutes)</label>
       <input
         type="number"
-        min={1}
+        min={0.1}
+        step={0.1}
         max={1440}
         style={inputStyle}
         value={data.delayMinutes || 5}

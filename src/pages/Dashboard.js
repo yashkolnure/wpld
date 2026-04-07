@@ -6,8 +6,9 @@ import {
   Wifi, WifiOff, Plus, Copy, Check, ChevronLeft, ChevronRight,
   Trash2, Pencil, Menu, X, ExternalLink, Bell, Search,
   TrendingUp, Activity, Clock, CircleDot, AlertCircle, Hash,
-  Phone, StickyNote, Download, MessageSquare, Send, RefreshCw
+  Phone, StickyNote, Download, MessageSquare, Send, RefreshCw,Layers, Lock
 } from "lucide-react";
+import MyLeads from "./MyLeads";
 
 const API = ""; // adjust if your backend is on a different URL/port
 const POLL_CHATS_MS     = 8000;   // refresh chat list every 8s
@@ -30,6 +31,7 @@ function formatRelativeTime(date) {
 const NAV = [
   { key: "overview",  label: "Overview",  Icon: LayoutDashboard },
   { key: "chats",     label: "Chats",     Icon: MessageSquare },
+  { key: "myleads",   label: "My Leads",  Icon: Layers },
   { key: "workflows", label: "Workflows", Icon: Zap },
   { key: "contacts",  label: "Contacts",  Icon: Users },
   { key: "whatsapp",  label: "WhatsApp",  Icon: MessageCircle },
@@ -681,6 +683,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
                   <Plus size={13} /> {isFree && workflows.length >= 1 ? "Upgrade for more" : "New workflow"}
                 </button>
               )}
+
             {activeTab === "chats" && (
               <button onClick={fetchChats} title="Refresh chats"
                 style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 12, background: S.greenBg, border: `1px solid ${S.greenBorder}`, color: S.greenDark, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: S.font }}>
@@ -987,7 +990,9 @@ const activeCount = workflows.filter(w => w.isActive).length;
         ) : (
           /* ─── ALL OTHER TABS — scrollable ──────────────────────────────────── */
           <main style={{ flex: 1, overflowY: "auto" }}>
-            <div style={{ padding: 24, margin: "0 auto" }}>
+            <div style={{ padding: 24, margin: "0 auto" }}
+            
+            >
 
               {/* ─── OVERVIEW ─── */}
               {activeTab === "overview" && (
@@ -1195,6 +1200,119 @@ const activeCount = workflows.filter(w => w.isActive).length;
 </div>
                 </div>
               )}
+              {/* Inside your Dashboard content mapping */}
+
+{/* ─── MY LEADS (With Free Plan Blocker) ─── */}
+{activeTab === "myleads" && (
+  <main style={{ flex: 1, overflowY: "auto" }}>
+    <div style={{ padding: isFree ? 24 : 0, margin: "0 auto", height: "100%" }}>
+      {isFree ? (
+        <div style={{ 
+          ...S.card, 
+          height: "100%", 
+          minHeight: 450, 
+          display: "flex", 
+          flexDirection: "column", 
+          alignItems: "center", 
+          justifyContent: "center", 
+          textAlign: "center", 
+          padding: 40,
+          background: "#fff",
+          animation: "wpl-fadein 0.4s ease both"
+        }}>
+          <div style={{ 
+            width: 80, 
+            height: 80, 
+            borderRadius: 30, 
+            background: "rgba(37,211,102,0.1)", 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center", 
+            marginBottom: 24,
+            position: 'relative'
+          }}>
+            <Layers size={32} color={S.greenDark} style={{ opacity: 0.5 }} />
+            <div style={{ 
+              position: 'absolute', 
+              bottom: -4, 
+              right: -4, 
+              width: 32, 
+              height: 32, 
+              borderRadius: '50%', 
+              background: S.greenGrad, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              border: '4px solid #fff',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+            }}>
+              <Lock size={14} color="#fff" />
+            </div>
+          </div>
+
+          <h2 style={{ fontSize: 24, fontWeight: 900, color: S.textPrimary, marginBottom: 12, letterSpacing: "-0.02em" }}>
+            Unlock Lead Generation
+          </h2>
+          <p style={{ fontSize: 15, color: S.textMuted, maxWidth: 400, lineHeight: 1.6, marginBottom: 32 }}>
+            Custom lead forms and CRM management are available for <strong>Pro Plan</strong> users. Capture leads directly from WhatsApp and manage them in one place.
+          </p>
+
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 12 }}>
+            <button 
+              onClick={() => navTo("upgrade")}
+              style={{ 
+                padding: "14px 28px", 
+                borderRadius: 16, 
+                background: S.greenGrad, 
+                color: "#fff", 
+                border: "none", 
+                fontSize: 14, 
+                fontWeight: 800, 
+                cursor: "pointer", 
+                boxShadow: "0 10px 25px rgba(37,211,102,0.3)",
+                display: "flex",
+                alignItems: "center",
+                gap: 8
+              }}
+            >
+              <Zap size={16} fill="#fff" /> Upgrade to Pro
+            </button>
+            <button 
+              onClick={() => navTo("overview")}
+              style={{ 
+                padding: "14px 28px", 
+                borderRadius: 16, 
+                background: "transparent", 
+                color: S.textMuted, 
+                border: `1px solid ${S.border}`, 
+                fontSize: 14, 
+                fontWeight: 700, 
+                cursor: "pointer" 
+              }}
+            >
+              Go back
+            </button>
+          </div>
+
+          <div style={{ marginTop: 40, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 500, textAlign: "left" }}>
+            <div style={{ display: "flex", gap: 10 }}>
+              <Check size={16} color={S.greenDark} style={{ flexShrink: 0 }} />
+              <p style={{ fontSize: 12, color: S.textMuted }}><strong>Custom Forms:</strong> Build branded lead capture forms.</p>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <Check size={16} color={S.greenDark} style={{ flexShrink: 0 }} />
+              <p style={{ fontSize: 12, color: S.textMuted }}><strong>CRM Integration:</strong> Organize leads with notes and stats.</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ padding: 0, margin: "0 auto" }}>
+          <MyLeads S={S} headers={headers} />
+        </div>
+      )}
+    </div>
+  </main>
+)}
 
               {/* ─── WORKFLOWS ─── */}
               {activeTab === "workflows" && (

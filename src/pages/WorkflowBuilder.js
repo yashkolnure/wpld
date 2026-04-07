@@ -90,7 +90,7 @@ export default function WorkflowBuilder() {
     setLoading(true);
     setLoadError('');
 
-    axios.get(`${API}/api/workflows/${urlId}`, { headers })
+    axios.get(`${API}http://localhost:5004/api/workflows/${urlId}`, { headers })
       .then(res => {
         const wf = res.data;
         setName(wf.name);
@@ -230,13 +230,13 @@ const schemaEdges = edges.map(e => {
     let res;
     if (savedId) {
       res = await axios.put(
-        `${API}/api/workflows/${savedId}`,
+        `${API}http://localhost:5004/api/workflows/${savedId}`,
         { name, nodes: schemaNodes, edges: schemaEdges },  // ← schemaEdges not edges
         { headers }
       );
     } else {
       res = await axios.post(
-        `${API}/api/workflows`,
+        `${API}http://localhost:5004/api/workflows`,
         { name, nodes: schemaNodes, edges: schemaEdges },  // ← schemaEdges not edges
         { headers }
       );
