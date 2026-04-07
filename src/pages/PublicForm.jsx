@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CheckCircle2, AlertCircle, Loader2, MessageCircle, Home } from "lucide-react";
 
-const API = "http://localhost:5004";
+const API = "";
 
 export default function PublicForm() {
   const { slug } = useParams();
