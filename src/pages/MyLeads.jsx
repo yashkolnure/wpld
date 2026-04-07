@@ -9,7 +9,7 @@ import {
   ChevronRight, Search, PlusCircle, Settings2
 } from "lucide-react";
 
-const API = "http://localhost:5004";
+const API = "";
 
 // Brand Colors
 const COLORS = {
