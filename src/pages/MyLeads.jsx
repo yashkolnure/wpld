@@ -845,7 +845,7 @@ function FormBuilder({ userId }) {
 
 /* ─── ROOT COMPONENT ─── */
 export default function MyLeads() {
-  const [tab, setTab] = useState("builder");
+  const [tab, setTab] = useState("leads");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate(); 
