@@ -896,10 +896,9 @@ export default function MyLeads() {
   const activeUserId = user?._id || user?.id;
 
   return (
-    <div style={{ 
-      background: COLORS.bg, 
+    <div style={{  
       minHeight: "100vh", 
-      padding: "24px", 
+      padding: "", 
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" 
     }}>
       <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
