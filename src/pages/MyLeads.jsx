@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// useNavigate must be imported from react-router-dom, NOT react
+import { useNavigate } from "react-router-dom"; 
 import axios from "axios";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
@@ -12,23 +13,13 @@ import {
 
 const API = "";
 
-// Brand Colors
 const COLORS = {
-  primary: "#16a34a", // wpleads green
+  primary: "#16a34a",
   primaryHover: "#15803d",
   bg: "#f8fafc",
   border: "#e2e8f0",
   textMain: "#1e293b",
   textMuted: "#64748b"
-};
-
-const getLocalUserId = () => {
-  const userData = localStorage.getItem("user");
-  if (userData) {
-    const parsed = JSON.parse(userData);
-    return parsed._id || parsed.id;
-  }
-  return localStorage.getItem("userId");
 };
 
 const FIELD_TYPES = [
@@ -40,9 +31,8 @@ const FIELD_TYPES = [
 ];
 
 /* ─── COMPONENT: Leads Table ─── */
-function LeadsTable() {
+function LeadsTable({ userId }) { // Receive userId as prop
   const [leads, setLeads] = useState([]);
-  const userId = getLocalUserId();
 
   useEffect(() => {
     if (!userId) return;
@@ -55,7 +45,6 @@ function LeadsTable() {
         <h3 style={{ margin: 0, fontSize: "18px", color: COLORS.textMain }}>Incoming Leads</h3>
         <span style={{ background: "#f1f5f9", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 600 }}>Total: {leads.length}</span>
       </div>
-      
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
           <thead style={{ background: COLORS.bg }}>
@@ -84,9 +73,9 @@ function LeadsTable() {
                 </td>
               </tr>
             )) : (
-                <tr>
-                    <td colSpan="3" style={{ padding: "40px", textAlign: "center", color: COLORS.textMuted }}>No leads captured yet.</td>
-                </tr>
+              <tr>
+                <td colSpan="3" style={{ padding: "40px", textAlign: "center", color: COLORS.textMuted }}>No leads captured yet.</td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -126,14 +115,13 @@ function SortableItem({ field, isSelected, onSelect, onRemove }) {
 }
 
 /* ─── COMPONENT: Form Builder ─── */
-function FormBuilder() {
+function FormBuilder({ userId }) { // Receive userId as prop
   const [fields, setFields] = useState([]);
   const [selected, setSelected] = useState(null);
   const [formTitle, setFormTitle] = useState("My Lead Form");
   const [slug, setSlug] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const userId = getLocalUserId();
   const sensors = useSensors(useSensor(PointerSensor));
 
   useEffect(() => {
@@ -159,7 +147,11 @@ function FormBuilder() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await axios.post(`${API}/api/leads/config`, { fields, formTitle, slug, userId });
+      const token = localStorage.getItem("token");
+      await axios.post(`${API}/api/leads/config`, 
+        { fields, formTitle, slug, userId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       alert("Config Saved!");
     } catch (e) { alert("Save failed"); }
     setSaving(false);
@@ -168,20 +160,8 @@ function FormBuilder() {
   return (
     <div className="builder-grid">
       <style>{`
-        .builder-grid {
-            display: grid;
-            grid-template-columns: 260px 1fr 300px;
-            gap: 24px;
-            min-height: 80vh;
-        }
-        @media (max-width: 1024px) {
-            .builder-grid {
-                grid-template-columns: 1fr;
-            }
-            .order-mobile-1 { order: 1; }
-            .order-mobile-2 { order: 2; }
-            .order-mobile-3 { order: 3; }
-        }
+        .builder-grid { display: grid; grid-template-columns: 260px 1fr 300px; gap: 24px; min-height: 80vh; }
+        @media (max-width: 1024px) { .builder-grid { grid-template-columns: 1fr; } .order-mobile-1 { order: 1; } .order-mobile-2 { order: 2; } .order-mobile-3 { order: 3; } }
         .spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
@@ -190,11 +170,11 @@ function FormBuilder() {
       <div className="order-mobile-2" style={{ background: "#fff", padding: "20px", borderRadius: "12px", border: `1px solid ${COLORS.border}`, alignSelf: "start" }}>
         <p style={{ fontSize: "11px", fontWeight: 700, color: COLORS.textMuted, marginBottom: "16px", letterSpacing: "0.05em" }}>FIELD ELEMENTS</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px" }}>
-            {FIELD_TYPES.map((t) => (
+          {FIELD_TYPES.map((t) => (
             <button key={t.type} onClick={() => addField(t)} style={{ width: "100%", padding: "12px", borderRadius: "8px", border: `1px solid ${COLORS.border}`, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: "10px", fontSize: "14px", fontWeight: 500, color: COLORS.textMain, transition: "0.2s" }} onMouseOver={(e)=>e.currentTarget.style.borderColor = COLORS.primary} onMouseOut={(e)=>e.currentTarget.style.borderColor = COLORS.border}>
-                <div style={{ color: COLORS.primary }}><t.icon size={16} /></div> {t.label}
+              <div style={{ color: COLORS.primary }}><t.icon size={16} /></div> {t.label}
             </button>
-            ))}
+          ))}
         </div>
       </div>
 
@@ -217,40 +197,36 @@ function FormBuilder() {
         </DndContext>
         
         {fields.length === 0 && <div style={{ padding: "60px 20px", textAlign: "center", border: `2px dashed ${COLORS.border}`, borderRadius: "12px", color: COLORS.textMuted, background: "#fff" }}>
-            <PlusCircle size={32} style={{ marginBottom: "12px", opacity: 0.5 }} />
-            <p>Your form is empty. Click a field on the left to start.</p>
+          <PlusCircle size={32} style={{ marginBottom: "12px", opacity: 0.5 }} />
+          <p>Your form is empty. Click a field on the left to start.</p>
         </div>}
       </div>
 
-      {/* Right: Inspector - MOVES TO TOP ON MOBILE IF SELECTED */}
+      {/* Right: Inspector */}
       <div className="order-mobile-1" style={{ background: "#fff", padding: "20px", borderRadius: "12px", border: `1px solid ${COLORS.border}`, alignSelf: "start", position: "sticky", top: "20px" }}>
         {selected ? (
           <div style={{ marginBottom: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "15px" }}>
-                <Settings2 size={16} color={COLORS.primary} />
-                <p style={{ fontSize: "11px", fontWeight: 700, color: COLORS.textMuted, margin: 0 }}>FIELD PROPERTIES</p>
+              <Settings2 size={16} color={COLORS.primary} />
+              <p style={{ fontSize: "11px", fontWeight: 700, color: COLORS.textMuted, margin: 0 }}>FIELD PROPERTIES</p>
             </div>
-            
             <label style={{ fontSize: "12px", fontWeight: 600, color: COLORS.textMain }}>Label Name</label>
             <input value={selected.label} onChange={(e) => {
               const val = e.target.value;
               setFields(fields.map(f => f.id === selected.id ? { ...f, label: val } : f));
               setSelected({ ...selected, label: val });
             }} style={{ width: "100%", padding: "10px", marginTop: "6px", marginBottom: "16px", borderRadius: "6px", border: `1px solid ${COLORS.border}`, boxSizing: "border-box" }} />
-
             <label style={{ fontSize: "12px", fontWeight: 600, color: COLORS.textMain }}>Placeholder Text</label>
             <input value={selected.placeholder} onChange={(e) => {
               const val = e.target.value;
               setFields(fields.map(f => f.id === selected.id ? { ...f, placeholder: val } : f));
               setSelected({ ...selected, placeholder: val });
             }} style={{ width: "100%", padding: "10px", marginTop: "6px", borderRadius: "6px", border: `1px solid ${COLORS.border}`, boxSizing: "border-box" }} />
-            
             <hr style={{ border: "none", borderTop: `1px solid ${COLORS.border}`, margin: "20px 0" }} />
           </div>
         ) : null}
 
         <p style={{ fontSize: "11px", fontWeight: 700, color: COLORS.textMuted, marginBottom: "15px" }}>PUBLISH SETTINGS</p>
-        
         <div style={{ marginBottom: "20px" }}>
           <label style={{ fontSize: "12px", fontWeight: 600 }}>Slug URL</label>
           <div style={{ display: "flex", alignItems: "center", gap: "0", marginTop: "6px" }}>
@@ -263,16 +239,13 @@ function FormBuilder() {
             />
           </div>
         </div>
-
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <button onClick={handleLivePreview} disabled={!slug} style={{ width: "100%", padding: "10px", background: "#fff", border: `1px solid ${COLORS.border}`, borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: COLORS.textMain }}>
             <ExternalLink size={14} /> Preview Form
           </button>
-          
           <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/${slug}`); alert("Copied!"); }} disabled={!slug} style={{ width: "100%", padding: "10px", background: "#fff", border: `1px solid ${COLORS.border}`, borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: COLORS.textMain }}>
             <Copy size={14} /> Copy Link
           </button>
-
           <button onClick={handleSave} disabled={saving} style={{ width: "100%", padding: "12px", marginTop: "10px", background: COLORS.primary, color: "#fff", border: "none", borderRadius: "8px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", transition: "0.2s" }}>
             {saving ? <Activity size={16} className="spin" /> : <Save size={16} />}
             {saving ? "Saving..." : "Save Config"}
@@ -288,7 +261,7 @@ export default function MyLeads() {
   const [tab, setTab] = useState("builder");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate(); // Ensure you're using react-router-dom
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -312,15 +285,31 @@ export default function MyLeads() {
 
   if (loading) return <div style={{ padding: "50px", textAlign: "center" }}>Verifying Session...</div>;
 
-  // Pass the user._id down to components
+  const activeUserId = user?._id || user?.id;
+
   return (
     <div style={{ background: COLORS.bg, minHeight: "100vh", padding: "24px", fontFamily: "'Inter', sans-serif" }}>
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-        {/* ... Header Code ... */}
         
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", flexWrap: "wrap", gap: "20px" }}>
+            <div>
+                <h1 style={{ margin: 0, fontSize: "24px", fontWeight: 800, color: COLORS.textMain }}>wpleads <span style={{ color: COLORS.primary }}>Forms</span></h1>
+                <p style={{ margin: 0, fontSize: "14px", color: COLORS.textMuted }}>Build and manage your lead capture forms</p>
+            </div>
+
+            <div style={{ background: "#fff", padding: "4px", borderRadius: "10px", border: `1px solid ${COLORS.border}`, display: "flex", gap: "4px" }}>
+                <button onClick={() => setTab("builder")} style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: tab === "builder" ? COLORS.primary : "transparent", color: tab === "builder" ? "#fff" : COLORS.textMuted, cursor: "pointer", fontWeight: 600, fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Layout size={16} /> Builder
+                </button>
+                <button onClick={() => setTab("leads")} style={{ padding: "8px 16px", borderRadius: "8px", border: "none", background: tab === "leads" ? COLORS.primary : "transparent", color: tab === "leads" ? "#fff" : COLORS.textMuted, cursor: "pointer", fontWeight: 600, fontSize: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <ClipboardList size={16} /> Leads
+                </button>
+            </div>
+        </div>
+
         {tab === "builder" 
-          ? <FormBuilder userId={user._id || user.id} /> 
-          : <LeadsTable userId={user._id || user.id} />
+          ? <FormBuilder userId={activeUserId} /> 
+          : <LeadsTable userId={activeUserId} />
         }
       </div>
     </div>
