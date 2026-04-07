@@ -9,7 +9,11 @@ export default function DelayConfig({ data, onChange }) {
         max={1440}
         style={inputStyle}
         value={data.delayMinutes || 5}
-        onChange={e => onChange({ ...data, delayMinutes: parseInt(e.target.value) || 1 })}
+        // Use parseFloat here to support decimals
+        onChange={e => {
+          const val = parseFloat(e.target.value);
+          onChange({ ...data, delayMinutes: isNaN(val) ? 0.1 : val });
+        }}
       />
       <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>Max 1440 min (24 hours)</p>
     </div>
