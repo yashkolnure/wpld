@@ -44,8 +44,8 @@ export default function ButtonConfig({ data, onChange }) {
               style={{ ...inputStyle, flex: 1 }}
               value={btn.title}
               onChange={e => updateBtn(idx, e.target.value)}
-              placeholder={`Button ${idx + 1} title (max 20 chars)`}
-              maxLength={20}
+              placeholder={`Button ${idx + 1} title (max 50 chars)`}
+              maxLength={50}
             />
             {buttons.length > 1 && (
               <button onClick={() => removeBtn(idx)} style={{ color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '0 4px' }}>×</button>
