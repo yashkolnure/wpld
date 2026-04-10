@@ -92,7 +92,7 @@ function LeadsTable({ userId }) {
 
   useEffect(() => {
     if (!userId) return;
-    axios.get(`${API}http://localhost:5004/api/leads?userId=${userId}`).then((res) => setLeads(res.data));
+    axios.get(`${API}/api/leads?userId=${userId}`).then((res) => setLeads(res.data));
   }, [userId]);
 
   const filteredLeads = leads.filter(lead => 
@@ -360,7 +360,7 @@ function FormBuilder({ userId }) {
 
   useEffect(() => {
     if (!userId) return;
-    axios.get(`${API}http://localhost:5004/api/leads/config?userId=${userId}`).then((res) => {
+    axios.get(`${API}/api/leads/config?userId=${userId}`).then((res) => {
       if (res.data.fields) setFields(res.data.fields);
       if (res.data.formTitle) setFormTitle(res.data.formTitle);
       if (res.data.slug) setSlug(res.data.slug);
@@ -388,7 +388,7 @@ function FormBuilder({ userId }) {
     setSaving(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.post(`${API}http://localhost:5004/api/leads/config`, 
+      await axios.post(`${API}/api/leads/config`, 
         { fields, formTitle, slug, userId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -859,7 +859,7 @@ export default function MyLeads() {
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    axios.get(`${API}http://localhost:5004/api/user/me`, { headers })
+    axios.get(`${API}/api/user/me`, { headers })
       .then(r => {
         setUser(r.data);
         setLoading(false);

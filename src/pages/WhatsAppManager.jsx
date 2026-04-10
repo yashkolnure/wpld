@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import axios from "axios";
 
 // ─── API CONFIG ────────────────────────────────────────────────────────────
-const API = axios.create({ baseURL: "http://localhost:5004/api/whatsapp" });
+const API = axios.create({ baseURL: "/api/whatsapp" });
 
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
