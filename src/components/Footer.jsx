@@ -174,7 +174,7 @@ export default function Footer() {
     
     {/* Main WhatsApp Button */}
     <a 
-        href="https://wa.me/917498869327?text=Hello!%20I'm%20interested%20in%20WhatsApp%20Automation." 
+        href="https://wa.me/917499835687?text=Hello!%20I'm%20interested%20in%20WhatsApp%20Automation." 
         target="_blank" 
         rel="noreferrer"
         style={{ 
