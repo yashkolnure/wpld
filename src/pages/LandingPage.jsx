@@ -314,117 +314,157 @@ export default function LandingPage() {
 
 
       {/* ══ HERO (Unchanged) ══ */}
-      <section style={{
-        minHeight:"100vh", display:"flex",alignItems:"center",
-        padding: isMobile 
-            ? "clamp(120px,18vw,160px) 20px 60px"   // 👈 more top space on mobile
-            : "clamp(90px,12vw,130px) clamp(20px,5vw,60px) 60px",
-        background:"linear-gradient(160deg,#f0fdf8 0%,#e8f5fd 40%,#f8f0ff 100%)",
-        overflow:"hidden",position:"relative",
+<section style={{
+  minHeight: "100vh", 
+  display: "flex", 
+  alignItems: "center",
+  padding: isMobile 
+    ? "clamp(120px,18vw,160px) 20px 60px" 
+    : "clamp(90px,12vw,130px) clamp(20px,5vw,60px) 60px",
+  background: "linear-gradient(160deg,#f0fdf8 0%,#e8f5fd 40%,#f8f0ff 100%)",
+  overflow: "hidden", 
+  position: "relative",
+}}>
+  <div style={{
+    position: "absolute", 
+    inset: 0, 
+    backgroundImage: "linear-gradient(rgba(0,0,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.025) 1px,transparent 1px)", 
+    backgroundSize: "60px 60px", 
+    pointerEvents: "none"
+  }}/>
+  
+  <div style={{
+    width: "100%", 
+    maxWidth: 1280, 
+    margin: "0 auto", 
+    display: "grid", 
+    gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", 
+    gap: 60, 
+    alignItems: "center", 
+    position: "relative", 
+    zIndex: 1
+  }}>
+    <div style={{animation: "wpl-fadein 0.7s ease both"}}>
+      {/* BADGE: Highlights the Free Credits immediately */}
+      <div style={{
+        display: "inline-flex", 
+        alignItems: "center", 
+        gap: 8, 
+        background: "rgba(37,211,102,0.1)", 
+        border: "1px solid rgba(37,211,102,0.25)", 
+        borderRadius: 100, 
+        padding: "6px 14px", 
+        fontSize: 11, 
+        fontFamily: "'DM Mono',monospace", 
+        fontWeight: 600, 
+        letterSpacing: 1.4, 
+        color: "#16a34a", 
+        textTransform: "uppercase", 
+        marginBottom: 24
       }}>
-        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(rgba(0,0,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.025) 1px,transparent 1px)",backgroundSize:"60px 60px",pointerEvents:"none"}}/>
-        <div style={{width:"100%",maxWidth:1280,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(400px, 1fr))",gap:60,alignItems:"center",position:"relative",zIndex:1}}>
-          <div style={{animation:"wpl-fadein 0.7s ease both"}}>
-            <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.25)",borderRadius:100,padding:"6px 14px",fontSize:11,fontFamily:"'DM Mono',monospace",fontWeight:500,letterSpacing:1.5,color:"#16a34a",textTransform:"uppercase",marginBottom:24}}>
-              <span style={{width:5,height:5,borderRadius:"50%",background:"#25d366",animation:"wpl-ping 1.5s ease-in-out infinite"}}/>
-              WhatsApp Business Automation
-            </div>
-            <h1 style={{fontSize:"clamp(40px,5vw,66px)",fontWeight:900,letterSpacing:"-0.04em",lineHeight:1.04,marginBottom:20,color:"#0a0a0a"}}>
-              Build WhatsApp<br/>bots{" "}
-              <span style={{position:"relative",display:"inline-block"}}>
-                <span style={{background:"linear-gradient(135deg,#25d366 0%,#059669 60%,#16a34a 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>without code</span>
-                <svg style={{position:"absolute",bottom:-3,left:0,width:"100%"}} height="5" viewBox="0 0 240 5" fill="none" preserveAspectRatio="none">
-                  <path d="M0 4Q60 0.5 120 4Q180 0.5 240 4" stroke="#25d366" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-                </svg>
-              </span>
-            </h1>
-            <p style={{fontSize:16,color:"rgba(0,0,0,0.5)",lineHeight:1.75,marginBottom:32,maxWidth:460,fontWeight:400}}>
-              Drag keyword triggers, message nodes, and branches onto a canvas. Your automation goes live instantly — no developer needed.
-            </p>
-            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:36}}>
-              {[{icon:"⚡",l:"Keyword triggers"},{icon:"🔀",l:"Visual builder"},{icon:"💬",l:"Interactive buttons"}].map(f=>(
-                <div key={f.l} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(0,0,0,0.04)",border:"1px solid rgba(0,0,0,0.07)",borderRadius:100,padding:"7px 14px",fontSize:12.5,fontWeight:500,color:"rgba(0,0,0,0.55)"}}>
-                  <span style={{fontSize:13}}>{f.icon}</span>{f.l}
-                </div>
-              ))}
-            </div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:14,marginBottom:44}}>
-<button 
-      onClick={() => window.open("https://wa.me/917498869327?text=Hi! I want to test the automation.", "_blank")} 
-      style={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 12,
-      background: "#25D366", // Official WhatsApp Green
-      color: "#fff",
-      border: "none",
-      borderRadius: "50px", // Rounded pill shape for modern app feel
-      padding: "16px 36px",
-      fontSize: "15px",
-      fontWeight: 700,
-      cursor: "pointer",
-      boxShadow: "0 10px 20px -5px rgba(37,211,102,0.4)",
-      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-      fontFamily: "inherit",
-      letterSpacing: "-0.01em"
-    }}
-    onMouseOver={e => {
-      e.currentTarget.style.transform = "translateY(-3px)";
-      e.currentTarget.style.background = "#128C7E"; // Darker Teal Green on hover
-      e.currentTarget.style.boxShadow = "0 15px 25px -5px rgba(37,211,102,0.5)";
-    }} 
-    onMouseOut={e => {
-      e.currentTarget.style.transform = "translateY(0)";
-      e.currentTarget.style.background = "#25D366";
-      e.currentTarget.style.boxShadow = "0 10px 20px -5px rgba(37,211,102,0.4)";
-    }}
-  >
-    <WaIcon size={18} color="#fff" /> Test Now
-  </button>
+        <span style={{width: 5, height: 5, borderRadius: "50%", background: "#25d366", animation: "wpl-ping 1.5s ease-in-out infinite"}}/>
+        OFFICIAL META PARTNER
+      </div>
 
-  {/* SECONDARY: TEST NOW (Clean Chat-Bubble Style) */}
-  <button 
-      onClick={() => navigate("/register")} 
-      style={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 12,
-      background: "#fff",
-      color: "#075E54", // WhatsApp Deep Teal
-      border: "2px solid #25D366",
-      borderRadius: "50px",
-      padding: "16px 36px",
-      fontSize: "15px",
-      fontWeight: 700,
-      cursor: "pointer",
-      transition: "all 0.3s ease",
-      fontFamily: "inherit",
-      letterSpacing: "-0.01em"
-    }}
-    onMouseOver={e => {
-      e.currentTarget.style.background = "rgba(37,211,102,0.05)";
-      e.currentTarget.style.transform = "translateY(-3px)";
-    }} 
-    onMouseOut={e => {
-      e.currentTarget.style.background = "#fff";
-      e.currentTarget.style.transform = "translateY(0)";
-    }}
-  >
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#075E54" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-     <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-  <circle cx="8.5" cy="7" r="4" />
-  <line x1="20" y1="8" x2="20" y2="14" />
-  <line x1="17" y1="11" x2="23" y2="11" />
-    </svg>
-    Start Free
-  </button>
-            </div>
+      {/* MAIN HEADING */}
+      <h1 style={{fontSize: "clamp(40px,5vw,66px)", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1.04, marginBottom: 20, color: "#0a0a0a"}}>
+        Get WhatsApp API<br/>
+        <span style={{position: "relative", display: "inline-block"}}>
+          <span style={{background: "linear-gradient(135deg,#25d366 0%,#059669 60%,#16a34a 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent"}}>
+            Free in 5 Minutes
+          </span>
+          <svg style={{position: "absolute", bottom: -3, left: 0, width: "100%"}} height="5" viewBox="0 0 240 5" fill="none" preserveAspectRatio="none">
+            <path d="M0 4Q60 0.5 120 4Q180 0.5 240 4" stroke="#25d366" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+          </svg>
+        </span>
+      </h1>
+
+      {/* SUBTEXT */}
+      <p style={{fontSize: 17, color: "rgba(0,0,0,0.6)", lineHeight: 1.6, marginBottom: 32, maxWidth: 500, fontWeight: 400}}>
+        Experience <strong>Instant Setup</strong> with our self-hosted gateway. No complex approvals, no long waits—start sending messages with your free credits today.
+      </p>
+
+      {/* QUICK STATS / FEATURES */}
+      <div style={{display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 36}}>
+        {[{icon: "🚀", l: "Instant Activation"}, {icon: "💰", l: "No Setup Fee"}, {icon: "🛠️", l: "Developer Ready"}].map(f => (
+          <div key={f.l} style={{display: "flex", alignItems: "center", gap: 6, background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.07)", borderRadius: 100, padding: "7px 14px", fontSize: 12.5, fontWeight: 500, color: "rgba(0,0,0,0.55)"}}>
+            <span style={{fontSize: 13}}>{f.icon}</span>{f.l}
           </div>
-          <div style={{position:"relative",animation:"wpl-fadein 1s ease 0.15s both"}}>
-            <HeroIllustration/>
-          </div>
-        </div>
-      </section>
+        ))}
+      </div>
+
+      {/* BUTTONS */}
+      <div style={{display: "flex", flexWrap: "wrap", gap: 14, marginBottom: 44}}>
+        <button 
+          onClick={() => navigate("/register")} 
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 12,
+            background: "#25D366",
+            color: "#fff",
+            border: "none",
+            borderRadius: "50px",
+            padding: "16px 36px",
+            fontSize: "15px",
+            fontWeight: 700,
+            cursor: "pointer",
+            boxShadow: "0 10px 20px -5px rgba(37,211,102,0.4)",
+            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+            fontFamily: "inherit",
+          }}
+          onMouseOver={e => {
+            e.currentTarget.style.transform = "translateY(-3px)";
+            e.currentTarget.style.background = "#128C7E";
+          }} 
+          onMouseOut={e => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.background = "#25D366";
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+          Get Free API Access
+        </button>
+
+        <button 
+          onClick={() => window.open("https://wa.me/917498869327?text=Hi! I want to test the free API setup.", "_blank")} 
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 12,
+            background: "#fff",
+            color: "#075E54",
+            border: "2px solid #25D366",
+            borderRadius: "50px",
+            padding: "16px 36px",
+            fontSize: "15px",
+            fontWeight: 700,
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+            fontFamily: "inherit",
+          }}
+          onMouseOver={e => {
+            e.currentTarget.style.background = "rgba(37,211,102,0.05)";
+            e.currentTarget.style.transform = "translateY(-3px)";
+          }} 
+          onMouseOut={e => {
+            e.currentTarget.style.background = "#fff";
+            e.currentTarget.style.transform = "translateY(0)";
+          }}
+        >
+          <WaIcon size={18} color="#075E54" /> 
+          Test Demo
+        </button>
+      </div>
+    </div>
+    
+    <div style={{position: "relative", animation: "wpl-fadein 1s ease 0.15s both"}}>
+      <HeroIllustration/>
+    </div>
+  </div>
+</section>
 
       {/* ══ UPGRADED LOGO STRIP ══ */}
       <div style={{borderTop:"1px solid rgba(0,0,0,0.06)",borderBottom:"1px solid rgba(0,0,0,0.06)",padding:"24px 0",overflow:"hidden",background:"#fafafa",WebkitMaskImage:"linear-gradient(to right, transparent, black 15%, black 85%, transparent)"}}>

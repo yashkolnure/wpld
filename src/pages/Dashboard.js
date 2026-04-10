@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import WhatsAppManager from "./WhatsAppManager";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
@@ -59,6 +60,7 @@ export default function Dashboard() {
   const [contactTotal,   setContactTotal]   = useState(0);
   const [selectedContact,setSelectedContact]= useState(null);
   const [contactNotes,   setContactNotes]   = useState("");
+  const [showDelayedPopup, setShowDelayedPopup] = useState(false);
 
 
   //payments
@@ -92,14 +94,27 @@ export default function Dashboard() {
 
   // ─── AUTH ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    axios.get(`${API}/api/user/me`, { headers })
+    axios.get(`${API}http://localhost:5004/api/user/me`, { headers })
       .then(r => setUser(r.data))
       .catch(() => { localStorage.removeItem("token"); navigate("/login"); });
   }, []);
 
+  useEffect(() => {
+  let timer;
+
+  if (!waStatus?.connected && activeTab !== "whatsapp") {
+    timer = setTimeout(() => {
+      setShowDelayedPopup(true);
+    }, 2000); // 2 second delay
+  } else {
+    setShowDelayedPopup(false);
+  }
+  return () => clearTimeout(timer);
+}, [waStatus?.connected, activeTab]);
+
   // ─── WA STATUS (+ polling) ──────────────────────────────────────────────────
   const fetchWaStatus = useCallback(() => {
-    axios.get(`${API}/api/whatsapp/status`, { headers })
+    axios.get(`${API}http://localhost:5004/api/whatsapp/status`, { headers })
       .then(r => setWaStatus(r.data))
       .catch(() => setWaStatus({ connected: false }));
   }, []);
@@ -112,7 +127,7 @@ export default function Dashboard() {
 
   // ─── WORKFLOWS ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    axios.get(`${API}/api/workflows`, { headers })
+    axios.get(`${API}http://localhost:5004/api/workflows`, { headers })
       .then(r => setWorkflows(r.data))
       .catch(() => {})
       .finally(() => setWfLoading(false));
@@ -121,8 +136,8 @@ export default function Dashboard() {
   // ─── OVERVIEW STATS (fetched once on mount) ─────────────────────────────────
   useEffect(() => {
     Promise.all([
-      axios.get(`${API}/api/contacts/stats`, { headers }),
-      axios.get(`${API}/api/contacts?page=1&limit=1`, { headers }),
+      axios.get(`${API}http://localhost:5004/api/contacts/stats`, { headers }),
+      axios.get(`${API}http://localhost:5004/api/contacts?page=1&limit=1`, { headers }),
     ])
       .then(([sRes, cRes]) => {
         setContactStats(sRes.data);
@@ -135,7 +150,7 @@ export default function Dashboard() {
   // ─── WEBHOOK INFO ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (activeTab !== "whatsapp") return;
-    axios.get(`${API}/api/whatsapp/webhook-info`, { headers })
+    axios.get(`${API}http://localhost:5004/api/whatsapp/webhook-info`, { headers })
       .then(r => setWebhookInfo(r.data))
       .catch(() => {});
   }, [activeTab]);
@@ -143,14 +158,14 @@ export default function Dashboard() {
   // ─── PLAN ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     setPlanLoading(true);
-    axios.get(`${API}/api/payments/plan`, { headers })
+    axios.get(`${API}http://localhost:5004/api/payments/plan`, { headers })
       .then(r => setUserPlan(r.data))
       .catch(() => setUserPlan({ plan: "free", isActive: false }))
       .finally(() => setPlanLoading(false));
   }, []);
   // ─── CHATS (+ polling when on chats tab) ─────────────────────────────────────
   const fetchChats = useCallback(() => {
-    axios.get(`${API}/api/chats`, { headers })
+    axios.get(`${API}http://localhost:5004/api/chats`, { headers })
       .then(r => setChats(r.data))
       .catch(() => {});
   }, []);
@@ -161,7 +176,7 @@ export default function Dashboard() {
       return;
     }
     setChatsLoading(true);
-    axios.get(`${API}/api/chats`, { headers })
+    axios.get(`${API}http://localhost:5004/api/chats`, { headers })
       .then(r => setChats(r.data))
       .catch(() => {})
       .finally(() => setChatsLoading(false));
@@ -175,7 +190,7 @@ export default function Dashboard() {
   // ─── MESSAGES (+ polling when a chat is selected) ────────────────────────────
   const fetchMessages = useCallback(() => {
     if (!selectedChat) return;
-    axios.get(`${API}/api/chats/${selectedChat._id}/messages`, { headers })
+    axios.get(`${API}http://localhost:5004/api/chats/${selectedChat._id}/messages`, { headers })
       .then(r => setActiveMessages(r.data))
       .catch(() => {});
   }, [selectedChat]);
@@ -185,7 +200,7 @@ export default function Dashboard() {
     if (!selectedChat) { setActiveMessages([]); return; }
 
     setMessagesLoading(true);
-    axios.get(`${API}/api/chats/${selectedChat._id}/messages`, { headers })
+    axios.get(`${API}http://localhost:5004/api/chats/${selectedChat._id}/messages`, { headers })
       .then(r => setActiveMessages(r.data))
       .catch(err => console.error("Failed to load messages", err))
       .finally(() => setMessagesLoading(false));
@@ -203,8 +218,8 @@ export default function Dashboard() {
     setContactsLoading(true);
     const contactLimit = isFree ? 50 : 20;
     Promise.all([
-      axios.get(`${API}/api/contacts?page=${contactPage}&limit=${contactLimit}&search=${contactSearch}`, { headers }),
-      axios.get(`${API}/api/contacts/stats`, { headers }),
+      axios.get(`${API}http://localhost:5004/api/contacts?page=${contactPage}&limit=${contactLimit}&search=${contactSearch}`, { headers }),
+      axios.get(`${API}http://localhost:5004/api/contacts/stats`, { headers }),
     ])
       .then(([cRes, sRes]) => {
         setContacts(cRes.data.contacts);
@@ -226,7 +241,7 @@ export default function Dashboard() {
     e.preventDefault();
     setWaLoading(true);
     try {
-      const res = await axios.post(`${API}/api/whatsapp/connect`, form, { headers });
+      const res = await axios.post(`${API}http://localhost:5004/api/whatsapp/connect`, form, { headers });
       setWaMsg({ text: res.data.message, type: "success" });
       setWaStatus({ connected: true, ...form });
     } catch {
@@ -236,14 +251,14 @@ export default function Dashboard() {
 
   const handleWaDisconnect = async () => {
     if (!window.confirm("Disconnect WhatsApp?")) return;
-    await axios.delete(`${API}/api/whatsapp/disconnect`, { headers });
+    await axios.delete(`${API}http://localhost:5004/api/whatsapp/disconnect`, { headers });
     setWaStatus({ connected: false });
     setWaMsg({ text: "Disconnected successfully.", type: "success" }); 
   };
 
   const handleToggleWorkflow = async (id) => {
     try {
-      const res = await axios.patch(`${API}/api/workflows/${id}/toggle`, {}, { headers });
+      const res = await axios.patch(`${API}http://localhost:5004/api/workflows/${id}/toggle`, {}, { headers });
       setWorkflows(wfs => wfs.map(w => w._id === id ? { ...w, isActive: res.data.isActive } : w));
     } catch {}
   };
@@ -262,7 +277,7 @@ const handleUpgrade = async () => {
     const plan = PRO_PLANS[selectedDuration];
 
     const { data } = await axios.post(
-      `${API}/api/payments/create-order`,
+      `${API}http://localhost:5004/api/payments/create-order`,
       { amount: plan.paise, currency: "INR" },
       { headers }
     );
@@ -292,7 +307,7 @@ const handleUpgrade = async () => {
       handler: async (response) => {
         try {
           const verify = await axios.post(
-            `${API}/api/payments/verify`,
+            `${API}http://localhost:5004/api/payments/verify`,
             {
               razorpay_order_id:   response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
@@ -326,7 +341,7 @@ const handleUpgrade = async () => {
 
   const handleDeleteWorkflow = async (id) => {
     if (!window.confirm("Delete this workflow?")) return;
-    await axios.delete(`${API}/api/workflows/${id}`, { headers });
+    await axios.delete(`${API}http://localhost:5004/api/workflows/${id}`, { headers });
     setWorkflows(wfs => wfs.filter(w => w._id !== id));
   };
 
@@ -355,7 +370,7 @@ const handleUpgrade = async () => {
     setReplyText("");
     try {
       await axios.post(
-        `${API}/api/chats/${selectedChat._id}/messages`,
+        `${API}http://localhost:5004/api/chats/${selectedChat._id}/messages`,
         { text, type: "text" },
         { headers }
       );
@@ -380,7 +395,7 @@ const handleUpgrade = async () => {
   // ─── EXPORT ──────────────────────────────────────────────────────────────────
   const handleExport = async () => {
     try {
-      const res = await axios.get(`${API}/api/contacts?limit=1000`, { headers });
+      const res = await axios.get(`${API}http://localhost:5004/api/contacts?limit=1000`, { headers });
       const data = res.data.contacts;
       if (!data || data.length === 0) return alert("No contacts to export");
       const csvHeaders = ["Name", "Phone", "Messages", "Last Active", "Notes"];
@@ -445,7 +460,7 @@ const resolveIdToLabel = (text) => {
     if (!selectedContact) return;
     try {
       await axios.patch(
-        `${API}/api/contacts/${selectedContact._id}`,
+        `${API}http://localhost:5004/api/contacts/${selectedContact._id}`,
         { notes: contactNotes },
         { headers }
       );
@@ -458,7 +473,7 @@ const resolveIdToLabel = (text) => {
 
   const isFree = !userPlan || userPlan.plan !== "pro";
 const activeCount = workflows.filter(w => w.isActive).length;
-  const webhookUrl  = webhookInfo?.webhookUrl || `${window.location.origin}/api/webhook`;
+  const webhookUrl  = webhookInfo?.webhookUrl || `${window.location.origin}http://localhost:5004/api/webhook`;
   const navTo = (key) => { setActiveTab(key); setSidebarOpen(false); };
 
   const S = {
@@ -559,6 +574,41 @@ const activeCount = workflows.filter(w => w.isActive).length;
   ::-webkit-scrollbar-thumb  { background: rgba(37,211,102,0.2); border-radius: 99px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(37,211,102,0.4); }
 `}</style>
+
+
+{/* ── WHATSAPP CONNECTION POPUP (DELAYED) ── */}
+{showDelayedPopup && (
+  <div style={{ 
+    position: "fixed", 
+    inset: 0, 
+    zIndex: 999, 
+    display: "flex", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    padding: 20, 
+    background: "rgba(0,0,0,0.4)", 
+    backdropFilter: "blur(8px)",
+    animation: "wpl-fadein 0.3s ease-out" // Using your existing CSS animation
+  }}>
+    <div style={{ 
+      width: "100%", 
+      maxWidth: 600, 
+      maxHeight: "90vh", 
+      overflowY: "auto", 
+      background: "#fff", 
+      borderRadius: 32, 
+      boxShadow: "0 40px 100px rgba(0,0,0,0.25)",
+      position: "relative",
+      border: `1px solid ${S.border}`
+    }}>
+       {/* ... rest of your popup content ... */}
+       <div style={{ padding: "32px" }}>
+          <WhatsAppManager />
+       </div>
+    </div>
+  </div>
+)}
+
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -1758,7 +1808,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
                                   <button className="dib rd" title="Delete" style={{ color: S.textFaint }}
                                     onClick={() => {
                                       if (window.confirm("Delete contact?"))
-                                        axios.delete(`${API}/api/contacts/${c._id}`, { headers })
+                                        axios.delete(`${API}http://localhost:5004/api/contacts/${c._id}`, { headers })
                                           .then(() => {
                                             setContacts(prev => prev.filter(x => x._id !== c._id));
                                             setContactTotal(t => t - 1);
