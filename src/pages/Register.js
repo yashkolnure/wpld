@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { WaIcon } from "../components/Icons";
 
 export default function Register() {
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "",  phone: "" });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -90,6 +90,18 @@ export default function Register() {
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
             </div>
+            <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              placeholder="+91 98765 43210"
+              className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-[#25d366] focus:ring-4 focus:ring-emerald-500/5 outline-none transition-all duration-200 text-slate-900 font-medium"
+              required
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
+          </div>
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Security Key</label>
