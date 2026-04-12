@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import WhatsAppManager from "./WhatsAppManager";
 import axios from "axios";
+import { User, Upload, Image as ImageIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Zap, Users, MessageCircle, LogOut,
@@ -92,6 +93,214 @@ export default function Dashboard() {
   const token    = localStorage.getItem("token");
   const headers  = { Authorization: `Bearer ${token}` };
 
+// ── Profile state ──
+const [profileForm,     setProfileForm]     = useState({ displayName: "", about: "", email: "", website: "", address: "" });
+const [profileFetching, setProfileFetching] = useState(false);
+const [profileLoading,  setProfileLoading]  = useState({});
+const [profileMsg,      setProfileMsg]      = useState({ text: "", type: "" });
+const [profilePhoto,    setProfilePhoto]    = useState({ file: null, preview: null, uploading: false, msg: null });
+const [currentPhoto,    setCurrentPhoto]    = useState(null);
+
+
+// ── Display Name Request State ──
+const [nameStatus,       setNameStatus]       = useState(null); // APPROVED / PENDING_REVIEW / DECLINED / NONE
+const [nameStatusLoading,setNameStatusLoading]= useState(false);
+const [requestedName,    setRequestedName]    = useState("");
+const [nameReqLoading,   setNameReqLoading]   = useState(false);
+const [nameReqMsg,       setNameReqMsg]       = useState({ text: "", type: "" });
+
+// ── Fetch phone number info (name + status) from Meta ──
+const fetchNameStatus = () => {
+  if (!waStatus?.connected || !waStatus?.accessToken) return;
+  setNameStatusLoading(true);
+  fetch(
+    `https://graph.facebook.com/v19.0/${waStatus.phoneNumberId}` +
+    `?fields=verified_name,name_status,quality_rating,display_phone_number,code_verification_status`,
+    { headers: { Authorization: `Bearer ${waStatus.accessToken}` } }
+  )
+    .then(r => r.json())
+    .then(data => {
+      console.log("Phone number info:", data);
+      setNameStatus(data);
+      setRequestedName(data.verified_name || "");
+    })
+    .catch(err => console.error("Name status error:", err))
+    .finally(() => setNameStatusLoading(false));
+};
+
+// ── Fetch on tab open ──
+useEffect(() => {
+  if (activeTab !== "whatsapp" || !waStatus?.connected) return;
+  fetchNameStatus();
+}, [activeTab, waStatus?.connected]);
+
+// ── Submit name change request ──
+const handleNameChangeRequest = async () => {
+  if (!requestedName.trim() || !waStatus?.accessToken) return;
+  setNameReqLoading(true);
+  setNameReqMsg({ text: "", type: "" });
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v19.0/${waStatus.phoneNumberId}/whatsapp_business_profile`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${waStatus.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          name: requestedName.trim(),
+        }),
+      }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "Request failed");
+    setNameReqMsg({ text: "Name change request submitted! Pending Meta review.", type: "success" });
+    // re-fetch status after 2s
+    setTimeout(fetchNameStatus, 2000);
+  } catch (err) {
+    setNameReqMsg({ text: err.message, type: "error" });
+  } finally {
+    setNameReqLoading(false);
+  }
+};
+// ── Fetch directly from Meta ──
+useEffect(() => {
+  if (activeTab !== "whatsapp" || !waStatus?.connected || !waStatus?.accessToken) return;
+
+  setProfileFetching(true);
+  fetch(
+    `https://graph.facebook.com/v19.0/${waStatus.phoneNumberId}/whatsapp_business_profile` +
+    `?fields=about,address,email,profile_picture_url,websites,vertical,name`,
+    { headers: { Authorization: `Bearer ${waStatus.accessToken}` } }
+  )
+    .then(r => r.json())
+    .then(data => {
+      console.log("RAW META PROFILE:", data); // remove after confirming
+      const p = data.data?.[0] || {};
+      setProfileForm({
+        displayName: p.name          || "",
+        about:       p.about         || "",
+        email:       p.email         || "",
+        website:     p.websites?.[0] || "",
+        address:     p.address       || "",
+      });
+      setCurrentPhoto(p.profile_picture_url || null);
+    })
+    .catch(err => {
+      console.error("Profile fetch error:", err);
+      setProfileMsg({ text: "Failed to load profile", type: "error" });
+    })
+    .finally(() => setProfileFetching(false));
+}, [activeTab, waStatus?.connected, waStatus?.accessToken]);
+
+// ── Update single field directly on Meta ──
+const handleUpdateProfile = async (field) => {
+  if (!waStatus?.connected || !waStatus?.accessToken) return;
+
+  const fieldMap = {
+    name:    "name",
+    about:   "about",
+    email:   "email",
+    website: "websites",
+    address: "address",
+  };
+
+  const formKeyMap = {
+    name:    "displayName",
+    about:   "about",
+    email:   "email",
+    website: "website",
+    address: "address",
+  };
+
+  const value = field === "website"
+    ? [profileForm.website]
+    : profileForm[formKeyMap[field]];
+
+  setProfileLoading(l => ({ ...l, [field]: true }));
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v19.0/${waStatus.phoneNumberId}/whatsapp_business_profile`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${waStatus.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          [fieldMap[field]]: value,
+        }),
+      }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "Update failed");
+    setProfileMsg({ text: `✓ ${field} updated successfully!`, type: "success" });
+  } catch (err) {
+    console.error("Update error:", err);
+    setProfileMsg({ text: err.message, type: "error" });
+  } finally {
+    setProfileLoading(l => ({ ...l, [field]: false }));
+    setTimeout(() => setProfileMsg({ text: "", type: "" }), 3500);
+  }
+};
+
+// ── Photo select ──
+const handlePhotoSelect = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  setProfilePhoto(p => ({ ...p, file, preview: URL.createObjectURL(file) }));
+};
+
+// ── Upload photo directly to Meta (2-step) ──
+const handlePhotoUpload = async () => {
+  if (!profilePhoto.file || !waStatus?.accessToken) return;
+  setProfilePhoto(p => ({ ...p, uploading: true, msg: null }));
+  try {
+    // Step 1 — upload media
+    const formData = new FormData();
+    formData.append("file", profilePhoto.file);
+    formData.append("messaging_product", "whatsapp");
+    formData.append("type", profilePhoto.file.type);
+
+    const uploadRes = await fetch(
+      `https://graph.facebook.com/v19.0/${waStatus.phoneNumberId}/media`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${waStatus.accessToken}` },
+        body: formData,
+      }
+    );
+    const uploadData = await uploadRes.json();
+    if (!uploadRes.ok) throw new Error(uploadData.error?.message || "Upload failed");
+
+    // Step 2 — set as profile photo
+    const setRes = await fetch(
+      `https://graph.facebook.com/v19.0/${waStatus.phoneNumberId}/whatsapp_business_profile`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${waStatus.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          profile_picture_handle: uploadData.id,
+        }),
+      }
+    );
+    const setData = await setRes.json();
+    if (!setRes.ok) throw new Error(setData.error?.message || "Failed to set photo");
+
+    setCurrentPhoto(profilePhoto.preview);
+    setProfilePhoto(p => ({ ...p, uploading: false, msg: { type: "success", text: "✓ Profile photo updated!" } }));
+  } catch (err) {
+    setProfilePhoto(p => ({ ...p, uploading: false, msg: { type: "error", text: err.message } }));
+  }
+};
+
   // ─── AUTH ───────────────────────────────────────────────────────────────────
   useEffect(() => {
     axios.get(`${API}/api/user/me`, { headers })
@@ -113,11 +322,18 @@ export default function Dashboard() {
 }, [waStatus?.connected, activeTab]);
 
   // ─── WA STATUS (+ polling) ──────────────────────────────────────────────────
-  const fetchWaStatus = useCallback(() => {
-    axios.get(`${API}/api/whatsapp/status`, { headers })
-      .then(r => setWaStatus(r.data))
-      .catch(() => setWaStatus({ connected: false }));
-  }, []);
+const fetchWaStatus = useCallback(() => {
+  axios.get(`${API}/api/whatsapp/status`, { headers })
+    .then(r => {
+
+    console.log("RAW META PROFILE:", JSON.stringify(r.data, null, 2));
+      if (r.data?.accessToken) {
+        localStorage.setItem("wa_token", r.data.accessToken); // cache it
+      }
+      setWaStatus(r.data);
+    })
+    .catch(() => setWaStatus({ connected: false }));
+}, []);
 
   useEffect(() => {
     fetchWaStatus();
@@ -237,24 +453,27 @@ export default function Dashboard() {
     setTimeout(() => setCopied(""), 2000);
   };
 
-  const handleWaConnect = async (e) => {
-    e.preventDefault();
-    setWaLoading(true);
-    try {
-      const res = await axios.post(`${API}/api/whatsapp/connect`, form, { headers });
-      setWaMsg({ text: res.data.message, type: "success" });
-      setWaStatus({ connected: true, ...form });
-    } catch {
-      setWaMsg({ text: "Connection failed. Check your credentials.", type: "error" });
-    } finally { setWaLoading(false); }
-  };
+const handleWaConnect = async (e) => {
+  e.preventDefault();
+  setWaLoading(true);
+  try {
+    const res = await axios.post(`${API}/api/whatsapp/connect`, form, { headers });
+    setWaMsg({ text: res.data.message, type: "success" });
+    // ✅ persist accessToken for profile API calls
+    localStorage.setItem("wa_token", form.accessToken);
+    setWaStatus({ connected: true, ...form });
+  } catch {
+    setWaMsg({ text: "Connection failed. Check your credentials.", type: "error" });
+  } finally { setWaLoading(false); }
+};
 
-  const handleWaDisconnect = async () => {
-    if (!window.confirm("Disconnect WhatsApp?")) return;
-    await axios.delete(`${API}/api/whatsapp/disconnect`, { headers });
-    setWaStatus({ connected: false });
-    setWaMsg({ text: "Disconnected successfully.", type: "success" }); 
-  };
+const handleWaDisconnect = async () => {
+  if (!window.confirm("Disconnect WhatsApp?")) return;
+  await axios.delete(`${API}/api/whatsapp/disconnect`, { headers });
+  localStorage.removeItem("wa_token"); // ✅ clear stored token
+  setWaStatus({ connected: false });
+  setWaMsg({ text: "Disconnected successfully.", type: "success" });
+};
 
   const handleToggleWorkflow = async (id) => {
     try {
@@ -419,8 +638,6 @@ const handleUpgrade = async () => {
       alert("Failed to export contacts");
     }
   };
-
-
   // Add this inside the Dashboard component
 const resolveIdToLabel = (text) => {
   if (!text || text.length < 20 || !text.includes('-')) return text;
@@ -1627,97 +1844,435 @@ const activeCount = workflows.filter(w => w.isActive).length;
             ))}
           </tbody>
         </table>
+        
       </div>
+    
     </div>
 
   </div>
 )}
-              {/* ─── WHATSAPP ─── */}
-              {activeTab === "whatsapp" && (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 20, animation: "wpl-fadein 0.4s ease both" }}>
-                  {/* Connect card */}
-                  <div style={{ borderRadius: 28, padding: "32px", position: "relative", overflow: "hidden", background: S.darkBg, boxShadow: "0 24px 60px rgba(6,95,86,0.22)" }}>
-                    <div style={{ position: "absolute", top: -50, right: -50, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle,rgba(37,211,102,0.18) 0%,transparent 65%)", pointerEvents: "none" }} />
-                    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
-                      <MessageCircle size={13} color="#4ade80" />
-                      <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: S.monoFont }}>Cloud API</span>
-                    </div>
-                    <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", letterSpacing: "-0.03em", marginBottom: 20 }}>WhatsApp Gateway</h2>
-                    <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 14px", borderRadius: 12, marginBottom: 22, background: waStatus?.connected ? "rgba(37,211,102,0.15)" : "rgba(255,255,255,0.05)", fontSize: 11, fontWeight: 600, color: waStatus?.connected ? "#4ade80" : "rgba(255,255,255,0.35)" }}>
-                      {waStatus?.connected ? <><Wifi size={12} />Connected and active</> : <><WifiOff size={12} />Not connected</>}
-                    </div>
-                    {!waStatus?.connected ? (
-                      <form onSubmit={handleWaConnect}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                          {[["Phone Number ID", "phoneNumberId", "123456…"], ["WABA ID", "wabaId", "987654…"]].map(([label, key, ph]) => (
-                            <div key={key}>
-                              <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 6, fontFamily: S.font }}>{label}</label>
-                              <input className="dinput" style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "9px 12px", fontSize: 12, color: "#fff", fontFamily: S.monoFont }}
-                                placeholder={ph} required onChange={e => setForm({ ...form, [key]: e.target.value })} />
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{ marginBottom: 16 }}>
-                          <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 6, fontFamily: S.font }}>Access Token</label>
-                          <input type="password" className="dinput" style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "9px 12px", fontSize: 12, color: "#fff", fontFamily: S.font }}
-                            placeholder="EAAxxxxx…" required onChange={e => setForm({ ...form, accessToken: e.target.value })} />
-                        </div>
-                        <button type="submit" disabled={waLoading}
-                          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 0", borderRadius: 14, background: S.greenGrad, border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: S.font, boxShadow: "0 8px 24px rgba(37,211,102,0.3)", opacity: waLoading ? 0.7 : 1 }}>
-                          {waLoading ? <><Activity size={12} style={{ animation: "wpl-spin 0.8s linear infinite" }} />Connecting…</> : <><Wifi size={13} />Connect</>}
-                        </button>
-                      </form>
-                    ) : (
-                      <div>
-                        <div style={{ borderRadius: 16, padding: "16px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 12 }}>
-                          <p style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 8, fontFamily: S.monoFont }}>Active number ID</p>
-                          <p style={{ fontSize: 14, fontWeight: 700, color: "#4ade80", fontFamily: S.monoFont, wordBreak: "break-all" }}>{waStatus.phoneNumberId}</p>
-                        </div>
-                        <button onClick={handleWaDisconnect}
-                          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 0", borderRadius: 14, background: "transparent", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: S.font }}>
-                          <WifiOff size={13} /> Disconnect
-                        </button>
-                      </div>
-                    )}
-                    {waMsg.text && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, padding: "9px 14px", borderRadius: 12, background: waMsg.type === "success" ? "rgba(37,211,102,0.12)" : "rgba(239,68,68,0.12)", color: waMsg.type === "success" ? "#4ade80" : "#f87171", fontSize: 12 }}>
-                        {waMsg.type === "success" ? <Check size={12} /> : <AlertCircle size={12} />} {waMsg.text}
-                      </div>
-                    )}
-                  </div>
+{activeTab === "whatsapp" && (
+  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(400px,1fr))", gap: 20, animation: "wpl-fadein 0.4s ease both" }}>
 
-                  {/* Webhook card */}
-                  <div style={{ ...S.card, padding: "32px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
-                      <Bell size={16} color={S.greenDark} />
-                      <h3 style={{ fontSize: 17, fontWeight: 800, color: S.textPrimary, letterSpacing: "-0.02em" }}>Webhook setup</h3>
-                    </div>
-                    <p style={{ fontSize: 12, color: S.textMuted, marginBottom: 24 }}>Paste these into your Meta App Dashboard.</p>
-                    {[
-                      { label: "Callback URL",  value: webhookUrl,                              key: "url" },
-                      { label: "Verify Token", value: webhookInfo?.verifyToken || "Loading…", key: "token" },
-                    ].map(({ label, value, key }) => (
-                      <div key={key} style={{ marginBottom: 18 }}>
-                        <p style={{ fontSize: 9, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8, fontFamily: S.monoFont }}>{label}</p>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <div style={{ flex: 1, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 10, padding: "9px 12px", fontSize: 11, fontFamily: S.monoFont, color: S.greenDeep, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</div>
-                          <button onClick={() => copyToClipboard(value, key)}
-                            style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 14px", borderRadius: 10, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font, flexShrink: 0, border: copied === key ? `1px solid ${S.greenBorder}` : "1px solid rgba(0,0,0,0.1)", background: copied === key ? S.greenBg : "#fff", color: copied === key ? S.greenDark : S.textMuted }}>
-                            {copied === key ? <><Check size={11} />Copied</> : <><Copy size={11} />Copy</>}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <div style={{ display: "flex", gap: 10, padding: "14px 16px", borderRadius: 16, background: "#fffbeb", border: "1px solid #fde68a" }}>
-                      <AlertCircle size={14} color="#d97706" style={{ flexShrink: 0, marginTop: 1 }} />
-                      <p style={{ fontSize: 12, color: "#92400e", lineHeight: 1.65 }}>
-                        Subscribe to <strong>messages</strong> webhook field in Meta Developer Console after pasting these values.
-                      </p>
-                    </div>
-                  </div>
+    {/* ─── Connect Card ─── */}
+    <div style={{ borderRadius: 28, padding: "32px", position: "relative", overflow: "hidden", background: S.darkBg, boxShadow: "0 24px 60px rgba(6,95,86,0.22)" }}>
+      <div style={{ position: "absolute", top: -50, right: -50, width: 200, height: 200, borderRadius: "50%", background: "radial-gradient(circle,rgba(37,211,102,0.18) 0%,transparent 65%)", pointerEvents: "none" }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
+        <MessageCircle size={13} color="#4ade80" />
+        <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: S.monoFont }}>Cloud API</span>
+      </div>
+      <h2 style={{ fontSize: 20, fontWeight: 900, color: "#fff", letterSpacing: "-0.03em", marginBottom: 20 }}>WhatsApp Gateway</h2>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 14px", borderRadius: 12, marginBottom: 22, background: waStatus?.connected ? "rgba(37,211,102,0.15)" : "rgba(255,255,255,0.05)", fontSize: 11, fontWeight: 600, color: waStatus?.connected ? "#4ade80" : "rgba(255,255,255,0.35)" }}>
+        {waStatus?.connected ? <><Wifi size={12} />Connected and active</> : <><WifiOff size={12} />Not connected</>}
+      </div>
+
+      {!waStatus?.connected ? (
+        <form onSubmit={handleWaConnect}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            {[["Phone Number ID", "phoneNumberId", "123456…"], ["WABA ID", "wabaId", "987654…"]].map(([label, key, ph]) => (
+              <div key={key}>
+                <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 6, fontFamily: S.font }}>{label}</label>
+                <input className="dinput"
+                  style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "9px 12px", fontSize: 12, color: "#fff", fontFamily: S.monoFont }}
+                  placeholder={ph} required onChange={e => setForm({ ...form, [key]: e.target.value })} />
+              </div>
+            ))}
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.4)", marginBottom: 6, fontFamily: S.font }}>Access Token</label>
+            <input type="password" className="dinput"
+              style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "9px 12px", fontSize: 12, color: "#fff", fontFamily: S.font }}
+              placeholder="EAAxxxxx…" required onChange={e => setForm({ ...form, accessToken: e.target.value })} />
+          </div>
+          <button type="submit" disabled={waLoading}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 0", borderRadius: 14, background: S.greenGrad, border: "none", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: S.font, boxShadow: "0 8px 24px rgba(37,211,102,0.3)", opacity: waLoading ? 0.7 : 1 }}>
+            {waLoading ? <><Activity size={12} style={{ animation: "wpl-spin 0.8s linear infinite" }} />Connecting…</> : <><Wifi size={13} />Connect</>}
+          </button>
+        </form>
+      ) : (
+        <div>
+          {/* Account Info */}
+          <div style={{ borderRadius: 16, padding: "16px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 12 }}>
+            <p style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 8, fontFamily: S.monoFont }}>Active number ID</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: "#4ade80", fontFamily: S.monoFont, wordBreak: "break-all" }}>{waStatus.phoneNumberId}</p>
+          </div>
+          {waStatus.wabaId && (
+            <div style={{ borderRadius: 16, padding: "16px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", marginBottom: 12 }}>
+              <p style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 8, fontFamily: S.monoFont }}>WABA ID</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "#4ade80", fontFamily: S.monoFont, wordBreak: "break-all" }}>{waStatus.wabaId}</p>
+            </div>
+          )}
+          {waStatus.connectedAt && (
+            <div style={{ borderRadius: 16, padding: "12px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+              <Clock size={11} color="rgba(255,255,255,0.3)" />
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: S.monoFont }}>
+                Connected {formatRelativeTime(waStatus.connectedAt)}
+              </p>
+            </div>
+          )}
+          <button onClick={handleWaDisconnect}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 0", borderRadius: 14, background: "transparent", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: S.font }}>
+            <WifiOff size={13} /> Disconnect
+          </button>
+        </div>
+      )}
+
+      {waMsg.text && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, padding: "9px 14px", borderRadius: 12, background: waMsg.type === "success" ? "rgba(37,211,102,0.12)" : "rgba(239,68,68,0.12)", color: waMsg.type === "success" ? "#4ade80" : "#f87171", fontSize: 12 }}>
+          {waMsg.type === "success" ? <Check size={12} /> : <AlertCircle size={12} />} {waMsg.text}
+        </div>
+      )}
+    </div>
+
+    {/* ─── Webhook Card ─── */}
+    <div style={{ ...S.card, padding: "32px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
+        <Bell size={16} color={S.greenDark} />
+        <h3 style={{ fontSize: 17, fontWeight: 800, color: S.textPrimary, letterSpacing: "-0.02em" }}>Webhook Setup</h3>
+      </div>
+      <p style={{ fontSize: 12, color: S.textMuted, marginBottom: 24 }}>Paste these into your Meta App Dashboard.</p>
+
+      {[
+        { label: "Callback URL",  value: webhookUrl,                              key: "url"   },
+        { label: "Verify Token",  value: webhookInfo?.verifyToken || "Loading…",  key: "token" },
+      ].map(({ label, value, key }) => (
+        <div key={key} style={{ marginBottom: 18 }}>
+          <p style={{ fontSize: 9, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8, fontFamily: S.monoFont }}>{label}</p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ flex: 1, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 10, padding: "9px 12px", fontSize: 11, fontFamily: S.monoFont, color: S.greenDeep, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</div>
+            <button onClick={() => copyToClipboard(value, key)}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 14px", borderRadius: 10, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font, flexShrink: 0, border: copied === key ? `1px solid ${S.greenBorder}` : "1px solid rgba(0,0,0,0.1)", background: copied === key ? S.greenBg : "#fff", color: copied === key ? S.greenDark : S.textMuted }}>
+              {copied === key ? <><Check size={11} />Copied</> : <><Copy size={11} />Copy</>}
+            </button>
+          </div>
+        </div>
+      ))}
+
+      <div style={{ display: "flex", gap: 10, padding: "14px 16px", borderRadius: 16, background: "#fffbeb", border: "1px solid #fde68a" }}>
+        <AlertCircle size={14} color="#d97706" style={{ flexShrink: 0, marginTop: 1 }} />
+        <p style={{ fontSize: 12, color: "#92400e", lineHeight: 1.65 }}>
+          Subscribe to <strong>messages</strong> webhook field in Meta Developer Console after pasting these values.
+        </p>
+      </div>
+    </div>
+
+{/* ─── Display Name Card ─── */}
+<div style={{ ...S.card, padding: "32px" }}>
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+      <CircleDot size={16} color={S.greenDark} />
+      <h3 style={{ fontSize: 17, fontWeight: 800, color: S.textPrimary, letterSpacing: "-0.02em" }}>Display Name</h3>
+    </div>
+    <button
+      onClick={fetchNameStatus}
+      disabled={nameStatusLoading}
+      style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 10, background: S.greenBg, border: `1px solid ${S.greenBorder}`, color: S.greenDark, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font }}>
+      <RefreshCw size={10} style={{ animation: nameStatusLoading ? "wpl-spin 0.8s linear infinite" : "none" }} />
+      Refresh
+    </button>
+  </div>
+  <p style={{ fontSize: 12, color: S.textMuted, marginBottom: 24 }}>
+    Request a display name change. Meta reviews and approves within 1–7 days.
+  </p>
+
+  {!waStatus?.connected ? (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderRadius: 12, background: "#fffbeb", border: "1px solid #fde68a" }}>
+      <AlertCircle size={13} color="#d97706" />
+      <p style={{ fontSize: 12, color: "#92400e" }}>Connect WhatsApp first.</p>
+    </div>
+  ) : nameStatusLoading ? (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "40px 0", color: S.textMuted }}>
+      <Activity size={16} color={S.green} style={{ animation: "wpl-spin 0.8s linear infinite" }} />
+      <span style={{ fontSize: 12 }}>Fetching from Meta…</span>
+    </div>
+  ) : (
+    <>
+      {/* Current Status Banner */}
+      {nameStatus && (() => {
+        const statusConfig = {
+          APPROVED:       { bg: "rgba(37,211,102,0.1)",  border: "rgba(37,211,102,0.25)", color: S.greenDark,  icon: <Check size={13} />,        label: "Approved" },
+          PENDING_REVIEW: { bg: "rgba(234,179,8,0.1)",   border: "rgba(234,179,8,0.3)",   color: "#a16207",    icon: <Clock size={13} />,        label: "Pending Review" },
+          DECLINED:       { bg: "rgba(239,68,68,0.08)",  border: "rgba(239,68,68,0.2)",   color: "#dc2626",    icon: <AlertCircle size={13} />,  label: "Declined" },
+          NONE:           { bg: "rgba(0,0,0,0.03)",      border: "rgba(0,0,0,0.08)",      color: S.textMuted,  icon: <CircleDot size={13} />,    label: "Not Set" },
+        };
+        const cfg = statusConfig[nameStatus.name_status] || statusConfig["NONE"];
+        return (
+          <div style={{ borderRadius: 16, padding: "16px", background: cfg.bg, border: `1px solid ${cfg.border}`, marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, color: cfg.color, textTransform: "uppercase", letterSpacing: "0.14em", fontFamily: S.monoFont }}>
+                Current Name
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 20, background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.color, fontSize: 10, fontWeight: 700 }}>
+                {cfg.icon} {cfg.label}
+              </div>
+            </div>
+            <p style={{ fontSize: 18, fontWeight: 900, color: S.textPrimary, letterSpacing: "-0.02em", marginBottom: 10 }}>
+              {nameStatus.verified_name || "—"}
+            </p>
+
+            {/* Extra info pills */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {nameStatus.display_phone_number && (
+                <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20, background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.07)", fontSize: 10, color: S.textMuted }}>
+                  <Phone size={9} /> {nameStatus.display_phone_number}
                 </div>
               )}
+              {nameStatus.quality_rating && (
+                <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20, background: nameStatus.quality_rating === "GREEN" ? "rgba(37,211,102,0.08)" : nameStatus.quality_rating === "YELLOW" ? "rgba(234,179,8,0.08)" : "rgba(239,68,68,0.08)", border: `1px solid ${nameStatus.quality_rating === "GREEN" ? "rgba(37,211,102,0.2)" : nameStatus.quality_rating === "YELLOW" ? "rgba(234,179,8,0.2)" : "rgba(239,68,68,0.2)"}`, fontSize: 10, color: nameStatus.quality_rating === "GREEN" ? S.greenDark : nameStatus.quality_rating === "YELLOW" ? "#a16207" : "#dc2626", fontWeight: 700 }}>
+                  <Activity size={9} /> Quality: {nameStatus.quality_rating}
+                </div>
+              )}
+              {nameStatus.code_verification_status && (
+                <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20, background: "rgba(37,99,235,0.06)", border: "1px solid rgba(37,99,235,0.14)", fontSize: 10, color: "#2563eb" }}>
+                  <Check size={9} /> {nameStatus.code_verification_status}
+                </div>
+              )}
+            </div>
 
+            {/* Declined reason hint */}
+            {nameStatus.name_status === "DECLINED" && (
+              <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 10, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
+                <p style={{ fontSize: 11, color: "#dc2626", lineHeight: 1.6 }}>
+                  Your name request was declined by Meta. Common reasons: name contains restricted words, doesn't match your business, or violates WhatsApp policies. Try a different name below.
+                </p>
+              </div>
+            )}
+
+            {/* Pending hint */}
+            {nameStatus.name_status === "PENDING_REVIEW" && (
+              <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 10, background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.2)" }}>
+                <p style={{ fontSize: 11, color: "#a16207", lineHeight: 1.6 }}>
+                  Your name is under review by Meta. This typically takes 1–7 business days. Click Refresh to check the latest status.
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Request New Name */}
+      <div>
+        <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8, fontFamily: S.monoFont }}>
+          Request New Name
+        </label>
+        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+          <input
+            className="dinput"
+            value={requestedName}
+            onChange={e => setRequestedName(e.target.value)}
+            placeholder="Your Business Name"
+            maxLength={60}
+            style={{ flex: 1, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 10, padding: "9px 12px", fontSize: 13, color: S.greenDeep, fontFamily: S.monoFont }}
+          />
+          <button
+            onClick={handleNameChangeRequest}
+            disabled={nameReqLoading || !requestedName.trim() || requestedName.trim() === nameStatus?.verified_name}
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 18px", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: nameReqLoading || !requestedName.trim() ? "not-allowed" : "pointer", fontFamily: S.font, flexShrink: 0, border: "none", background: nameReqLoading || !requestedName.trim() ? "rgba(0,0,0,0.06)" : S.greenGrad, color: nameReqLoading || !requestedName.trim() ? S.textFaint : "#fff", boxShadow: nameReqLoading || !requestedName.trim() ? "none" : "0 4px 14px rgba(37,211,102,0.3)", opacity: nameReqLoading ? 0.7 : 1 }}>
+            {nameReqLoading
+              ? <><Activity size={12} style={{ animation: "wpl-spin 0.8s linear infinite" }} />Submitting…</>
+              : <><Send size={12} />Request</>}
+          </button>
+        </div>
+        <p style={{ fontSize: 10, color: S.textFaint, display: "flex", alignItems: "center", gap: 5 }}>
+          <AlertCircle size={9} color="#d97706" />
+          Name must represent your actual business. Misleading names will be declined.
+        </p>
+      </div>
+
+      {/* Feedback */}
+      {nameReqMsg.text && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, padding: "10px 14px", borderRadius: 12, background: nameReqMsg.type === "success" ? "rgba(37,211,102,0.12)" : "rgba(239,68,68,0.12)", color: nameReqMsg.type === "success" ? "#4ade80" : "#f87171", fontSize: 12 }}>
+          {nameReqMsg.type === "success" ? <Check size={12} /> : <AlertCircle size={12} />} {nameReqMsg.text}
+        </div>
+      )}
+    </>
+  )}
+</div>
+    {/* ─── Profile Info Card ─── */}
+    <div style={{ ...S.card, padding: "32px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <User size={16} color={S.greenDark} />
+          <h3 style={{ fontSize: 17, fontWeight: 800, color: S.textPrimary, letterSpacing: "-0.02em" }}>Profile Info</h3>
+        </div>
+        {profileFetching && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: S.greenDark }}>
+            <Activity size={10} style={{ animation: "wpl-spin 0.8s linear infinite" }} /> Syncing…
+          </div>
+        )}
+      </div>
+      <p style={{ fontSize: 12, color: S.textMuted, marginBottom: 20 }}>Update your WhatsApp Business profile details.</p>
+
+      {!waStatus?.connected ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderRadius: 12, background: "#fffbeb", border: "1px solid #fde68a" }}>
+          <AlertCircle size={13} color="#d97706" />
+          <p style={{ fontSize: 12, color: "#92400e" }}>Connect WhatsApp first to manage your profile.</p>
+        </div>
+      ) : (
+        <>
+          {/* About */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8, fontFamily: S.monoFont }}>About / Status</label>
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+              <div style={{ flex: 1 }}>
+                <textarea
+                  value={profileForm.about}
+                  onChange={e => setProfileForm({ ...profileForm, about: e.target.value })}
+                  placeholder="We're here to help you 24/7…"
+                  rows={3}
+                  maxLength={139}
+                  style={{ width: "100%", background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 10, padding: "9px 12px", fontSize: 12, color: S.greenDeep, fontFamily: S.monoFont, resize: "vertical" }}
+                />
+                <p style={{ fontSize: 10, color: S.textFaint, marginTop: 3, textAlign: "right" }}>{profileForm.about?.length || 0}/139</p>
+              </div>
+              <button onClick={() => handleUpdateProfile("about")} disabled={profileLoading.about}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 14px", borderRadius: 10, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font, flexShrink: 0, border: `1px solid ${S.greenBorder}`, background: S.greenBg, color: S.greenDark, opacity: profileLoading.about ? 0.6 : 1 }}>
+                {profileLoading.about ? <Activity size={11} style={{ animation: "wpl-spin 0.8s linear infinite" }} /> : <Check size={11} />}
+                {profileLoading.about ? "…" : "Save"}
+              </button>
+            </div>
+          </div>
+
+          {/* Email */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8, fontFamily: S.monoFont }}>Business Email</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input className="dinput" type="email"
+                value={profileForm.email}
+                onChange={e => setProfileForm({ ...profileForm, email: e.target.value })}
+                placeholder="support@yourbusiness.com"
+                style={{ flex: 1, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 10, padding: "9px 12px", fontSize: 12, color: S.greenDeep, fontFamily: S.monoFont }} />
+              <button onClick={() => handleUpdateProfile("email")} disabled={profileLoading.email}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 14px", borderRadius: 10, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font, flexShrink: 0, border: `1px solid ${S.greenBorder}`, background: S.greenBg, color: S.greenDark, opacity: profileLoading.email ? 0.6 : 1 }}>
+                {profileLoading.email ? <Activity size={11} style={{ animation: "wpl-spin 0.8s linear infinite" }} /> : <Check size={11} />}
+                {profileLoading.email ? "…" : "Save"}
+              </button>
+            </div>
+          </div>
+
+          {/* Website */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8, fontFamily: S.monoFont }}>Website</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input className="dinput" type="url"
+                value={profileForm.website}
+                onChange={e => setProfileForm({ ...profileForm, website: e.target.value })}
+                placeholder="https://yourbusiness.com"
+                style={{ flex: 1, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 10, padding: "9px 12px", fontSize: 12, color: S.greenDeep, fontFamily: S.monoFont }} />
+              <button onClick={() => handleUpdateProfile("website")} disabled={profileLoading.website}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 14px", borderRadius: 10, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font, flexShrink: 0, border: `1px solid ${S.greenBorder}`, background: S.greenBg, color: S.greenDark, opacity: profileLoading.website ? 0.6 : 1 }}>
+                {profileLoading.website ? <Activity size={11} style={{ animation: "wpl-spin 0.8s linear infinite" }} /> : <Check size={11} />}
+                {profileLoading.website ? "…" : "Save"}
+              </button>
+            </div>
+          </div>
+
+          {/* Address */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8, fontFamily: S.monoFont }}>Business Address</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input className="dinput"
+                value={profileForm.address}
+                onChange={e => setProfileForm({ ...profileForm, address: e.target.value })}
+                placeholder="123 Main St, City, Country"
+                style={{ flex: 1, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 10, padding: "9px 12px", fontSize: 12, color: S.greenDeep, fontFamily: S.monoFont }} />
+              <button onClick={() => handleUpdateProfile("address")} disabled={profileLoading.address}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 14px", borderRadius: 10, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font, flexShrink: 0, border: `1px solid ${S.greenBorder}`, background: S.greenBg, color: S.greenDark, opacity: profileLoading.address ? 0.6 : 1 }}>
+                {profileLoading.address ? <Activity size={11} style={{ animation: "wpl-spin 0.8s linear infinite" }} /> : <Check size={11} />}
+                {profileLoading.address ? "…" : "Save"}
+              </button>
+            </div>
+          </div>
+
+          {/* Vertical / Category */}
+          <div style={{ marginBottom: 4 }}>
+            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8, fontFamily: S.monoFont }}>Business Category</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              <select
+                value={profileForm.vertical || ""}
+                onChange={e => setProfileForm({ ...profileForm, vertical: e.target.value })}
+                style={{ flex: 1, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 10, padding: "9px 12px", fontSize: 12, color: S.greenDeep, fontFamily: S.monoFont }}>
+                <option value="">Select category…</option>
+                {["UNDEFINED","OTHER","AUTO","BEAUTY","APPAREL","EDU","ENTERTAIN","EVENT_PLAN","FINANCE","GROCERY","GOVT","HOTEL","HEALTH","NONPROFIT","PROF_SERVICES","RETAIL","TRAVEL","RESTAURANT","NOT_A_BIZ"].map(v => (
+                  <option key={v} value={v}>{v.replace(/_/g, " ")}</option>
+                ))}
+              </select>
+              <button onClick={() => handleUpdateProfile("vertical")} disabled={profileLoading.vertical}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 14px", borderRadius: 10, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font, flexShrink: 0, border: `1px solid ${S.greenBorder}`, background: S.greenBg, color: S.greenDark, opacity: profileLoading.vertical ? 0.6 : 1 }}>
+                {profileLoading.vertical ? <Activity size={11} style={{ animation: "wpl-spin 0.8s linear infinite" }} /> : <Check size={11} />}
+                {profileLoading.vertical ? "…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {profileMsg.text && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16, padding: "9px 14px", borderRadius: 12, background: profileMsg.type === "success" ? "rgba(37,211,102,0.12)" : "rgba(239,68,68,0.12)", color: profileMsg.type === "success" ? "#4ade80" : "#f87171", fontSize: 12 }}>
+          {profileMsg.type === "success" ? <Check size={12} /> : <AlertCircle size={12} />} {profileMsg.text}
+        </div>
+      )}
+    </div>
+
+    {/* ─── Profile Photo Card ─── */}
+    <div style={{ ...S.card, padding: "32px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
+        <ImageIcon size={16} color={S.greenDark} />
+        <h3 style={{ fontSize: 17, fontWeight: 800, color: S.textPrimary, letterSpacing: "-0.02em" }}>Profile Photo</h3>
+      </div>
+      <p style={{ fontSize: 12, color: S.textMuted, marginBottom: 24 }}>Upload a photo for your WhatsApp Business profile.</p>
+
+      {/* Preview */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+        <div style={{ position: "relative" }}>
+          <div style={{ width: 100, height: 100, borderRadius: "50%", background: S.greenBg, border: `3px solid ${S.greenBorder}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+            {profilePhoto.preview || currentPhoto
+              ? <img src={profilePhoto.preview || currentPhoto} alt="profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : profileFetching
+                ? <Activity size={24} color={S.greenBorder} style={{ animation: "wpl-spin 0.8s linear infinite" }} />
+                : <User size={36} color={S.greenBorder} />}
+          </div>
+          {(profilePhoto.preview || currentPhoto) && (
+            <div style={{ position: "absolute", bottom: 2, right: 2, width: 26, height: 26, borderRadius: "50%", background: S.greenGrad, display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #fff", boxShadow: "0 2px 8px rgba(37,211,102,0.3)" }}>
+              <Check size={12} color="#fff" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {!waStatus?.connected ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderRadius: 12, background: "#fffbeb", border: "1px solid #fde68a" }}>
+          <AlertCircle size={13} color="#d97706" />
+          <p style={{ fontSize: 12, color: "#92400e" }}>Connect WhatsApp first to update your photo.</p>
+        </div>
+      ) : (
+        <>
+          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "11px 0", borderRadius: 14, border: `1px dashed ${S.greenBorder}`, background: S.greenBg, color: S.greenDark, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: S.font, marginBottom: 8 }}>
+            <Upload size={13} /> {profilePhoto.file ? profilePhoto.file.name : "Choose Image"}
+            <input type="file" accept="image/jpeg,image/png" hidden onChange={handlePhotoSelect} />
+          </label>
+          <p style={{ fontSize: 10, color: S.textFaint, textAlign: "center", marginBottom: 16 }}>JPEG or PNG · Max 5 MB · Recommended 640×640 px</p>
+
+          <button onClick={handlePhotoUpload}
+            disabled={!profilePhoto.file || profilePhoto.uploading}
+            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 0", borderRadius: 14, background: profilePhoto.file ? S.greenGrad : "rgba(0,0,0,0.06)", border: "none", color: profilePhoto.file ? "#fff" : S.textFaint, fontSize: 13, fontWeight: 700, cursor: profilePhoto.file ? "pointer" : "not-allowed", fontFamily: S.font, boxShadow: profilePhoto.file ? "0 8px 24px rgba(37,211,102,0.3)" : "none", opacity: profilePhoto.uploading ? 0.7 : 1 }}>
+            {profilePhoto.uploading
+              ? <><Activity size={12} style={{ animation: "wpl-spin 0.8s linear infinite" }} />Uploading…</>
+              : <><Upload size={13} />Upload Photo</>}
+          </button>
+        </>
+      )}
+
+      {profilePhoto.msg && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, padding: "9px 14px", borderRadius: 12, background: profilePhoto.msg.type === "success" ? "rgba(37,211,102,0.12)" : "rgba(239,68,68,0.12)", color: profilePhoto.msg.type === "success" ? "#4ade80" : "#f87171", fontSize: 12 }}>
+          {profilePhoto.msg.type === "success" ? <Check size={12} /> : <AlertCircle size={12} />} {profilePhoto.msg.text}
+        </div>
+      )}
+    </div>
+
+  </div>
+)}
               {/* ─── CONTACTS ─── */}
               {activeTab === "contacts" && (
                 <div style={{ animation: "wpl-fadein 0.4s ease both" }}>
