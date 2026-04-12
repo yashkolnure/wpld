@@ -14,41 +14,24 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // 🔥 Handle Submit
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-    // ✅ Clean phone (remove spaces)
-    let phone = form.phone.replace(/\s+/g, "");
+  try {
+    // Just send the digits; let the backend handle the final normalization
+    await axios.post("/api/auth/register", form); 
 
-    // ✅ Auto add +91 if missing
-    if (!phone.startsWith("+91")) {
-      phone = "+91" + phone.replace(/^0+/, "");
-    }
-
-    // ✅ Validate phone
-    if (!/^\+?[0-9]{10,15}$/.test(phone)) {
-      alert("Enter valid phone number");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      await axios.post("/api/auth/register", {
-        ...form,
-        phone
-      });
-
-      alert("Success! Please sign in.");
-      navigate("/login");
-
-    } catch (err) {
-      alert(err.response?.data?.message || "Registration failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+    alert("Success! Please sign in.");
+    navigate("/login");
+  } catch (err) {
+    // Detailed error logging
+    const msg = err.response?.data?.message || "Registration failed";
+    alert(msg);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleGoogleLogin = () => {
     window.location.href = `${process.env.REACT_APP_API_URL || ""}/api/auth/google`;
