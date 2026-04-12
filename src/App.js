@@ -9,6 +9,7 @@ import LoginSuccess from "./pages/LoginSuccess";
 import Footer from "./components/Footer";
 import PublicForm from "./pages/PublicForm";
 import WhatsAppManager from "./pages/WhatsAppManager";
+import ThankYou from "./pages/thankyou";
 
 // Updated Helper: 
 // We hide the Layout if it's a Workspace (/dashboard, /workflow) 
@@ -54,6 +55,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/workflow/new" element={<WorkflowBuilder />} />
+          <Route path="/thankyou" element={<ThankYou />} />
           <Route path="/workflow/:id" element={<WorkflowBuilder />} />
           <Route path="/whatsapp-manager" element={<WhatsAppManager />} />
           
