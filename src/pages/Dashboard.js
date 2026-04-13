@@ -793,7 +793,6 @@ const activeCount = workflows.filter(w => w.isActive).length;
 `}</style>
 
 
-// ...existing code...
 {showDelayedPopup && (
   <div style={{ 
     position: "fixed", 
