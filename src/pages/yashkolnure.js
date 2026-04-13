@@ -14,7 +14,7 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("http://localhost:5004/api/admin/users", {
+      const res = await axios.get("/api/admin/users", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(res.data);
