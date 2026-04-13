@@ -793,7 +793,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
 `}</style>
 
 
-{/* ── WHATSAPP CONNECTION POPUP (DELAYED) ── */}
+// ...existing code...
 {showDelayedPopup && (
   <div style={{ 
     position: "fixed", 
@@ -805,7 +805,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
     padding: 20, 
     background: "rgba(0,0,0,0.4)", 
     backdropFilter: "blur(8px)",
-    animation: "wpl-fadein 0.3s ease-out" // Using your existing CSS animation
+    animation: "wpl-fadein 0.3s ease-out"
   }}>
     <div style={{ 
       width: "100%", 
@@ -818,15 +818,36 @@ const activeCount = workflows.filter(w => w.isActive).length;
       position: "relative",
       border: `1px solid ${S.border}`
     }}>
-       {/* ... rest of your popup content ... */}
-       <div style={{ padding: "32px" }}>
-          <WhatsAppManager />
-       </div>
+      {/* Close button */}
+      <button
+        onClick={() => setShowDelayedPopup(false)}
+        style={{
+          position: "absolute",
+          top: 18,
+          right: 18,
+          width: 32,
+          height: 32,
+          borderRadius: "50%",
+          background: "rgba(0,0,0,0.06)",
+          border: "none",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: S.textFaint,
+          fontSize: 18,
+          zIndex: 2
+        }}
+        aria-label="Close"
+      >
+        <X size={18} />
+      </button>
+      <div style={{ padding: "32px" }}>
+        <WhatsAppManager />
+      </div>
     </div>
   </div>
 )}
-
-
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)}
