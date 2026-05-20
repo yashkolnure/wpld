@@ -1,12 +1,27 @@
 import express from 'express';
+import crypto from 'crypto';
 import { executeWorkflow } from '../services/workflowExecutor.js';
 import WhatsApp from '../models/WhatsApp.js';
 import Contact from '../models/Contact.js';
 import Workflow from '../models/Workflow.js';
 import Message from '../models/Message.js';
+import { sendPushNotification } from '../services/notificationService.js';
 
 const router = express.Router();
 const VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN;
+
+// Verify Meta webhook signature (X-Hub-Signature-256)
+const verifyWebhookSignature = (req) => {
+  const appSecret = process.env.META_APP_SECRET;
+  if (!appSecret) return true; // skip in dev if not set
+  const sig = req.headers['x-hub-signature-256'];
+  if (!sig) return false;
+  const expected = 'sha256=' + crypto
+    .createHmac('sha256', appSecret)
+    .update(req.rawBody || '')
+    .digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+};
 
 // Meta verification handshake
 router.get('/webhook', (req, res) => {
@@ -19,129 +34,204 @@ router.get('/webhook', (req, res) => {
   res.sendStatus(403);
 });
 
-// Incoming messages
+// Incoming messages & status updates
 router.post("/webhook", async (req, res) => {
-  // 1. Immediate ACK to Meta (Prevents duplicate retries)
+  // Reject requests that fail signature check
+  if (!verifyWebhookSignature(req)) {
+    console.warn('⚠️ Webhook signature verification failed — request rejected');
+    return res.sendStatus(403);
+  }
   res.sendStatus(200);
 
   try {
-    const entry = req.body?.entry?.[0];
+    const entry  = req.body?.entry?.[0];
     const change = entry?.changes?.[0];
-    const value = change?.value;
+    const value  = change?.value;
 
-    // Filter: Only process incoming messages (ignore read receipts/status updates)
-    if (!value?.messages) return;
+    if (!value) return;
+   if (value.statuses && value.statuses.length > 0) {
+  const statusUpdate = value.statuses[0];
+  const wamid = statusUpdate.id;
+  const newStatus = statusUpdate.status;
+  const errors = statusUpdate.errors || null;
 
-    const msg = value.messages[0];
-    const fromNumber = msg.from;
-    const phoneNumberId = value.metadata.phone_number_id;
+  try {
+    const updateFields = { status: newStatus };
+    if (errors && errors.length > 0) {
+      updateFields.error = { code: errors[0].code, title: errors[0].title, message: errors[0].message };
+      console.error(`Message FAILED for WAMID ${wamid}: code=${errors[0].code} — ${errors[0].title}: ${errors[0].message}`);
+    }
+
+    const updated = await Message.findOneAndUpdate(
+      {
+        messageId: wamid,
+        status: { $ne: "read" },
+      },
+      { $set: updateFields },
+      { returnDocument: 'after' }
+    );
+
+    console.log(`Status update for WAMID ${wamid}: ${newStatus}. DB update result:`, updated ? "Success" : "No matching message found");
+  } catch (err) {
+    console.error("Error updating status:", err.message);
+  }
+  return;
+}
+
+    // ── 2. INCOMING MESSAGES ─────────────────────────────────────────────────
+    if (!value.messages) return;
+
+    const msg                = value.messages[0];
+    const fromNumber         = msg.from;
+    const phoneNumberId      = value.metadata.phone_number_id;
     const contactProfileName = value.contacts?.[0]?.profile?.name || "";
 
-    // 2. Auth: Identify which user owns this WhatsApp account
+    // Auth: find which user owns this WhatsApp number
     const wa = await WhatsApp.findOne({ phoneNumberId });
     if (!wa) {
       console.error("⚠️ Message received for unregistered Phone ID:", phoneNumberId);
       return;
     }
 
-    // 3. Extract Message Content & Type
-    let incomingTextForWorkflow = ""; // Used to trigger keywords
-    let displaySnippet = "";          // Used for the "Last Message" UI
-    let messageType = msg.type;
-    let mediaData = null;
-    let interactiveMetadata = null;
+    // ── 3. EXTRACT MESSAGE CONTENT ───────────────────────────────────────────
+    let incomingTextForWorkflow = "";
+    let displaySnippet          = "";
+    let messageType             = msg.type;
+    let mediaData               = null;
+    let interactiveMetadata     = null;
 
     if (msg.type === "text") {
       incomingTextForWorkflow = msg.text.body;
-      displaySnippet = msg.text.body;
-    } 
+      displaySnippet          = msg.text.body;
+    }
     else if (["image", "video", "audio", "document"].includes(msg.type)) {
-      const media = msg[msg.type];
+      const media             = msg[msg.type];
       incomingTextForWorkflow = media.caption || `[${msg.type.toUpperCase()}]`;
-      displaySnippet = media.caption || `Sent a ${msg.type}`;
+      displaySnippet          = media.caption || `Sent a ${msg.type}`;
       mediaData = {
-        mediaId: media.id,
+        mediaId:  media.id,
         mimeType: media.mime_type,
-        fileName: media.filename || null
+        fileName: media.filename || null,
       };
-    } 
+    }
     else if (msg.type === "interactive") {
       const interactive = msg.interactive;
       if (interactive.type === "button_reply") {
-        messageType = "button_reply";
-        incomingTextForWorkflow = interactive.button_reply.id; // Trigger workflow by ID
-        displaySnippet = interactive.button_reply.title;      // Show title in Chat List
-        interactiveMetadata = { title: displaySnippet, id: incomingTextForWorkflow };
+        messageType             = "button_reply";
+        incomingTextForWorkflow = interactive.button_reply.id;
+        displaySnippet          = interactive.button_reply.title;
+        interactiveMetadata     = {
+          title: displaySnippet,
+          id:    incomingTextForWorkflow,
+        };
       } else if (interactive.type === "list_reply") {
-        messageType = "list_reply";
+        messageType             = "list_reply";
         incomingTextForWorkflow = interactive.list_reply.id;
-        displaySnippet = interactive.list_reply.title;
-        interactiveMetadata = { 
-          title: displaySnippet, 
-          id: incomingTextForWorkflow, 
-          description: interactive.list_reply.description 
+        displaySnippet          = interactive.list_reply.title;
+        interactiveMetadata     = {
+          title:       displaySnippet,
+          id:          incomingTextForWorkflow,
+          description: interactive.list_reply.description,
         };
       }
     }
 
-    // Stop if there is absolutely no content
     if (!incomingTextForWorkflow && !mediaData) return;
 
-    // 4. Workflow Matching
-    let triggeredWorkflowName = "";
-    try {
-      const workflows = await Workflow.find({ userId: wa.userId, isActive: true });
-      for (const wf of workflows) {
-        const trigger = wf.nodes.find(n => n.type === "trigger");
-        if (!trigger) continue;
-
-        const { keyword, matchType } = trigger.data;
-        const cleanInput = incomingTextForWorkflow.toLowerCase().trim();
-        const cleanKw = keyword.toLowerCase().trim();
-
-        const matched = matchType === "exact" ? cleanInput === cleanKw : cleanInput.includes(cleanKw);
-        if (matched) {
-          triggeredWorkflowName = wf.name;
-          break;
-        }
-      }
-    } catch (wfErr) {
-      console.error("Workflow Logic Error:", wfErr.message);
+    // ── META OPT-OUT: handle STOP / UNSUBSCRIBE ─────────────────────────────
+    const stopWords = ['stop', 'unsubscribe', 'optout', 'opt out', 'opt-out', 'cancel'];
+    if (stopWords.includes((incomingTextForWorkflow || '').toLowerCase().trim())) {
+      await Contact.findOneAndUpdate(
+        { userId: wa.userId, phone: fromNumber },
+        { $set: { optedOut: true, lastActive: new Date() } },
+        { upsert: true }
+      );
+      console.log(`Contact ${fromNumber} opted out of marketing messages.`);
+      return;
     }
 
-    // 5. Update/Create Contact
+    // ── 4. WORKFLOW KEYWORD MATCHING (for contact tagging only) ──────────────
+
+let triggeredWorkflowName = "";
+try {
+  const workflows = await Workflow.find({ userId: wa.userId, isActive: true });
+  
+  for (const wf of workflows) {
+    const trigger = wf.nodes.find(n => n.type === "trigger");
+    if (!trigger || !trigger.data?.keyword) continue;
+
+    const { keyword, matchType } = trigger.data;
+    const cleanInput = (incomingTextForWorkflow || "").toLowerCase().trim();
+    
+    // Split keywords by comma and clean them up
+    const keywordsArray = keyword.split(",").map(k => k.toLowerCase().trim());
+
+    // Check if ANY keyword in the array matches
+    const matched = keywordsArray.some(kw => {
+      if (matchType === "exact") {
+        return cleanInput === kw;
+      } else {
+        return cleanInput.includes(kw);
+      }
+    });
+
+    if (matched) { 
+      triggeredWorkflowName = wf.name; 
+      break; 
+    }
+  }
+} catch (wfErr) {
+  console.error("Workflow Logic Error:", wfErr.message);
+}
+
+    // ── 5. UPDATE / CREATE CONTACT ───────────────────────────────────────────
     const contact = await Contact.findOneAndUpdate(
       { userId: wa.userId, phone: fromNumber },
       {
         $set: {
           lastMessage: displaySnippet.slice(0, 100),
-          lastActive: new Date(),
-          ...(contactProfileName && { name: contactProfileName })
+          lastActive:  new Date(),
+          ...(contactProfileName && { name: contactProfileName }),
         },
         $inc: { messageCount: 1 },
-        ...(triggeredWorkflowName ? { $addToSet: { workflows: triggeredWorkflowName } } : {})
+        ...(triggeredWorkflowName
+          ? { $addToSet: { workflows: triggeredWorkflowName } }
+          : {}),
       },
       { upsert: true, new: true }
     );
 
-    // 6. Save Detailed Message to DB (For the "Chats" Tab)
+    // ── 6. SAVE INCOMING MESSAGE TO DB (deduplicate by messageId) ───────────
+    const alreadyExists = await Message.exists({ userId: wa.userId, messageId: msg.id });
+    if (alreadyExists) {
+      console.log(`Duplicate webhook ignored for messageId: ${msg.id}`);
+      return;
+    }
     await Message.create({
-      userId: wa.userId,
-      contactId: contact._id,
-      from: "customer",
-      type: messageType,
-      text: incomingTextForWorkflow,
-      media: mediaData,
-      metadata: interactiveMetadata,
-      messageId: msg.id,
-      timestamp: new Date()
+      userId:        wa.userId,
+      contactId:     contact._id,
+      from:          "customer",
+      type:          messageType,
+      text:          incomingTextForWorkflow,
+      media:         mediaData,
+      metadata:      interactiveMetadata,
+      messageId:     msg.id,   // incoming wamid — for deduplication
+      status:        "read",   // you received it — read from your side
+      isReadByAdmin: false,    // admin hasn't opened this chat yet
+      timestamp:     new Date(),
     });
-
-    console.log(`✅ Chat updated: ${fromNumber} | Type: ${messageType} | Trigger: ${triggeredWorkflowName || "None"}`);
-
-    // 7. Execute Automation
-    // Passing contact._id ensures bot replies are linked to this specific chat
-    await executeWorkflow(wa.userId, incomingTextForWorkflow, fromNumber, contact._id);
+try {
+  await sendPushNotification(
+    wa.userId,
+    `New Message: ${contactProfileName || fromNumber}`,
+    displaySnippet,
+    { contactId: contact._id.toString(), type: "whatsapp_message" }
+  );
+  console.log("Push notification sent for new message from:", fromNumber);
+} catch (pushErr) {
+  console.error("Non-blocking Push Error:", pushErr);
+}
+    await executeWorkflow(wa.userId, incomingTextForWorkflow, fromNumber, contact._id, contact);
 
   } catch (err) {
     console.error("🔥 Critical Webhook Error:", err);

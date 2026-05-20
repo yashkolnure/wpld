@@ -7,25 +7,50 @@ export const executeWorkflow = async (userId, incomingText, fromNumber, contactI
 
   for (const workflow of workflows) {
     const triggerNode = workflow.nodes.find(n => n.type === 'trigger');
-    if (!triggerNode) continue;
+    
+    // 1. If there's no trigger node or no keyword, skip this workflow
+    if (!triggerNode || !triggerNode.data?.keyword) continue;
 
     const { keyword, matchType } = triggerNode.data;
-    const text = incomingText.toLowerCase().trim();
-    const kw   = keyword.toLowerCase().trim();
+    const text = (incomingText || "").toLowerCase().trim();
 
-    const matched =
-      matchType === 'exact'    ? text === kw :
-      matchType === 'contains' ? text.includes(kw) : false;
+    // ─── FIX START: Split comma-separated keywords ───
+    const keywordsArray = keyword.split(',').map(k => k.toLowerCase().trim());
 
-    if (!matched) continue;
+    // Check if ANY keyword in the list matches the incoming text
+    const isKeywordMatch = keywordsArray.some(kw => {
+      if (matchType === 'exact') {
+        return text === kw;
+      } else if (matchType === 'contains') {
+        // "contains" logic: Does the customer's message contain one of our keywords?
+        return text.includes(kw);
+      }
+      return false;
+    });
+    // ─── FIX END ───
 
-    // Execute starting from trigger, passing the incoming text
-    // so branch nodes can match button/row IDs
-    await executeFromNode(workflow, triggerNode.id, incomingText, fromNumber, userId, contactId);
-    console.log('Workflow executed:', workflow.name , 'for user:', userId, 'with incoming text:', incomingText);
-    break;
+    const continuationEdge = workflow.edges.find(e => 
+      e.sourceHandle === incomingText.trim() 
+    );
+
+    if (!isKeywordMatch && !continuationEdge) continue;
+
+    // Trigger the execution
+    if (isKeywordMatch) {
+      await executeFromNode(
+        workflow, triggerNode.id, incomingText, fromNumber, userId, contactId
+      );
+    } else {
+      await executeFromNode(
+        workflow, continuationEdge.source, incomingText, fromNumber, userId, contactId
+      );
+    }
+    
+    // IMPORTANT: Stop looking for other workflows once one has matched
+    break; 
   }
 };
+
 const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, userId, contactId) => {
   const nodeMap = Object.fromEntries(workflow.nodes.map(n => [n.id, n]));
   let currentId = startNodeId;
@@ -39,66 +64,98 @@ const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, 
       nextEdge = outgoingEdges[0];
     } else {
       nextEdge = outgoingEdges.find(e => e.sourceHandle === incomingText.trim());
-      if (!nextEdge) break; 
+      if (!nextEdge) {
+        nextEdge = outgoingEdges[0]; // Fallback to first edge if no handle matches
+      }
     }
 
     const nextNode = nodeMap[nextEdge.target];
     if (!nextNode) break;
 
-    if (nextNode.type === 'message') {
-      const msgData = nextNode.data.message;
-      
-      // 1. Send the actual message via WhatsApp API
-      await sendMessage(userId, fromNumber, msgData);
-      
-      // 2. LOG THE OUTGOING BOT MESSAGE TO DB
-      // We determine what text to show in the dashboard based on message type
-      let loggedText = "";
-      let metadata = null;
-
-      if (msgData.type === 'text') {
-        loggedText = msgData.text;
-      } else if (msgData.type === 'button') {
-        loggedText = msgData.buttonBody; // Main body of the button msg
-        metadata = {
-          header: msgData.buttonHeader,
-          buttons: msgData.buttons,
-          footer: msgData.buttonFooter
-        };
-      } else if (msgData.type === 'list') {
-        loggedText = msgData.listBody;
-        metadata = {
-          title: msgData.listTitle,
-          sections: msgData.sections
-        };
-      }
-console.log('Logging bot message to DB for user:', userId, 'Contact:', contactId, 'Text:', loggedText, 'Metadata:', metadata);
-      try {
-        await Message.create({
-          userId,
-          contactId,
-          from: 'bot', // This is key for the UI layout
-          type: msgData.type === 'text' ? 'text' : 'interactive',
-          text: loggedText,
-          metadata: metadata,
-          timestamp: new Date()
-        });
-      } catch (dbErr) {
-        console.error('Error logging bot message:', dbErr.message);
-      }
-
-      console.log('Sent message and logged to DB for user:', userId);
-    }
-
+    // ── Handle delay node ──
     if (nextNode.type === 'delay') {
       await sleep(nextNode.data.delayMinutes * 60 * 1000);
+      currentId = nextNode.id;
+      continue;
+    }
+
+    // ── Handle message node ──
+    if (nextNode.type === 'message') {
+      const msgData = nextNode.data.message; // Declared ONCE here
+      if (!msgData) { currentId = nextNode.id; continue; }
+
+      try {
+        // 1. Send via Meta API
+        const result = await sendMessage(userId, fromNumber, msgData);
+        const metaMessageId = result?.metaMessageId || null;
+
+        // 2. Build message record with type-specific fields
+        let messageRecord = {
+          userId,
+          contactId,
+          from: 'bot',
+          type: msgData.type === 'text' ? 'text' : 'interactive',
+          messageId: metaMessageId,   // wamid — required for delivery/read status updates via webhook
+          status: 'sent',
+          isReadByAdmin: true,
+          timestamp: new Date(),
+        };
+
+        // 3. Store complete message data based on type
+        if (msgData.type === 'text') {
+          messageRecord.text = msgData.text;
+        } 
+        else if (msgData.type === 'button') {
+          messageRecord.text = msgData.buttonBody || 'Button Message';
+          messageRecord.metadata = {
+            type: 'button',
+            header: msgData.buttonHeader || null,
+            footer: msgData.buttonFooter || null,
+            buttons: msgData.buttons, // Store complete buttons array with id, title
+          };
+        } 
+        else if (msgData.type === 'list') {
+          messageRecord.text = msgData.listBody || 'List Message';
+          messageRecord.metadata = {
+            type: 'list',
+            header: msgData.listHeader || null,
+            footer: msgData.listFooter || null,
+            buttonText: msgData.listButtonText || 'View options',
+            sections: msgData.sections, // Store complete sections with rows (id, title, description)
+          };
+        } 
+        else if (msgData.type === 'media') {
+          messageRecord.text = msgData.mediaCaption || 'Media Message';
+          messageRecord.metadata = {
+            type: 'media',
+            mediaType: msgData.mediaType,
+            mediaUrl: msgData.mediaUrl,
+          };
+        }
+
+        // 4. Save to Message DB
+       try {
+    const savedMsg = await Message.create(messageRecord);
+    console.log("✅ Message saved successfully:", savedMsg._id);
+} catch (dbErr) {
+    console.error("❌ Database Save Error:", dbErr.message);
+    console.error("Data attempted:", JSON.stringify(messageRecord, null, 2));
+}
+
+      } catch (err) {
+        console.error('🔥 Send error:', err.message);
+      }
+
+      currentId = nextNode.id;
+
+      // Stop loop if it's an interactive message requiring user input
+      if (msgData.type === 'button' || msgData.type === 'list') {
+        break;
+      }
+      continue;
     }
 
     currentId = nextNode.id;
-
-    // After sending a branching node (button/list), stop and wait
-    const msgType = nextNode.data?.message?.type;
-    if (msgType === 'button' || msgType === 'list') break;
   }
 };
 

@@ -7,7 +7,7 @@ const messageSchema = new mongoose.Schema(
     from: { type: String, enum: ["customer", "bot", "admin"], required: true },
     
     // UI State
-    isReadByAdmin: { type: Boolean, default: false }, // For unread badge in dashboard
+    isReadByAdmin: { type: Boolean, default: false }, 
     
     type: { 
       type: String, 
@@ -18,16 +18,16 @@ const messageSchema = new mongoose.Schema(
     text: { type: String },
     
     // Meta Tracking
-    messageId: { type: String, unique: true }, // WhatsApp 'wamid' - unique to prevent duplicates
+    messageId: { type: String, index: true },
     status: { 
       type: String, 
-      enum: ["pending", "sent", "delivered", "read", "failed"], 
+      // Added 'received' for incoming customer messages
+      enum: ["pending", "sent", "delivered", "read", "failed", "received"], 
       default: "pending" 
     },
     
-    // Context (Replies to specific messages)
     context: {
-      quotedMessageId: String, // The ID of the message being replied to
+      quotedMessageId: String, 
     },
 
     media: {
@@ -39,14 +39,15 @@ const messageSchema = new mongoose.Schema(
 
     metadata: mongoose.Schema.Types.Mixed, 
     
-    // For Debugging
-    error: mongoose.Schema.Types.Mixed, // Stores Axios error details if status is 'failed'
-    nodeId: String, // Which workflow node sent this?
+    error: mongoose.Schema.Types.Mixed, 
+    nodeId: String, 
   },
   { timestamps: true }
 );
 
-// Indexing for faster Chat History loading
+// Chat history queries
 messageSchema.index({ contactId: 1, createdAt: 1 });
+// Deduplication — one wamid per user (Meta can send the same webhook multiple times)
+messageSchema.index({ userId: 1, messageId: 1 }, { unique: true, sparse: true });
 
 export default mongoose.model("Message", messageSchema);

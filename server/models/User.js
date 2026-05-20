@@ -4,7 +4,18 @@ const userSchema = new mongoose.Schema(
   {
     name: String,
     email: { type: String, unique: true },
-    password: String
+    password: String,
+    googleId: { type: String }, // New field for Google users
+    avatar: { type: String },
+    plan:          { type: String, enum: ["free", "pro"], default: "pro" },
+    planExpiresAt: { type: Date, default: null },
+    planOrderId:   { type: String, default: null },
+    fcmTokens: [{ type: String }],
+    phone: { 
+    type: String, 
+    sparse: true, // Allows multiple null/missing values while keeping uniqueness for others
+    unique: true 
+  }
   },
   { timestamps: true }
 );

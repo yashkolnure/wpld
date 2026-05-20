@@ -1,5 +1,5 @@
 import express from 'express';
-import { connect, getStatus, disconnect } from '../controllers/whatsappController.js';
+import { connect, getStatus, disconnect, addPhoneNumber, requestOtp, verifyOtp, registerPhoneNumber, getOnboardingProgress, saveOnboardingProgress, clearOnboardingProgress } from '../controllers/whatsappController.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -8,6 +8,15 @@ router.post  ('/connect',    protect, connect);
 router.get   ('/status',     protect, getStatus);
 router.delete('/disconnect', protect, disconnect);
 
+
+router.get   ('/onboarding',         protect, getOnboardingProgress);
+router.put   ('/onboarding',         protect, saveOnboardingProgress);
+router.delete('/onboarding',         protect, clearOnboardingProgress);
+
+router.post('/numbers/add',         protect, addPhoneNumber);
+router.post('/numbers/request-otp', protect, requestOtp);
+router.post('/numbers/verify-otp',  protect, verifyOtp);
+router.post('/numbers/register',    protect, registerPhoneNumber);
 
 router.get('/webhook-info', protect, (req, res) => {
   res.json({
