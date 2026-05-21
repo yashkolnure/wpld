@@ -9,6 +9,8 @@ const campaignSchema = new mongoose.Schema({
   status:          { type: String, enum: ['running', 'done', 'failed'], default: 'running' },
   totalCount:      { type: Number, default: 0 },
   sentCount:       { type: Number, default: 0 },
+  deliveredCount:  { type: Number, default: 0 },
+  readCount:       { type: Number, default: 0 },
   failedCount:     { type: Number, default: 0 },
   pricePerMsg:     { type: Number, default: 0 }, // in paise
   costPaise:       { type: Number, default: 0 },

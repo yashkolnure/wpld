@@ -133,20 +133,9 @@ export const createCampaign = async (req, res) => {
 export const getCampaigns = async (req, res) => {
   try {
     const campaigns = await Campaign.find({ userId: req.user._id }).sort('-createdAt').limit(50);
-
-    // Enrich with live delivered/read counts from Message collection
-    // (webhook updates Message.status in real-time; campaign doc only stores sent/failed)
-    // deliveredCount = delivered OR read (read implies delivered)
-    // readCount      = read only
-    const enriched = await Promise.all(campaigns.map(async c => {
-      const [delivered, read] = await Promise.all([
-        Message.countDocuments({ 'metadata.campaignId': c._id, status: { $in: ['delivered', 'read'] } }),
-        Message.countDocuments({ 'metadata.campaignId': c._id, status: 'read' }),
-      ]);
-      return { ...c.toObject(), deliveredCount: delivered, readCount: read };
-    }));
-
-    res.json(enriched);
+    // deliveredCount and readCount are stored directly on the Campaign doc,
+    // incremented in real-time by the webhook status handler
+    res.json(campaigns);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

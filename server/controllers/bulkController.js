@@ -130,18 +130,9 @@ export const getBulkCampaigns = async (req, res) => {
   try {
     const campaigns = await BulkCampaign.find({ userId: req.user._id }).sort('-createdAt').limit(50);
 
-    // Attach live delivery/read counts from Message collection
-    // deliveredCount = delivered OR read (read implies delivered)
-    // readCount      = read only
-    const enriched = await Promise.all(campaigns.map(async c => {
-      const [delivered, read] = await Promise.all([
-        Message.countDocuments({ 'metadata.bulkCampaignId': c._id, status: { $in: ['delivered', 'read'] } }),
-        Message.countDocuments({ 'metadata.bulkCampaignId': c._id, status: 'read' }),
-      ]);
-      return { ...c.toObject(), deliveredCount: delivered, readCount: read };
-    }));
-
-    res.json(enriched);
+    // deliveredCount and readCount are stored on the BulkCampaign doc,
+    // incremented in real-time by the webhook status handler
+    res.json(campaigns);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

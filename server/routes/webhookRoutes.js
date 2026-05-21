@@ -70,13 +70,26 @@ router.post("/webhook", async (req, res) => {
       { returnDocument: 'after' }
     );
 
-    // If a post-send failure comes in, increment the campaign failedCount
-    if (newStatus === 'failed' && updated?.metadata) {
+    // On every status update, increment the matching counter on the campaign doc
+    if (updated?.metadata && ['delivered', 'read', 'failed'].includes(newStatus)) {
       const { campaignId, bulkCampaignId } = updated.metadata;
-      if (campaignId) {
-        await Campaign.findByIdAndUpdate(campaignId, { $inc: { failedCount: 1 } });
-      } else if (bulkCampaignId) {
-        await BulkCampaign.findByIdAndUpdate(bulkCampaignId, { $inc: { failedCount: 1 } });
+      const prevStatus = updated.status; // status BEFORE this update (returnDocument:'after' gives new, so check what changed)
+
+      // Only increment delivered once (not again when it moves to read)
+      // Only increment read once
+      // delivered: transition from 'sent' → 'delivered'
+      // read:      transition from 'delivered' → 'read'  (don't double-count delivered)
+      const inc = {};
+      if (newStatus === 'delivered') inc.deliveredCount = 1;
+      if (newStatus === 'read')      { inc.readCount = 1; inc.deliveredCount = 1; } // read implies delivered
+      if (newStatus === 'failed')    inc.failedCount = 1;
+
+      if (Object.keys(inc).length > 0) {
+        if (campaignId) {
+          await Campaign.findByIdAndUpdate(campaignId, { $inc: inc });
+        } else if (bulkCampaignId) {
+          await BulkCampaign.findByIdAndUpdate(bulkCampaignId, { $inc: inc });
+        }
       }
     }
 
