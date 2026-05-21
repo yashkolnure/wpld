@@ -75,13 +75,16 @@ router.post("/webhook", async (req, res) => {
       const { campaignId, bulkCampaignId } = updated.metadata;
       const prevStatus = updated.status; // status BEFORE this update (returnDocument:'after' gives new, so check what changed)
 
-      // Only increment delivered once (not again when it moves to read)
-      // Only increment read once
-      // delivered: transition from 'sent' → 'delivered'
-      // read:      transition from 'delivered' → 'read'  (don't double-count delivered)
+      // Meta fires webhooks in order: sent → delivered → read
+      // deliveredCount counts every message that reached the device (delivered OR later read)
+      // readCount counts messages the user opened
+      // 'delivered' webhook always arrives before 'read', so:
+      //   delivered → inc deliveredCount only
+      //   read      → inc readCount only (deliveredCount was already incremented earlier)
+      //   failed    → inc failedCount only
       const inc = {};
       if (newStatus === 'delivered') inc.deliveredCount = 1;
-      if (newStatus === 'read')      { inc.readCount = 1; inc.deliveredCount = 1; } // read implies delivered
+      if (newStatus === 'read')      inc.readCount = 1;
       if (newStatus === 'failed')    inc.failedCount = 1;
 
       if (Object.keys(inc).length > 0) {
