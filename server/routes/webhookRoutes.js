@@ -5,6 +5,8 @@ import WhatsApp from '../models/WhatsApp.js';
 import Contact from '../models/Contact.js';
 import Workflow from '../models/Workflow.js';
 import Message from '../models/Message.js';
+import Campaign from '../models/Campaign.js';
+import BulkCampaign from '../models/BulkCampaign.js';
 import { sendPushNotification } from '../services/notificationService.js';
 
 const router = express.Router();
@@ -63,13 +65,20 @@ router.post("/webhook", async (req, res) => {
     }
 
     const updated = await Message.findOneAndUpdate(
-      {
-        messageId: wamid,
-        status: { $ne: "read" },
-      },
+      { messageId: wamid, status: { $ne: "read" } },
       { $set: updateFields },
       { returnDocument: 'after' }
     );
+
+    // If a post-send failure comes in, increment the campaign failedCount
+    if (newStatus === 'failed' && updated?.metadata) {
+      const { campaignId, bulkCampaignId } = updated.metadata;
+      if (campaignId) {
+        await Campaign.findByIdAndUpdate(campaignId, { $inc: { failedCount: 1 } });
+      } else if (bulkCampaignId) {
+        await BulkCampaign.findByIdAndUpdate(bulkCampaignId, { $inc: { failedCount: 1 } });
+      }
+    }
 
     console.log(`Status update for WAMID ${wamid}: ${newStatus}. DB update result:`, updated ? "Success" : "No matching message found");
   } catch (err) {

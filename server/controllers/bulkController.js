@@ -131,9 +131,11 @@ export const getBulkCampaigns = async (req, res) => {
     const campaigns = await BulkCampaign.find({ userId: req.user._id }).sort('-createdAt').limit(50);
 
     // Attach live delivery/read counts from Message collection
+    // deliveredCount = delivered OR read (read implies delivered)
+    // readCount      = read only
     const enriched = await Promise.all(campaigns.map(async c => {
       const [delivered, read] = await Promise.all([
-        Message.countDocuments({ 'metadata.bulkCampaignId': c._id, status: 'delivered' }),
+        Message.countDocuments({ 'metadata.bulkCampaignId': c._id, status: { $in: ['delivered', 'read'] } }),
         Message.countDocuments({ 'metadata.bulkCampaignId': c._id, status: 'read' }),
       ]);
       return { ...c.toObject(), deliveredCount: delivered, readCount: read };
