@@ -49,5 +49,8 @@ const messageSchema = new mongoose.Schema(
 messageSchema.index({ contactId: 1, createdAt: 1 });
 // Deduplication — one wamid per user (Meta can send the same webhook multiple times)
 messageSchema.index({ userId: 1, messageId: 1 }, { unique: true, sparse: true });
+// Campaign delivery stats — speeds up getCampaigns enrichment queries
+messageSchema.index({ 'metadata.campaignId': 1, status: 1 }, { sparse: true });
+messageSchema.index({ 'metadata.bulkCampaignId': 1, status: 1 }, { sparse: true });
 
 export default mongoose.model("Message", messageSchema);
