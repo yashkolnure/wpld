@@ -25,10 +25,11 @@ export default function Header() {
   }, [mobileMenuOpen]);
 
   const navLinks = [
-    { name: "Features",  id: "features"  },
-    { name: "Use Cases", id: "usecases"  },
-    { name: "Pricing",   id: "pricing"   },
-    { name: "Reviews",   id: "reviews"   },
+    { name: "Features",   id: "features"  },
+    { name: "Use Cases",  id: "usecases"  },
+    { name: "Pricing",    id: "pricing"   },
+    { name: "Compare",    id: "compare"   },
+    { name: "Reviews",    id: "reviews"   },
   ];
 
   const handleNav = (e, id) => {

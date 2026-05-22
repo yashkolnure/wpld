@@ -808,7 +808,7 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <PricingComparisonSection />
+          <div id="compare"><PricingComparisonSection /></div>
         </div>
       </section>
 
