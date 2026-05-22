@@ -44,51 +44,38 @@ function HeroIllustration() {
   },[]);
 
   return (
-    <div style={{position:"relative", width:"100%", minHeight:480}}>
-
-      {/* ── Centre image ── */}
+    <div style={{position:"relative", width:"100%"}}>
       <img
         src="/images/hero-phone.webp"
         alt="WPLeads WhatsApp automation"
         style={{
           display:"block",
           width:"100%",
-          maxWidth:560,
-          margin:"0 auto",
-          filter:"drop-shadow(0 30px 60px rgba(0,0,0,0.14))",
+          borderRadius:16,
           animation:"wpl-float 7s ease-in-out infinite",
-          position:"relative",
-          zIndex:10,
+          filter:"drop-shadow(0 20px 40px rgba(0,0,0,0.12))",
         }}
       />
 
-      {/* ── Messages counter — top right, fixed pixels ── */}
-      <div style={{
-        position:"absolute", top:16, right:0,
-        zIndex:20, animation:"wpl-float3 6s ease-in-out infinite 0.8s",
-        filter:"drop-shadow(0 6px 20px rgba(0,0,0,0.09))",
-      }}>
-        <div style={{background:"#fff",borderRadius:50,padding:"9px 16px",display:"flex",alignItems:"center",gap:10,boxShadow:"0 4px 18px rgba(0,0,0,0.08)",border:"1px solid rgba(0,0,0,0.05)"}}>
-          <div style={{width:34,height:34,borderRadius:"50%",background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 3px 8px rgba(37,211,102,0.35)"}}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      {/* messages sent — anchored inside top-left of image */}
+      <div style={{position:"absolute",top:16,left:16,zIndex:20,animation:"wpl-float2 6s ease-in-out infinite 0.8s"}}>
+        <div style={{background:"#fff",borderRadius:50,padding:"7px 14px",display:"flex",alignItems:"center",gap:9,boxShadow:"0 4px 16px rgba(0,0,0,0.12)",border:"1px solid rgba(0,0,0,0.06)"}}>
+          <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
           </div>
           <div>
-            <div style={{fontSize:16,fontWeight:900,color:"#111",fontFamily:"system-ui",letterSpacing:"-0.04em",lineHeight:1}}>{sent.toLocaleString()}</div>
-            <div style={{fontSize:9,color:"#6b7280",fontFamily:"system-ui",marginTop:2}}>messages sent</div>
+            <div style={{fontSize:14,fontWeight:900,color:"#111",fontFamily:"system-ui",letterSpacing:"-0.03em",lineHeight:1}}>{sent.toLocaleString()}</div>
+            <div style={{fontSize:8,color:"#6b7280",fontFamily:"system-ui",marginTop:1}}>messages sent</div>
           </div>
         </div>
       </div>
 
-      {/* ── AI Bot pill — bottom right, fixed pixels ── */}
-      <div style={{
-        position:"absolute", bottom:16, right:0,
-        zIndex:20, animation:"wpl-float2 6.5s ease-in-out infinite 1.5s",
-        filter:"drop-shadow(0 4px 14px rgba(15,23,42,0.25))",
-      }}>
-        <div style={{background:"#0f172a",borderRadius:50,padding:"9px 18px",display:"flex",alignItems:"center",gap:9,boxShadow:"0 6px 18px rgba(15,23,42,0.28)"}}>
-          <div style={{width:8,height:8,borderRadius:"50%",background:"#25d366",boxShadow:"0 0 8px #25d366",animation:"wpl-ping 1.4s ease-in-out infinite",flexShrink:0}}/>
-          <span style={{fontSize:11,fontWeight:700,color:"#fff",fontFamily:"system-ui",whiteSpace:"nowrap"}}>AI Bot Active</span>
-          <span style={{fontSize:10,fontWeight:600,color:"#25d366",fontFamily:"'DM Mono',monospace",whiteSpace:"nowrap"}}>+{leads} leads</span>
+      {/* AI Bot pill — anchored inside bottom-left of image */}
+      <div style={{position:"absolute",bottom:16,left:16,zIndex:20,animation:"wpl-float3 6.5s ease-in-out infinite 1.5s"}}>
+        <div style={{background:"#0f172a",borderRadius:50,padding:"7px 14px",display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 14px rgba(15,23,42,0.3)"}}>
+          <div style={{width:7,height:7,borderRadius:"50%",background:"#25d366",boxShadow:"0 0 6px #25d366",animation:"wpl-ping 1.4s ease-in-out infinite",flexShrink:0}}/>
+          <span style={{fontSize:10,fontWeight:700,color:"#fff",fontFamily:"system-ui",whiteSpace:"nowrap"}}>AI Bot Active</span>
+          <span style={{fontSize:9,fontWeight:600,color:"#25d366",fontFamily:"'DM Mono',monospace",whiteSpace:"nowrap"}}>+{leads} leads</span>
         </div>
       </div>
     </div>
