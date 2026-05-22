@@ -274,95 +274,6 @@ const testimonials = [
 
 const logos = ["QuickKart","Finova","Bolt Co.","Nuvora","ShopFlow","PrimeHub","ZoomCart","NexaHQ"];
 
-/* ─────────────────────────────
-   PHONE MOCKUP COMPONENT
-───────────────────────────── */
-function WaPhone({ messages, brandName, brandEmoji = "🤖", headerBg = "linear-gradient(90deg,#065f56,#0d9488)" }) {
-  return (
-    <div style={{
-      width: 260, margin: "0 auto",
-      filter: "drop-shadow(0 40px 60px rgba(0,0,0,0.18)) drop-shadow(0 8px 20px rgba(0,0,0,0.1))",
-    }}>
-      {/* Phone shell */}
-      <div style={{ background: "linear-gradient(170deg,#1c1c2e,#12122a)", borderRadius: 40, padding: "10px 8px", border: "1.5px solid rgba(255,255,255,0.1)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)" }}>
-        <div style={{ background: "#0c0c1c", borderRadius: 33, overflow: "hidden" }}>
-          {/* Notch */}
-          <div style={{ height: 26, background: "#111", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: 56, height: 5, background: "rgba(255,255,255,0.12)", borderRadius: 10 }} />
-          </div>
-          {/* WA Header */}
-          <div style={{ background: headerBg, padding: "10px 12px", display: "flex", alignItems: "center", gap: 9 }}>
-            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,#25d366,#16a34a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, boxShadow: "0 2px 8px rgba(37,211,102,0.4)" }}>{brandEmoji}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#fff", fontSize: 11, fontWeight: 700, fontFamily: "system-ui" }}>{brandName}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 2 }}>
-                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", animation: "wpl-ping 1.8s ease-in-out infinite" }} />
-                <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 8, fontFamily: "system-ui" }}>online</span>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 5 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.75a16 16 0 006.13 6.13l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg>
-            </div>
-          </div>
-          {/* Chat area */}
-          <div style={{ minHeight: 320, padding: "10px 9px", display: "flex", flexDirection: "column", gap: 7, background: "#ece5dd", backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000' fill-opacity='0.018'%3E%3Cpath d='M50 50v-10h-4v10h-10v4h10v10h4v-10h10v-4H50z'/%3E%3C/g%3E%3C/svg%3E")` }}>
-            <div style={{ textAlign: "center", fontSize: 8, color: "#8a9ba8", background: "rgba(255,255,255,0.7)", borderRadius: 8, padding: "2px 10px", alignSelf: "center", fontFamily: "system-ui", fontWeight: 600 }}>TODAY</div>
-            {messages.map((m, i) => (
-              <div key={i}>
-                {m.type === "image" && (
-                  <div style={{ borderRadius: "12px 12px 12px 4px", overflow: "hidden", maxWidth: "84%", boxShadow: "0 1px 3px rgba(0,0,0,0.12)" }}>
-                    <div style={{ background: m.bg || "linear-gradient(135deg,#0d9488,#065f56)", height: 90, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 4 }}>
-                      <span style={{ fontSize: 22 }}>{m.emoji || "🖼️"}</span>
-                      <span style={{ fontSize: 8, fontWeight: 800, color: "#fff", letterSpacing: 1.5, textTransform: "uppercase", fontFamily: "system-ui" }}>{m.label}</span>
-                    </div>
-                  </div>
-                )}
-                {m.type === "bot" && (
-                  <div style={{ maxWidth: "84%", alignSelf: "flex-start", animation: "wpl-fadeup 0.3s ease both" }}>
-                    <div style={{ borderRadius: "12px 12px 12px 4px", padding: "8px 10px", background: "#fff", fontSize: 9.5, lineHeight: 1.55, color: "#111", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", fontFamily: "system-ui" }}>
-                      <div style={{ fontSize: 7.5, fontWeight: 700, color: "#065f56", marginBottom: 3, letterSpacing: 0.8, textTransform: "uppercase" }}>{brandName}</div>
-                      <span style={{ whiteSpace: "pre-line" }}>{m.text}</span>
-                      <div style={{ fontSize: 7, color: "#94a3b8", textAlign: "right", marginTop: 3 }}>10:14 am</div>
-                    </div>
-                  </div>
-                )}
-                {m.type === "buttons" && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4, maxWidth: "84%" }}>
-                    {m.btns.map(b => (
-                      <div key={b} style={{ textAlign: "center", fontSize: 9, color: "#065f56", fontWeight: 700, border: "1px solid rgba(37,211,102,0.35)", borderRadius: 8, padding: "5px 8px", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.06)", fontFamily: "system-ui" }}>{b}</div>
-                    ))}
-                  </div>
-                )}
-                {m.type === "user" && (
-                  <div style={{ maxWidth: "84%", alignSelf: "flex-end", marginLeft: "auto" }}>
-                    <div style={{ borderRadius: "12px 12px 4px 12px", padding: "8px 10px", background: "#d9fdd3", fontSize: 9.5, lineHeight: 1.55, color: "#111", boxShadow: "0 1px 3px rgba(0,0,0,0.08)", fontFamily: "system-ui" }}>
-                      {m.text}
-                      <div style={{ fontSize: 7, color: "#94a3b8", textAlign: "right", marginTop: 3, display: "flex", justifyContent: "flex-end", gap: 2 }}>
-                        10:14 am
-                        <svg width="11" height="7" viewBox="0 0 16 11" fill="none"><path d="M1 5.5L5 9.5L10 2" stroke="#53bdeb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /><path d="M6 5.5L10 9.5L15 2" stroke="#53bdeb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          {/* Input bar */}
-          <div style={{ background: "#f0f0f0", padding: "7px 10px", display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ flex: 1, background: "#fff", borderRadius: 22, padding: "5px 12px", fontSize: 8.5, color: "#adb5bd", fontFamily: "system-ui" }}>Message</div>
-            <div style={{ width: 26, height: 26, borderRadius: "50%", background: "linear-gradient(135deg,#25d366,#16a34a)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 14.93V13H7v-2h6V6.07l6 5.43-6 5.43z" /></svg>
-            </div>
-          </div>
-          {/* Bottom bar */}
-          <div style={{ height: 18, background: "#111", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: 40, height: 3, background: "rgba(255,255,255,0.2)", borderRadius: 10 }} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ─────────────────────────────
    MAIN PAGE
@@ -616,18 +527,11 @@ export default function LandingPage() {
                   <div style={{ fontSize: 9.5, color: "rgba(0,0,0,0.4)" }}>Responding in 0ms</div>
                 </div>
               </div>
-              <div style={{ animation: "wpl-float2 6s ease-in-out infinite", zIndex: 10 }}>
-                <WaPhone
-                  brandName="ABC Store ✓"
-                  brandEmoji="🛒"
-                  messages={[
-                    { type: "image", emoji: "🛍️", label: "Online Store", bg: "linear-gradient(135deg,#0d9488,#065f56)" },
-                    { type: "bot", text: "Hi Amit,\n\nWelcome to ABC Store on WhatsApp! 🏪\nHow can we assist you today?" },
-                    { type: "buttons", btns: ["Get Exclusive Offers", "Track My Order", "Get Help from Support"] },
-                    { type: "user", text: "Get Exclusive Offers" },
-                  ]}
-                />
-              </div>
+              <img
+                src="/images/usecase2.png"
+                alt="E-commerce WhatsApp automation"
+                style={{ width: "100%", maxWidth: 480, borderRadius: 20, filter: "drop-shadow(0 30px 60px rgba(0,0,0,0.14))", display: "block", margin: "0 auto", zIndex: 10, position: "relative" }}
+              />
             </div>
           </div>
 
@@ -647,18 +551,11 @@ export default function LandingPage() {
                 <div style={{ fontSize: 9, fontWeight: 600, color: "rgba(0,0,0,0.5)", lineHeight: 1.4 }}>Send Reminders &<br />Updates on</div>
                 <div style={{ fontSize: 11, fontWeight: 900, color: "#25d366" }}>WhatsApp</div>
               </div>
-              <div style={{ animation: "wpl-float3 7s ease-in-out infinite", zIndex: 10 }}>
-                <WaPhone
-                  brandName="Spice Restaurant ✓"
-                  brandEmoji="🍛"
-                  headerBg="linear-gradient(90deg,#b45309,#d97706)"
-                  messages={[
-                    { type: "image", emoji: "🍛", label: "Today's Special", bg: "linear-gradient(135deg,#d97706,#b45309)" },
-                    { type: "bot", text: "Hello Riya,\nYour order at Spice Restaurant is confirmed. 🎉\n\n📋 Order ID: #SG7845\n🍽️ Paneer Masala, Naan (2)\n💰 ₹1,150 | Paid via UPI\n📍 45 MG Road, Bengaluru" },
-                    { type: "buttons", btns: ["Track Order", "Contact Support"] },
-                  ]}
-                />
-              </div>
+              <img
+                src="/images/usecase3.webp"
+                alt="Restaurant WhatsApp automation"
+                style={{ width: "100%", maxWidth: 480, borderRadius: 20, filter: "drop-shadow(0 30px 60px rgba(0,0,0,0.14))", display: "block", margin: "0 auto", zIndex: 10, position: "relative" }}
+              />
             </div>
             {/* Text */}
             <div style={{ order: isMobile ? 0 : 1 }}>
@@ -696,68 +593,13 @@ export default function LandingPage() {
                 ))}
               </div>
             </div>
-            {/* Phone + Workflow nodes visual */}
-            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 540 }}>
-              {/* Left: Flow Start Node */}
-              <div style={{ position: "absolute", left: 0, top: "20%", background: "#fff", borderRadius: 14, padding: "14px 16px", width: 155, boxShadow: "0 8px 28px rgba(0,0,0,0.09)", border: "2px solid #16a34a", zIndex: 20, animation: "wpl-float2 5s ease-in-out infinite" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                  <div style={{ width: 8, height: 20, background: "#16a34a", borderRadius: 3 }} />
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#16a34a" }}>⚡ Flow Start</span>
-                </div>
-                {["hi", "hello", "start"].map(k => (
-                  <div key={k} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 7, padding: "4px 8px", marginBottom: 4, fontSize: 10.5, color: "#0a0a0a", fontWeight: 600, fontFamily: "'DM Mono',monospace" }}>
-                    {k} <span style={{ color: "#94a3b8", fontSize: 10 }}>×</span>
-                  </div>
-                ))}
-                {/* Arrow */}
-                <svg style={{ position: "absolute", right: -26, top: "55%", transform: "translateY(-50%)" }} width="26" height="12" viewBox="0 0 26 12">
-                  <path d="M0 6h22M16 1l6 5-6 5" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeDasharray="4 2" fill="none" />
-                </svg>
-              </div>
-              {/* Left bottom: Message Node */}
-              <div style={{ position: "absolute", left: 0, bottom: "15%", background: "#fff", borderRadius: 14, padding: "14px 16px", width: 155, boxShadow: "0 8px 28px rgba(0,0,0,0.09)", border: "2px solid #2563eb", zIndex: 20, animation: "wpl-float3 6s ease-in-out infinite 0.8s" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                  <div style={{ width: 8, height: 20, background: "#2563eb", borderRadius: 3 }} />
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#2563eb" }}>💬 Message</span>
-                </div>
-                <div style={{ fontSize: 9.5, color: "#374151", lineHeight: 1.5, background: "#f8fafc", borderRadius: 8, padding: "8px 10px", border: "1px solid #e2e8f0" }}>
-                  Hello {"{name}"}!<br />How can we assist<br />you today?
-                </div>
-                <svg style={{ position: "absolute", right: -26, top: "50%", transform: "translateY(-50%)" }} width="26" height="12" viewBox="0 0 26 12">
-                  <path d="M0 6h22M16 1l6 5-6 5" stroke="#2563eb" strokeWidth="1.8" strokeLinecap="round" strokeDasharray="4 2" fill="none" />
-                </svg>
-              </div>
-              {/* Phone center */}
-              <div style={{ animation: "wpl-float2 7s ease-in-out infinite", zIndex: 10 }}>
-                <WaPhone
-                  brandName="ADNEC Group ✓"
-                  brandEmoji="🏢"
-                  headerBg="linear-gradient(90deg,#1d4ed8,#2563eb)"
-                  messages={[
-                    { type: "user", text: "Hello" },
-                    { type: "bot", text: "Hello Saurabh!\nHow can we assist you today?" },
-                    { type: "buttons", btns: ["Upcoming Events", "Explore other options"] },
-                  ]}
-                />
-              </div>
-              {/* Right: Media + Buttons card */}
-              <div style={{ position: "absolute", right: 0, top: "10%", background: "#fff", borderRadius: 14, padding: "14px 16px", width: 155, boxShadow: "0 8px 28px rgba(0,0,0,0.09)", border: "2px solid #8b5cf6", zIndex: 20, animation: "wpl-float3 5.5s ease-in-out infinite 0.4s" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                  <div style={{ width: 8, height: 20, background: "#8b5cf6", borderRadius: 3 }} />
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#8b5cf6" }}>🖼️ Media + Buttons</span>
-                </div>
-                <div style={{ height: 60, background: "linear-gradient(135deg,#8b5cf6,#6d28d9)", borderRadius: 8, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🎪</div>
-                <div style={{ fontSize: 9, color: "#374151", lineHeight: 1.4, marginBottom: 6 }}>The summit event details...</div>
-                <div style={{ textAlign: "center", fontSize: 9.5, color: "#8b5cf6", fontWeight: 700, border: "1px solid rgba(139,92,246,0.3)", borderRadius: 6, padding: "3px 0" }}>× Register</div>
-              </div>
-              {/* Right bottom: Message node */}
-              <div style={{ position: "absolute", right: 0, bottom: "12%", background: "#fff", borderRadius: 14, padding: "12px 14px", width: 155, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", border: "2px solid #0d9488", zIndex: 20, animation: "wpl-float2 6s ease-in-out infinite 1.5s" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                  <div style={{ width: 8, height: 20, background: "#0d9488", borderRadius: 3 }} />
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#0d9488" }}>💬 Message</span>
-                </div>
-                <div style={{ fontSize: 9.5, color: "#374151", lineHeight: 1.4 }}>You can find upcoming events on our website.</div>
-              </div>
+            {/* Workflow Builder Image */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <img
+                src="/images/usecase1.webp"
+                alt="Visual workflow flow builder"
+                style={{ width: "100%", maxWidth: 580, borderRadius: 20, filter: "drop-shadow(0 30px 60px rgba(0,0,0,0.12))", display: "block", margin: "0 auto" }}
+              />
             </div>
           </div>
         </div>
