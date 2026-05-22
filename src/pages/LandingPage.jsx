@@ -44,65 +44,20 @@ function HeroIllustration() {
   },[]);
 
   return (
-    <div style={{position:"relative",width:"100%",height:600,overflow:"visible",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{position:"relative",width:"100%",overflow:"visible",display:"flex",alignItems:"center",justifyContent:"center"}}>
 
-      {/* ── Centre image ── */}
-      <div style={{position:"relative",zIndex:10,animation:"wpl-float 7s ease-in-out infinite",width:"100%",maxWidth:560}}>
+      {/* ── Centre image — the photo already has phone, cards, bubble, WA logo, cart icon ── */}
+      <div style={{position:"relative",zIndex:10,animation:"wpl-float 7s ease-in-out infinite",width:"100%",maxWidth:580}}>
         <img
           src="/images/hero-phone.webp"
           alt="WPLeads WhatsApp automation"
-          style={{width:"100%",display:"block",filter:"drop-shadow(0 40px 80px rgba(0,0,0,0.18))"}}
+          style={{width:"100%",display:"block",filter:"drop-shadow(0 30px 60px rgba(0,0,0,0.14))"}}
         />
       </div>
 
-      {/* ── TOP-LEFT  · Smartwatch product card ── */}
-      <div style={{position:"absolute",top:"6%",left:"-4%",zIndex:20,animation:"wpl-float2 5.5s ease-in-out infinite",filter:"drop-shadow(0 12px 28px rgba(0,0,0,0.12))"}}>
-        <div style={{background:"#fff",borderRadius:18,padding:"14px 16px",width:210,boxShadow:"0 6px 28px rgba(0,0,0,0.10)",border:"1px solid rgba(0,0,0,0.06)"}}>
-          <div style={{height:90,background:"linear-gradient(135deg,#1e293b,#334155)",borderRadius:12,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:34,overflow:"hidden",position:"relative"}}>
-            ⌚
-            <div style={{position:"absolute",bottom:6,right:8,fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.5)",fontFamily:"'DM Mono',monospace"}}>{clock}</div>
-          </div>
-          <div style={{fontSize:13,fontWeight:800,color:"#0a0a0a",marginBottom:4,fontFamily:"system-ui"}}>Smartwatch  <span style={{color:"#25d366"}}>$999</span></div>
-          <div style={{fontSize:10.5,color:"#64748b",lineHeight:1.5,marginBottom:10,fontFamily:"system-ui"}}>You can find our latest product catalog on our official WhatsApp account.</div>
-          <div style={{display:"flex",alignItems:"center",gap:6,fontSize:11,fontWeight:700,color:"#128C7E",fontFamily:"system-ui"}}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#128C7E" strokeWidth="2.2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            View Product
-          </div>
-        </div>
-      </div>
-
-      {/* ── TOP-RIGHT  · WhatsApp logo badge ── */}
-      <div style={{position:"absolute",top:"4%",right:"-2%",zIndex:20,animation:"wpl-float3 6s ease-in-out infinite 0.8s",filter:"drop-shadow(0 8px 24px rgba(37,211,102,0.35))"}}>
-        <div style={{width:68,height:68,borderRadius:"50%",background:"#25d366",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 8px 28px rgba(37,211,102,0.45)"}}>
-          <WaIcon size={36} color="#fff"/>
-        </div>
-      </div>
-
-      {/* ── BOTTOM-LEFT  · User reply bubble ── */}
-      <div style={{position:"absolute",bottom:"8%",left:"-2%",zIndex:20,animation:"wpl-float2 6s ease-in-out infinite 1s",filter:"drop-shadow(0 8px 24px rgba(0,0,0,0.09))"}}>
-        <div style={{background:"#d9fdd3",borderRadius:"18px 18px 4px 18px",padding:"14px 18px",maxWidth:260,boxShadow:"0 4px 20px rgba(0,0,0,0.08)",border:"1px solid rgba(37,211,102,0.2)"}}>
-          <div style={{fontSize:13.5,color:"#111",fontFamily:"system-ui",lineHeight:1.55,fontWeight:500}}>Wow this is amazing! Thanks for<br/>recommending!</div>
-          <div style={{fontSize:9,color:"#94a3b8",textAlign:"right",marginTop:7,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:3,fontFamily:"system-ui"}}>
-            {clock}
-            <svg width="14" height="9" viewBox="0 0 16 11" fill="none"><path d="M1 5.5L5 9.5L10 2" stroke="#53bdeb" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 5.5L10 9.5L15 2" stroke="#53bdeb" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </div>
-        </div>
-      </div>
-
-      {/* ── BOTTOM-RIGHT  · Add to cart badge ── */}
-      <div style={{position:"absolute",bottom:"7%",right:"-3%",zIndex:20,animation:"wpl-float3 5.5s ease-in-out infinite 0.4s",filter:"drop-shadow(0 10px 28px rgba(37,99,235,0.3))"}}>
-        <div style={{width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,#2563eb,#1d4ed8)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 8px 28px rgba(37,99,235,0.4)"}}>
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-            <path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.66a2 2 0 001.99-1.61L23 6H6"/>
-            <line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/>
-          </svg>
-        </div>
-      </div>
-
-      {/* ── MID-RIGHT  · Live stats ── */}
-      <div style={{position:"absolute",top:"42%",right:"-5%",zIndex:20,animation:"wpl-float2 8s ease-in-out infinite 2s",filter:"drop-shadow(0 6px 18px rgba(0,0,0,0.10))"}}>
-        <div style={{background:"#fff",borderRadius:16,padding:"11px 16px",display:"flex",alignItems:"center",gap:11,boxShadow:"0 4px 20px rgba(0,0,0,0.08)",border:"1px solid rgba(0,0,0,0.05)"}}>
+      {/* ── TOP-RIGHT outside image · Live messages counter ── */}
+      <div style={{position:"absolute",top:"2%",right:"-8%",zIndex:20,animation:"wpl-float3 6s ease-in-out infinite 0.8s",filter:"drop-shadow(0 8px 24px rgba(0,0,0,0.10))"}}>
+        <div style={{background:"#fff",borderRadius:50,padding:"10px 18px",display:"flex",alignItems:"center",gap:11,boxShadow:"0 4px 20px rgba(0,0,0,0.09)",border:"1px solid rgba(0,0,0,0.05)"}}>
           <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 10px rgba(37,211,102,0.35)"}}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
           </div>
@@ -113,12 +68,12 @@ function HeroIllustration() {
         </div>
       </div>
 
-      {/* ── MID-LEFT  · Bot active pill ── */}
-      <div style={{position:"absolute",top:"45%",left:"-5%",zIndex:20,animation:"wpl-float3 6.5s ease-in-out infinite 1.5s",filter:"drop-shadow(0 6px 16px rgba(0,0,0,0.09))"}}>
-        <div style={{background:"#0f172a",borderRadius:50,padding:"10px 18px",display:"flex",alignItems:"center",gap:9,boxShadow:"0 6px 20px rgba(15,23,42,0.3)"}}>
+      {/* ── BOTTOM-RIGHT outside image · Bot active + leads ── */}
+      <div style={{position:"absolute",bottom:"4%",right:"-6%",zIndex:20,animation:"wpl-float2 6.5s ease-in-out infinite 1.5s",filter:"drop-shadow(0 6px 16px rgba(0,0,0,0.09))"}}>
+        <div style={{background:"#0f172a",borderRadius:50,padding:"10px 20px",display:"flex",alignItems:"center",gap:9,boxShadow:"0 6px 20px rgba(15,23,42,0.3)"}}>
           <div style={{width:8,height:8,borderRadius:"50%",background:"#25d366",boxShadow:"0 0 8px #25d366",animation:"wpl-ping 1.4s ease-in-out infinite"}}/>
           <span style={{fontSize:11,fontWeight:700,color:"#fff",fontFamily:"system-ui"}}>AI Bot Active</span>
-          <span style={{fontSize:10,fontWeight:600,color:"#25d366",fontFamily:"'DM Mono',monospace"}}>+{leads} leads</span>
+          <span style={{fontSize:10,fontWeight:600,color:"#25d366",fontFamily:"'DM Mono',monospace"}}>+{leads} leads today</span>
         </div>
       </div>
     </div>
