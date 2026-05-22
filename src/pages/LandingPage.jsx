@@ -20,173 +20,337 @@ const CheckIcon = ({ dark }) => (
 );
 
 /* ─────────────────────────────
-   HERO ILLUSTRATION (Unchanged)
+   HERO ILLUSTRATION
 ───────────────────────────── */
-const CHAT = [
-  { type:"bot",  text:"Hi! 👋 Welcome to WPLeads.\nHow can I help you today?", btns:["Browse Plans","See Features","Talk to Sales"] },
+const HERO_CHAT = [
+  { type:"bot",  text:"Hi Yash! 👋 Welcome to WPLeads.\nHow can I help you today?", btns:["Browse Plans","See Features","Talk to Sales"] },
   { type:"user", text:"Browse Plans" },
-  { type:"bot",  text:"Great! 🎉 Plans start from ₹0/month.\nStarter is free forever!" },
-  { type:"user", text:"Wow, free forever? That's amazing!" },
+  { type:"bot",  text:"Great choice! 🎉\nPlans start from ₹0/month.\nStarter is FREE forever!", btns:["Start Free Now","See All Plans"] },
+  { type:"user", text:"Start Free Now 🚀" },
+  { type:"bot",  text:"✅ Account created!\nYour API is ready in 5 mins.\n📱 Connect your number to begin." },
+  { type:"user", text:"That's amazing, free forever?" },
+  { type:"bot",  text:"Yes! 100% free to start.\nNo credit card required. 🙌" },
 ];
 
 function HeroIllustration() {
-  const [msgs, setMsgs]     = useState([]);
-  const [typing, setTyping] = useState(false);
-  const chatRef             = useRef(null);
+  const [msgs,    setMsgs]    = useState([]);
+  const [typing,  setTyping]  = useState(false);
+  const [clock,   setClock]   = useState("");
+  const [diOpen,  setDiOpen]  = useState(false);
+  const [sent,    setSent]    = useState(847219);
+  const [leads,   setLeads]   = useState(3);
+  const [diMsg,   setDiMsg]   = useState("New message");
+  const chatRef               = useRef(null);
 
+  /* live clock */
   useEffect(()=>{
-    if(chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    const tick=()=>setClock(new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}));
+    tick(); const t=setInterval(tick,1000); return ()=>clearInterval(t);
+  },[]);
+
+  /* incrementing counters */
+  useEffect(()=>{
+    const t=setInterval(()=>setSent(c=>c+Math.floor(Math.random()*4+1)),1700);
+    return ()=>clearInterval(t);
+  },[]);
+  useEffect(()=>{
+    const t=setInterval(()=>setLeads(c=>c+1),8000);
+    return ()=>clearInterval(t);
+  },[]);
+
+  /* auto-scroll chat */
+  useEffect(()=>{
+    if(chatRef.current) chatRef.current.scrollTop=chatRef.current.scrollHeight;
   },[msgs,typing]);
 
+  /* Dynamic Island expand on new message */
+  useEffect(()=>{
+    const expand=(label)=>{ setDiMsg(label); setDiOpen(true); setTimeout(()=>setDiOpen(false),2800); };
+    const t1=setTimeout(()=>expand("New message"),1600);
+    const t2=setInterval(()=>expand("WPLeads Bot"),7000);
+    return ()=>{ clearTimeout(t1); clearInterval(t2); };
+  },[]);
+
+  /* chat sequence */
   useEffect(()=>{
     let t;
     const run=(i)=>{
-      if(i>=CHAT.length){ t=setTimeout(()=>{ setMsgs([]); setTyping(false); t=setTimeout(()=>run(0),700); },4500); return; }
-      const s=CHAT[i];
-      if(s.type==="bot"){ setTyping(true); t=setTimeout(()=>{ setTyping(false); setMsgs(p=>[...p,s]); t=setTimeout(()=>run(i+1),1500); },1300); }
-      else { t=setTimeout(()=>{ setMsgs(p=>[...p,s]); t=setTimeout(()=>run(i+1),900); },500); }
+      if(i>=HERO_CHAT.length){ t=setTimeout(()=>{ setMsgs([]); setTyping(false); t=setTimeout(()=>run(0),900); },5000); return; }
+      const s=HERO_CHAT[i];
+      if(s.type==="bot"){ setTyping(true); t=setTimeout(()=>{ setTyping(false); setMsgs(p=>[...p,s]); t=setTimeout(()=>run(i+1),1700); },1300); }
+      else { t=setTimeout(()=>{ setMsgs(p=>[...p,s]); t=setTimeout(()=>run(i+1),1000); },500); }
     };
-    t=setTimeout(()=>run(0),600);
+    t=setTimeout(()=>run(0),700);
     return ()=>clearTimeout(t);
   },[]);
 
-  const now = new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
-
   return (
-    <div style={{position:"relative",width:"100%",height:600,overflow:"visible"}}>
-      <div style={{position:"absolute",top:-80,right:-60,width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(37,211,102,0.13) 0%,transparent 65%)",pointerEvents:"none"}}/>
-      <div style={{position:"absolute",bottom:-40,left:-20,width:300,height:300,borderRadius:"50%",background:"radial-gradient(circle,rgba(37,99,235,0.08) 0%,transparent 65%)",pointerEvents:"none"}}/>
+    <div style={{position:"relative",width:"100%",height:660,overflow:"visible"}}>
 
+      {/* ── glow blobs ── */}
+      <div style={{position:"absolute",top:-80,right:-80,width:460,height:460,borderRadius:"50%",background:"radial-gradient(circle,rgba(37,211,102,0.16) 0%,transparent 65%)",pointerEvents:"none",zIndex:0}}/>
+      <div style={{position:"absolute",bottom:-50,left:-40,width:340,height:340,borderRadius:"50%",background:"radial-gradient(circle,rgba(99,102,241,0.10) 0%,transparent 65%)",pointerEvents:"none",zIndex:0}}/>
+      <div style={{position:"absolute",top:"30%",left:"30%",width:280,height:280,borderRadius:"50%",background:"radial-gradient(circle,rgba(37,211,102,0.06) 0%,transparent 65%)",pointerEvents:"none",zIndex:0}}/>
+
+      {/* ══════════════════════════════════
+           iPHONE 15 PRO  –  Dynamic Island
+         ══════════════════════════════════ */}
       <div style={{
-        position:"absolute", top:"50%", left:"50%",
-        transform:"translate(-50%,-50%) perspective(1200px) rotateY(-10deg) rotateX(3deg)",
-        transformStyle:"preserve-3d", animation:"wpl-float 6s ease-in-out infinite",
-        filter:"drop-shadow(0 40px 60px rgba(0,0,0,0.22)) drop-shadow(0 8px 20px rgba(0,0,0,0.12))",
-        zIndex:10, width:230,
+        position:"absolute",top:"50%",left:"50%",
+        transform:"translate(-50%,-50%) perspective(1400px) rotateY(-9deg) rotateX(2.5deg)",
+        transformStyle:"preserve-3d",
+        animation:"wpl-float 7s ease-in-out infinite",
+        filter:"drop-shadow(0 55px 90px rgba(0,0,0,0.26)) drop-shadow(0 12px 28px rgba(0,0,0,0.13))",
+        zIndex:10, width:298,
       }}>
-        <div style={{background:"linear-gradient(170deg,#1c1c2e 0%,#12122a 100%)",borderRadius:38,padding:"10px 8px",border:"1.5px solid rgba(255,255,255,0.1)",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.08)"}}>
-          <div style={{background:"#0c0c1c",borderRadius:30,overflow:"hidden"}}>
-            <div style={{height:26,background:"#0c0c1c",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <div style={{width:56,height:5,background:"rgba(255,255,255,0.12)",borderRadius:10}}/>
-            </div>
-            <div style={{background:"linear-gradient(90deg,#065f56,#0d9488)",padding:"10px 12px",display:"flex",alignItems:"center",gap:9}}>
-              <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0,boxShadow:"0 2px 8px rgba(37,211,102,0.4)"}}>🤖</div>
-              <div style={{flex:1}}>
-                <div style={{color:"#fff",fontSize:10.5,fontWeight:700,fontFamily:"system-ui"}}>WPLeads Bot</div>
-                <div style={{display:"flex",alignItems:"center",gap:4,marginTop:2}}>
-                  <span style={{width:5,height:5,borderRadius:"50%",background:"#4ade80",animation:"wpl-ping 1.8s ease-in-out infinite"}}/>
-                  <span style={{color:"rgba(255,255,255,0.55)",fontSize:8,fontFamily:"system-ui"}}>online</span>
+        {/* Titanium outer frame */}
+        <div style={{
+          background:"linear-gradient(160deg,#3a3a3c 0%,#1c1c1e 45%,#2c2c2e 100%)",
+          borderRadius:54, padding:"12px 10px",
+          border:"1px solid rgba(255,255,255,0.13)",
+          boxShadow:"inset 0 1px 0 rgba(255,255,255,0.12),inset 0 -1px 0 rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.5)",
+          position:"relative",
+        }}>
+          {/* Physical side buttons */}
+          <div style={{position:"absolute",left:-3,top:96, width:3,height:34,background:"#3a3a3c",borderRadius:"3px 0 0 3px"}}/>
+          <div style={{position:"absolute",left:-3,top:144,width:3,height:58,background:"#3a3a3c",borderRadius:"3px 0 0 3px"}}/>
+          <div style={{position:"absolute",left:-3,top:214,width:3,height:58,background:"#3a3a3c",borderRadius:"3px 0 0 3px"}}/>
+          <div style={{position:"absolute",right:-3,top:136,width:3,height:80,background:"#3a3a3c",borderRadius:"0 3px 3px 0"}}/>
+
+          {/* Screen bezel */}
+          <div style={{background:"#000",borderRadius:44,overflow:"hidden",position:"relative"}}>
+
+            {/* ── STATUS BAR (inside screen, behind Dynamic Island) ── */}
+            <div style={{height:56,background:"#075E54",display:"flex",alignItems:"flex-start",paddingTop:16,paddingLeft:22,paddingRight:20,position:"relative"}}>
+              {/* Clock left */}
+              <span style={{fontSize:12.5,fontWeight:700,color:"#fff",fontFamily:"system-ui",letterSpacing:"-0.02em",zIndex:2}}>{clock}</span>
+
+              {/* ─── DYNAMIC ISLAND ─── */}
+              <div style={{
+                position:"absolute", top:10, left:"50%",
+                transform:"translateX(-50%)",
+                width: diOpen ? 196 : 120,
+                height: diOpen ? 42 : 36,
+                background:"#000",
+                borderRadius:50,
+                zIndex:30,
+                transition:"width 0.42s cubic-bezier(0.34,1.56,0.64,1), height 0.42s cubic-bezier(0.34,1.56,0.64,1)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                overflow:"hidden",
+              }}>
+                {diOpen ? (
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"0 14px",animation:"wpl-fadeup 0.25s ease both"}}>
+                    <div style={{width:24,height:24,borderRadius:"50%",background:"#25d366",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 0 8px rgba(37,211,102,0.6)"}}>
+                      <WaIcon size={13} color="#fff"/>
+                    </div>
+                    <div>
+                      <div style={{fontSize:9.5,fontWeight:700,color:"#fff",lineHeight:1.2,fontFamily:"system-ui"}}>{diMsg}</div>
+                      <div style={{fontSize:8,color:"rgba(255,255,255,0.55)",fontFamily:"system-ui"}}>WPLeads Bot</div>
+                    </div>
+                    <div style={{width:7,height:7,borderRadius:"50%",background:"#25d366",marginLeft:4,animation:"wpl-ping 1s ease-in-out infinite",boxShadow:"0 0 6px #25d366"}}/>
+                  </div>
+                ) : (
+                  /* camera dot when closed */
+                  <div style={{width:11,height:11,borderRadius:"50%",background:"#1c1c1e",border:"2px solid rgba(255,255,255,0.06)"}}/>
+                )}
+              </div>
+
+              {/* Right icons */}
+              <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:5,zIndex:2}}>
+                {/* Signal bars */}
+                <div style={{display:"flex",gap:1.5,alignItems:"flex-end"}}>
+                  {[4,6,8,10].map((h,i)=>(
+                    <div key={i} style={{width:3,height:h,background:i<3?"#fff":"rgba(255,255,255,0.4)",borderRadius:1.5}}/>
+                  ))}
+                </div>
+                {/* WiFi */}
+                <svg width="15" height="11" viewBox="0 0 30 22" fill="none">
+                  <path d="M15 17a2 2 0 100 4 2 2 0 000-4z" fill="#fff"/>
+                  <path d="M8.5 11Q11.5 8 15 11Q18.5 8 21.5 11" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
+                  <path d="M3 5.5Q8.5 0 15 5.5Q21.5 0 27 5.5" stroke="rgba(255,255,255,0.45)" strokeWidth="2.2" strokeLinecap="round" fill="none"/>
+                </svg>
+                {/* Battery */}
+                <div style={{position:"relative",width:23,height:12,border:"1.8px solid rgba(255,255,255,0.75)",borderRadius:3.5}}>
+                  <div style={{position:"absolute",right:-4.5,top:"50%",transform:"translateY(-50%)",width:3,height:7,background:"rgba(255,255,255,0.45)",borderRadius:"0 2px 2px 0"}}/>
+                  <div style={{margin:2,height:"calc(100% - 4px)",width:"80%",background:"#4ade80",borderRadius:1.5}}/>
                 </div>
               </div>
             </div>
+
+            {/* ── WA HEADER ── */}
+            <div style={{background:"#075E54",padding:"8px 14px 14px",display:"flex",alignItems:"center",gap:10}}>
+              {/* Back arrow */}
+              <svg width="10" height="17" viewBox="0 0 10 17" fill="none" style={{flexShrink:0}}>
+                <path d="M9 1L1 8.5L9 16" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              {/* Avatar */}
+              <div style={{width:40,height:40,borderRadius:"50%",background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0,boxShadow:"0 3px 10px rgba(37,211,102,0.45)"}}>🤖</div>
+              <div style={{flex:1}}>
+                <div style={{color:"#fff",fontSize:13.5,fontWeight:700,fontFamily:"system-ui",letterSpacing:"-0.01em"}}>WPLeads Bot</div>
+                <div style={{display:"flex",alignItems:"center",gap:5,marginTop:2}}>
+                  <span style={{width:6,height:6,borderRadius:"50%",background:"#4ade80",boxShadow:"0 0 5px #4ade80",animation:"wpl-ping 1.8s ease-in-out infinite"}}/>
+                  <span style={{color:"rgba(255,255,255,0.72)",fontSize:9.5,fontFamily:"system-ui"}}>online · 0ms response</span>
+                </div>
+              </div>
+              {/* Icons */}
+              <div style={{display:"flex",gap:14}}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round">
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.75a16 16 0 006.13 6.13l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                </svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2">
+                  <circle cx="12" cy="5" r="1" fill="rgba(255,255,255,0.85)"/><circle cx="12" cy="12" r="1" fill="rgba(255,255,255,0.85)"/><circle cx="12" cy="19" r="1" fill="rgba(255,255,255,0.85)"/>
+                </svg>
+              </div>
+            </div>
+
+            {/* ── CHAT AREA ── */}
             <div ref={chatRef} style={{
-              height:320,padding:"10px 9px",display:"flex",flexDirection:"column",gap:7,
-              overflowY:"auto",background:"#ece5dd",scrollBehavior:"smooth",
-              backgroundImage:`url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000' fill-opacity='0.018'%3E%3Cpath d='M50 50v-10h-4v10h-10v4h10v10h4v-10h10v-4H50zM10 10V0H6v10H-4v4h10v10h4V14h10v-4H10z'/%3E%3C/g%3E%3C/svg%3E")`,
+              height:360, padding:"10px 10px 6px",
+              display:"flex", flexDirection:"column", gap:7,
+              overflowY:"auto", background:"#e5ddd5", scrollBehavior:"smooth",
+              backgroundImage:`url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23b4a99a' fill-opacity='0.13'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
             }}>
-              <div style={{textAlign:"center",fontSize:8,color:"#8a9ba8",background:"rgba(255,255,255,0.7)",borderRadius:8,padding:"2px 10px",alignSelf:"center",fontFamily:"system-ui",fontWeight:600}}>TODAY</div>
+              <div style={{textAlign:"center",fontSize:9,color:"#78909c",background:"rgba(255,255,255,0.75)",borderRadius:8,padding:"2px 12px",alignSelf:"center",fontFamily:"system-ui",fontWeight:600,boxShadow:"0 1px 2px rgba(0,0,0,0.06)"}}>TODAY</div>
+
               {msgs.map((m,i)=>(
-                <div key={i} style={{display:"flex",flexDirection:"column",maxWidth:"84%",alignSelf:m.type==="user"?"flex-end":"flex-start",animation:"wpl-fadeup 0.3s ease both"}}>
+                <div key={i} style={{display:"flex",flexDirection:"column",maxWidth:"86%",alignSelf:m.type==="user"?"flex-end":"flex-start",animation:"wpl-fadeup 0.28s ease both"}}>
                   <div style={{
-                    borderRadius:m.type==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",
-                    padding:"8px 10px", background:m.type==="user"?"#d9fdd3":"#fff",
-                    fontSize:9.5,lineHeight:1.55,color:"#111", boxShadow:"0 1px 3px rgba(0,0,0,0.08)",fontFamily:"system-ui",
+                    borderRadius:m.type==="user"?"16px 16px 4px 16px":"4px 16px 16px 16px",
+                    padding:"9px 12px",
+                    background:m.type==="user"?"#d9fdd3":"#fff",
+                    fontSize:10.5,lineHeight:1.6,color:"#111",
+                    boxShadow:"0 1px 3px rgba(0,0,0,0.09)",fontFamily:"system-ui",
                   }}>
-                    {m.type==="bot"&&<div style={{fontSize:7.5,fontWeight:700,color:"#065f56",marginBottom:3,fontFamily:"monospace",letterSpacing:0.8,textTransform:"uppercase"}}>WPLeads Bot</div>}
+                    {m.type==="bot"&&<div style={{fontSize:8,fontWeight:700,color:"#075E54",marginBottom:3,fontFamily:"'DM Mono',monospace",letterSpacing:0.8,textTransform:"uppercase"}}>WPLeads Bot</div>}
                     <span style={{whiteSpace:"pre-line"}}>{m.text}</span>
                     {m.btns&&(
-                      <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid #e9ecef",display:"flex",flexDirection:"column",gap:3}}>
+                      <div style={{marginTop:7,paddingTop:7,borderTop:"1px solid rgba(0,0,0,0.07)",display:"flex",flexDirection:"column",gap:4}}>
                         {m.btns.map(b=>(
-                          <div key={b} style={{textAlign:"center",fontSize:8.5,color:"#065f56",fontWeight:700,border:"1px solid rgba(37,211,102,0.3)",borderRadius:7,padding:"3px 6px",background:"rgba(37,211,102,0.05)"}}>{b}</div>
+                          <div key={b} style={{textAlign:"center",fontSize:9.5,color:"#128C7E",fontWeight:700,border:"1px solid rgba(18,140,126,0.35)",borderRadius:8,padding:"5px 8px",background:"rgba(18,140,126,0.05)",fontFamily:"system-ui"}}>{b}</div>
                         ))}
                       </div>
                     )}
-                    <div style={{fontSize:7,color:"#94a3b8",textAlign:"right",marginTop:3,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:2,fontFamily:"system-ui"}}>
-                      {now}
-                      {m.type==="user"&&<svg width="11" height="7" viewBox="0 0 16 11" fill="none"><path d="M1 5.5L5 9.5L10 2" stroke="#53bdeb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 5.5L10 9.5L15 2" stroke="#53bdeb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                    <div style={{fontSize:8,color:"#94a3b8",textAlign:"right",marginTop:4,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:3}}>
+                      {clock}
+                      {m.type==="user"&&<svg width="13" height="8" viewBox="0 0 16 11" fill="none"><path d="M1 5.5L5 9.5L10 2" stroke="#53bdeb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 5.5L10 9.5L15 2" stroke="#53bdeb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                     </div>
                   </div>
                 </div>
               ))}
+
               {typing&&(
-                <div style={{alignSelf:"flex-start",background:"#fff",borderRadius:"16px 16px 16px 4px",padding:"10px 14px",display:"flex",gap:5,boxShadow:"0 1px 3px rgba(0,0,0,0.08)"}}>
-                  {[0,1,2].map(i=><span key={i} style={{width:6,height:6,borderRadius:"50%",background:"#b0bec5",display:"block",animation:`wpl-bounce 1.1s ease-in-out ${i*0.18}s infinite`}}/>)}
+                <div style={{alignSelf:"flex-start",background:"#fff",borderRadius:"4px 16px 16px 16px",padding:"11px 16px",display:"flex",gap:5,boxShadow:"0 1px 3px rgba(0,0,0,0.09)",animation:"wpl-fadeup 0.25s ease both"}}>
+                  {[0,1,2].map(i=><span key={i} style={{width:7,height:7,borderRadius:"50%",background:"#90a4ae",display:"block",animation:`wpl-bounce 1.1s ease-in-out ${i*0.18}s infinite`}}/>)}
                 </div>
               )}
             </div>
-            <div style={{background:"#f0f0f0",padding:"7px 10px",display:"flex",alignItems:"center",gap:8}}>
-              <div style={{flex:1,background:"#fff",borderRadius:22,padding:"5px 12px",fontSize:8.5,color:"#adb5bd",fontFamily:"system-ui"}}>Type a message…</div>
-              <div style={{width:26,height:26,borderRadius:"50%",background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 2px 8px rgba(37,211,102,0.35)"}}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+
+            {/* ── INPUT BAR ── */}
+            <div style={{background:"#f0f2f5",padding:"8px 10px",display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:33,height:33,borderRadius:"50%",background:"#e9ecef",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8a9ba8" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+              </div>
+              <div style={{flex:1,background:"#fff",borderRadius:24,padding:"8px 14px",fontSize:10,color:"#adb5bd",fontFamily:"system-ui",boxShadow:"0 1px 2px rgba(0,0,0,0.06)"}}>Type a message…</div>
+              <div style={{width:33,height:33,borderRadius:"50%",background:"#128C7E",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 3px 10px rgba(18,140,126,0.45)"}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
               </div>
             </div>
-            <div style={{height:18,background:"#0c0c1c",display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <div style={{width:40,height:3,background:"rgba(255,255,255,0.2)",borderRadius:10}}/>
+
+            {/* ── HOME INDICATOR ── */}
+            <div style={{height:26,background:"#f0f2f5",display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <div style={{width:52,height:5,background:"rgba(0,0,0,0.16)",borderRadius:10}}/>
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{position:"absolute",top:30,left:"-5%",zIndex:20,animation:"wpl-float2 5s ease-in-out infinite",filter:"drop-shadow(0 10px 28px rgba(0,0,0,0.12))"}}>
-        <div style={{background:"#fff",borderRadius:"18px 18px 18px 4px",padding:"13px 16px",maxWidth:210,boxShadow:"0 4px 24px rgba(0,0,0,0.09)",border:"1px solid rgba(0,0,0,0.05)"}}>
-          <div style={{fontSize:8,fontWeight:700,color:"#065f56",marginBottom:5,fontFamily:"system-ui",letterSpacing:0.5,textTransform:"uppercase",display:"flex",alignItems:"center",gap:5}}>
-            <span style={{width:5,height:5,borderRadius:"50%",background:"#25d366",animation:"wpl-ping 1.5s ease-in-out infinite"}}/>
-            WPLeads Bot
+      {/* ══════════════════════════════
+           FLOATING PANELS
+         ══════════════════════════════ */}
+
+      {/* TOP-LEFT  ·  Trigger fired */}
+      <div style={{position:"absolute",top:18,left:"-8%",zIndex:20,animation:"wpl-float2 5.5s ease-in-out infinite",filter:"drop-shadow(0 10px 28px rgba(0,0,0,0.11))"}}>
+        <div style={{background:"#fff",borderRadius:"4px 18px 18px 18px",padding:"13px 16px",width:218,boxShadow:"0 4px 24px rgba(0,0,0,0.09)",border:"1px solid rgba(0,0,0,0.05)"}}>
+          <div style={{fontSize:8.5,fontWeight:700,color:"#065f56",marginBottom:6,fontFamily:"'DM Mono',monospace",letterSpacing:0.8,textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}>
+            <span style={{width:6,height:6,borderRadius:"50%",background:"#25d366",boxShadow:"0 0 6px #25d366",animation:"wpl-ping 1.5s ease-in-out infinite"}}/>
+            Trigger Fired
           </div>
-          <div style={{fontSize:12,color:"#111",fontFamily:"system-ui",lineHeight:1.55}}>⚡ Keyword <strong style={{color:"#065f56"}}>"hi"</strong> detected</div>
-          <div style={{fontSize:11,color:"#6b7280",fontFamily:"system-ui",lineHeight:1.5,marginTop:2}}>Workflow triggered in <strong style={{color:"#25d366"}}>0ms</strong></div>
-          <div style={{fontSize:9,color:"#adb5bd",textAlign:"right",marginTop:6,fontFamily:"system-ui"}}>11:42</div>
+          <div style={{fontSize:12.5,color:"#111",fontFamily:"system-ui",lineHeight:1.5,fontWeight:500}}>⚡ Keyword <strong style={{color:"#065f56"}}>"hi"</strong> detected</div>
+          <div style={{fontSize:11,color:"#6b7280",fontFamily:"system-ui",marginTop:3}}>Workflow started in <strong style={{color:"#25d366"}}>0ms</strong></div>
+          <div style={{marginTop:8,height:3,background:"#f1f5f9",borderRadius:10,overflow:"hidden"}}>
+            <div style={{height:"100%",width:"100%",background:"linear-gradient(90deg,#25d366,#16a34a)",borderRadius:10,animation:"wpl-shimmer 2s ease-in-out infinite"}}/>
+          </div>
+          <div style={{fontSize:8.5,color:"#adb5bd",textAlign:"right",marginTop:5,fontFamily:"system-ui"}}>{clock}</div>
         </div>
       </div>
 
-      <div style={{position:"absolute",bottom:55,right:"-8%",zIndex:20,animation:"wpl-float3 5.5s ease-in-out infinite 0.5s",filter:"drop-shadow(0 8px 22px rgba(0,0,0,0.10))"}}>
-        <div style={{background:"#d9fdd3",borderRadius:"18px 18px 4px 18px",padding:"12px 15px",maxWidth:200,boxShadow:"0 4px 20px rgba(0,0,0,0.07)",border:"1px solid rgba(37,211,102,0.15)"}}>
-          <div style={{fontSize:12,color:"#111",fontFamily:"system-ui",lineHeight:1.55}}>Wow, free forever?<br/>That's amazing! 🤩</div>
-          <div style={{fontSize:9,color:"#94a3b8",textAlign:"right",marginTop:6,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:3,fontFamily:"system-ui"}}>
-            11:43
-            <svg width="13" height="8" viewBox="0 0 16 11" fill="none"><path d="M1 5.5L5 9.5L10 2" stroke="#53bdeb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 5.5L10 9.5L15 2" stroke="#53bdeb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      {/* TOP-RIGHT  ·  Live message counter */}
+      <div style={{position:"absolute",top:36,right:"-6%",zIndex:20,animation:"wpl-float3 6s ease-in-out infinite 0.8s",filter:"drop-shadow(0 8px 22px rgba(0,0,0,0.10))"}}>
+        <div style={{background:"#fff",borderRadius:50,padding:"10px 18px",display:"flex",alignItems:"center",gap:12,boxShadow:"0 4px 20px rgba(0,0,0,0.08)",border:"1px solid rgba(0,0,0,0.05)"}}>
+          <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 10px rgba(37,211,102,0.35)"}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          </div>
+          <div>
+            <div style={{fontSize:18,fontWeight:900,color:"#111",fontFamily:"system-ui",letterSpacing:"-0.04em",lineHeight:1}}>{sent.toLocaleString()}</div>
+            <div style={{fontSize:9,color:"#6b7280",fontFamily:"system-ui",marginTop:2}}>messages sent</div>
           </div>
         </div>
       </div>
 
-      <div style={{position:"absolute",bottom:20,left:"-8%",zIndex:20,animation:"wpl-float2 7s ease-in-out infinite 1s",filter:"drop-shadow(0 14px 32px rgba(0,0,0,0.13))"}}>
-        <div style={{background:"#fff",borderRadius:20,padding:"16px 18px",width:200,boxShadow:"0 4px 28px rgba(0,0,0,0.08)",border:"1px solid rgba(0,0,0,0.05)"}}>
-          <div style={{fontSize:8.5,fontWeight:700,color:"rgba(0,0,0,0.3)",fontFamily:"system-ui",letterSpacing:2,marginBottom:12,textTransform:"uppercase"}}>Active Workflow</div>
+      {/* BOTTOM-LEFT  ·  Active Workflow nodes */}
+      <div style={{position:"absolute",bottom:22,left:"-9%",zIndex:20,animation:"wpl-float2 7s ease-in-out infinite 1s",filter:"drop-shadow(0 14px 32px rgba(0,0,0,0.13))"}}>
+        <div style={{background:"#fff",borderRadius:20,padding:"15px 17px",width:214,boxShadow:"0 4px 28px rgba(0,0,0,0.08)",border:"1px solid rgba(0,0,0,0.05)"}}>
+          <div style={{fontSize:8.5,fontWeight:700,color:"rgba(0,0,0,0.28)",fontFamily:"'DM Mono',monospace",letterSpacing:1.8,marginBottom:11,textTransform:"uppercase"}}>Active Workflow</div>
           {[
-            {icon:"⚡",label:'Keyword: "hi"',   color:"#16a34a", bg:"#f0fdf4", border:"#bbf7d0"},
-            {icon:"💬",label:"Send welcome msg", color:"#1d4ed8", bg:"#eff6ff", border:"#bfdbfe"},
-            {icon:"🔀",label:"Branch on reply",  color:"#b45309", bg:"#fffbeb", border:"#fde68a"},
-          ].map((n,i)=>(
+            {icon:"⚡",label:'Keyword: "hi"',   col:"#16a34a",bg:"#f0fdf4",bdr:"#bbf7d0"},
+            {icon:"💬",label:"Send welcome",     col:"#1d4ed8",bg:"#eff6ff",bdr:"#bfdbfe"},
+            {icon:"🔀",label:"Branch on reply",  col:"#b45309",bg:"#fffbeb",bdr:"#fde68a"},
+            {icon:"📤",label:"API response",     col:"#7c3aed",bg:"#f5f3ff",bdr:"#ddd6fe"},
+          ].map((n,i,a)=>(
             <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
-              <div style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"7px 9px",borderRadius:10,background:n.bg,border:`1px solid ${n.border}`}}>
-                <span style={{fontSize:12}}>{n.icon}</span>
+              <div style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"6px 9px",borderRadius:9,background:n.bg,border:`1px solid ${n.bdr}`}}>
+                <span style={{fontSize:11}}>{n.icon}</span>
                 <span style={{fontSize:10.5,fontWeight:600,color:"#1a1a1a",fontFamily:"system-ui"}}>{n.label}</span>
+                {i===0&&<span style={{marginLeft:"auto",width:6,height:6,borderRadius:"50%",background:"#25d366",animation:"wpl-ping 1.5s ease-in-out infinite"}}/>}
               </div>
-              {i<2&&<div style={{width:2,height:8,background:"rgba(0,0,0,0.07)",borderRadius:1}}/>}
+              {i<a.length-1&&<div style={{width:2,height:6,background:"rgba(0,0,0,0.08)",borderRadius:1}}/>}
             </div>
           ))}
-          <div style={{marginTop:10,padding:"7px 9px",background:"rgba(37,211,102,0.07)",borderRadius:10,display:"flex",alignItems:"center",gap:7,border:"1px solid rgba(37,211,102,0.18)"}}>
-            <span style={{width:7,height:7,borderRadius:"50%",background:"#25d366",flexShrink:0,animation:"wpl-ping 1.5s ease-in-out infinite"}}/>
+          <div style={{marginTop:9,padding:"6px 9px",background:"rgba(37,211,102,0.07)",borderRadius:9,display:"flex",alignItems:"center",gap:7,border:"1px solid rgba(37,211,102,0.18)"}}>
+            <span style={{width:7,height:7,borderRadius:"50%",background:"#25d366",flexShrink:0,animation:"wpl-ping 1.5s ease-in-out infinite",boxShadow:"0 0 6px #25d366"}}/>
             <span style={{fontSize:10,fontWeight:700,color:"#15803d",fontFamily:"system-ui"}}>Live · 0ms response</span>
           </div>
         </div>
       </div>
 
-      <div style={{position:"absolute",top:50,right:"-5%",zIndex:20,animation:"wpl-float3 6s ease-in-out infinite 0.8s",filter:"drop-shadow(0 6px 18px rgba(0,0,0,0.10))"}}>
-        <div style={{background:"#fff",borderRadius:50,padding:"11px 18px",display:"flex",alignItems:"center",gap:11,boxShadow:"0 4px 20px rgba(0,0,0,0.08)",border:"1px solid rgba(0,0,0,0.05)"}}>
-          <div style={{width:34,height:34,borderRadius:"50%",background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 10px rgba(37,211,102,0.35)"}}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-          </div>
-          <div>
-            <div style={{fontSize:16,fontWeight:900,color:"#111",fontFamily:"system-ui",letterSpacing:"-0.04em",lineHeight:1}}>98M+</div>
-            <div style={{fontSize:9.5,color:"#6b7280",fontFamily:"system-ui",marginTop:2}}>messages sent</div>
+      {/* BOTTOM-RIGHT  ·  User reply bubble */}
+      <div style={{position:"absolute",bottom:70,right:"-7%",zIndex:20,animation:"wpl-float3 5.5s ease-in-out infinite 0.5s",filter:"drop-shadow(0 8px 22px rgba(0,0,0,0.10))"}}>
+        <div style={{background:"#d9fdd3",borderRadius:"18px 18px 4px 18px",padding:"12px 16px",maxWidth:196,boxShadow:"0 4px 20px rgba(0,0,0,0.07)",border:"1px solid rgba(37,211,102,0.18)"}}>
+          <div style={{fontSize:12.5,color:"#111",fontFamily:"system-ui",lineHeight:1.55}}>Free forever? 🤩<br/>That's amazing!</div>
+          <div style={{fontSize:8.5,color:"#94a3b8",textAlign:"right",marginTop:6,display:"flex",alignItems:"center",justifyContent:"flex-end",gap:3}}>
+            {clock}
+            <svg width="14" height="9" viewBox="0 0 16 11" fill="none"><path d="M1 5.5L5 9.5L10 2" stroke="#53bdeb" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 5.5L10 9.5L15 2" stroke="#53bdeb" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </div>
         </div>
       </div>
 
-      <div style={{position:"absolute",top:"42%",right:"-3%",zIndex:15,animation:"wpl-float2 8s ease-in-out infinite 2s",filter:"drop-shadow(0 6px 20px rgba(37,211,102,0.28))"}}>
-        <div style={{width:54,height:54,borderRadius:"50%",background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 20px rgba(37,211,102,0.35)"}}>
-          <WaIcon size={26} color="#fff"/>
+      {/* MID-RIGHT  ·  New contacts badge */}
+      <div style={{position:"absolute",top:"43%",right:"-6%",zIndex:20,animation:"wpl-float2 8s ease-in-out infinite 2s",filter:"drop-shadow(0 6px 18px rgba(0,0,0,0.10))"}}>
+        <div style={{background:"#fff",borderRadius:16,padding:"11px 16px",display:"flex",alignItems:"center",gap:11,boxShadow:"0 4px 20px rgba(0,0,0,0.08)",border:"1px solid rgba(0,0,0,0.05)"}}>
+          <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 3px 10px rgba(99,102,241,0.35)"}}>👥</div>
+          <div>
+            <div style={{fontSize:18,fontWeight:900,color:"#111",fontFamily:"system-ui",letterSpacing:"-0.04em",lineHeight:1}}>+{leads}</div>
+            <div style={{fontSize:9,color:"#6b7280",fontFamily:"system-ui",marginTop:2}}>new contacts today</div>
+          </div>
+        </div>
+      </div>
+
+      {/* MID-LEFT  ·  Broadcast status pill */}
+      <div style={{position:"absolute",top:"44%",left:"-7%",zIndex:20,animation:"wpl-float3 6.5s ease-in-out infinite 1.5s",filter:"drop-shadow(0 6px 16px rgba(0,0,0,0.09))"}}>
+        <div style={{background:"#0f172a",borderRadius:50,padding:"9px 16px",display:"flex",alignItems:"center",gap:9,boxShadow:"0 6px 20px rgba(15,23,42,0.3)"}}>
+          <div style={{width:8,height:8,borderRadius:"50%",background:"#25d366",boxShadow:"0 0 8px #25d366",animation:"wpl-ping 1.4s ease-in-out infinite"}}/>
+          <span style={{fontSize:11,fontWeight:700,color:"#fff",fontFamily:"system-ui",letterSpacing:"-0.01em"}}>Broadcast Live</span>
+          <span style={{fontSize:10,fontWeight:600,color:"#25d366",fontFamily:"'DM Mono',monospace"}}>12.4k</span>
         </div>
       </div>
     </div>
@@ -306,7 +470,8 @@ export default function LandingPage() {
         @keyframes wpl-bounce  {0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
         @keyframes wpl-fadeup  {from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
         @keyframes wpl-fadein  {from{opacity:0}to{opacity:1}}
-        @keyframes wpl-float   {0%,100%{transform:translate(-50%,-50%) perspective(1200px) rotateY(-10deg) rotateX(3deg) translateY(0px)} 50%{transform:translate(-50%,-50%) perspective(1200px) rotateY(-10deg) rotateX(3deg) translateY(-12px)}}
+        @keyframes wpl-float   {0%,100%{transform:translate(-50%,-50%) perspective(1400px) rotateY(-9deg) rotateX(2.5deg) translateY(0px)} 50%{transform:translate(-50%,-50%) perspective(1400px) rotateY(-9deg) rotateX(2.5deg) translateY(-14px)}}
+        @keyframes wpl-shimmer {0%{transform:translateX(-100%)} 100%{transform:translateX(100%)}}
         @keyframes wpl-float2  {0%,100%{transform:translateY(0px)} 50%{transform:translateY(-10px)}}
         @keyframes wpl-float3  {0%,100%{transform:translateY(0px)} 50%{transform:translateY(8px)}}
         @keyframes marquee     {from{transform:translateX(0)}to{transform:translateX(-50%)}}
