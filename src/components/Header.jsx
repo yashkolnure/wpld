@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { WaIcon } from "./Icons";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState(null);
+  const [pillStyle, setPillStyle] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navRef = useRef(null);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -23,10 +25,10 @@ export default function Header() {
   }, [mobileMenuOpen]);
 
   const navLinks = [
-    { name: "Features", id: "features" },
-    { name: "Builder",  id: "builder"  },
-    { name: "Pricing",  id: "pricing"  },
-    { name: "Reviews",  id: "reviews"  },
+    { name: "Features",  id: "features"  },
+    { name: "Use Cases", id: "usecases"  },
+    { name: "Pricing",   id: "pricing"   },
+    { name: "Reviews",   id: "reviews"   },
   ];
 
   const handleNav = (e, id) => {
@@ -73,14 +75,21 @@ export default function Header() {
           </Link>
 
           {/* NAV LINKS — desktop only */}
-          <div className="hidden lg:flex items-center gap-1 p-1 bg-black/5 rounded-full relative">
+          <div
+            className="hidden lg:flex items-center gap-1 p-1 bg-black/5 rounded-full relative"
+            ref={navRef}
+          >
             {navLinks.map((link, idx) => (
               <a
                 key={link.name}
                 href={`#${link.id}`}
                 onClick={(e) => handleNav(e, link.id)}
-                onMouseEnter={() => setHoveredIdx(idx)}
-                onMouseLeave={() => setHoveredIdx(null)}
+                onMouseEnter={(e) => {
+                  setHoveredIdx(idx);
+                  const el = e.currentTarget;
+                  setPillStyle({ left: el.offsetLeft, width: el.offsetWidth });
+                }}
+                onMouseLeave={() => { setHoveredIdx(null); setPillStyle(null); }}
                 className={`relative z-10 text-[13px] font-bold px-4 py-2 transition-colors duration-300 ${
                   hoveredIdx === idx ? "text-slate-900" : "text-slate-500"
                 }`}
@@ -88,12 +97,12 @@ export default function Header() {
                 {link.name}
               </a>
             ))}
-            {/* Sliding pill */}
+            {/* Sliding pill — tracks actual element size */}
             <div
               style={{
-                left: hoveredIdx !== null ? `${hoveredIdx * 84 + 4}px` : "0px",
-                opacity: hoveredIdx !== null ? 1 : 0,
-                width: "80px",
+                left:    pillStyle ? `${pillStyle.left}px` : "0px",
+                width:   pillStyle ? `${pillStyle.width}px` : "80px",
+                opacity: pillStyle ? 1 : 0,
               }}
               className="absolute top-1 bottom-1 bg-white rounded-full shadow-sm transition-all duration-300 ease-out pointer-events-none"
             />

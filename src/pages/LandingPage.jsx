@@ -387,7 +387,7 @@ export default function LandingPage() {
       <WorkflowBuilderPreview />
     </div>
       {/* ══ USE CASES — PHONE MOCKUPS ══ */}
-      <section style={{ padding: "clamp(80px,8vw,120px) clamp(20px,5vw,60px)", background: "#f8fafc", borderTop: "1px solid rgba(0,0,0,0.04)" }}>
+      <section id="usecases" style={{ padding: "clamp(80px,8vw,120px) clamp(20px,5vw,60px)", background: "#f8fafc", borderTop: "1px solid rgba(0,0,0,0.04)" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto" }}>
           {/* Header */}
           <div style={{ textAlign: "center", marginBottom: 80 }}>
