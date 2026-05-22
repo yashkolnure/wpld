@@ -107,14 +107,13 @@ const plans = [
     cta: "Get started free",
     popular: false,
     meta: [
-      { icon: "🔁", label: "2 Active Workflows", note: "+ ₹100 / extra workflow" },
-      { icon: "💬", label: "Unlimited Messages",  note: "No cap on sends" },
-      { icon: "📈", label: "25% Markup Fee",       note: "on each message sent" },
+      { icon: "🔁", label: "1 Active Workflow",     note: "Build 1 automation flow" },
+      { icon: "💬", label: "1,000 msgs / month",    note: "Resets every month" },
+      { icon: "📈", label: "25% Markup Fee",         note: "on each message sent" },
     ],
     features: [
-      "2 Active Workflows",
-      "₹100 per extra workflow",
-      "Unlimited Message Limit",
+      "1 Active Workflow",
+      "1,000 Messages per month",
       "25% Markup Fee on messages",
       "Basic Message Types",
       "1 WhatsApp Number",
@@ -130,14 +129,15 @@ const plans = [
     cta: "Start for free",
     popular: true,
     meta: [
-      { icon: "♾️", label: "Unlimited Workflows",  note: "No restrictions" },
-      { icon: "💬", label: "Unlimited Messages",   note: "No cap on sends" },
-      { icon: "🏷️", label: "0% Markup Fee",        note: "Pay Meta rate only" },
+      { icon: "🔁", label: "2 Workflows included",  note: "+ ₹100 per extra workflow" },
+      { icon: "💬", label: "Unlimited Messages",     note: "No monthly cap" },
+      { icon: "📈", label: "25% Markup Fee",         note: "on each message sent" },
     ],
     features: [
-      "Unlimited Workflows",
+      "2 Workflows included",
+      "₹100 per extra workflow",
       "Unlimited Message Limit",
-      "0% Markup — Pay Meta rate only",
+      "25% Markup Fee on messages",
       "Bulk Cold Outreach",
       "Broadcast Campaigns",
       "Template Management",
@@ -154,9 +154,9 @@ const plans = [
     cta: "Talk to sales",
     popular: false,
     meta: [
-      { icon: "♾️", label: "Unlimited Everything",  note: "Flows, numbers, msgs" },
-      { icon: "🔒", label: "Dedicated Instance",     note: "Isolated infrastructure" },
-      { icon: "🤝", label: "Custom Markup Deal",     note: "Negotiated per volume" },
+      { icon: "♾️", label: "Unlimited Workflows",   note: "No restrictions" },
+      { icon: "💬", label: "Unlimited Messages",     note: "No cap on sends" },
+      { icon: "📈", label: "25% Markup Fee",         note: "Same across all plans" },
     ],
     features: [
       "Everything in Pro",
@@ -655,7 +655,7 @@ export default function LandingPage() {
               Scale without limits
             </h2>
             <p style={{fontSize:16,color:"rgba(0,0,0,0.5)",maxWidth:520,margin:"0 auto 28px",lineHeight:1.7}}>
-              No subscription fees. Starter includes 2 workflows + ₹100/extra. Pro is fully unlimited with 0% markup.
+              No subscription fees. 25% markup on all plans. Pay only per message sent.
             </p>
             {/* Limited time banner */}
             <div style={{display:"inline-flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,#fef3c7,#fde68a)",border:"1.5px solid #f59e0b",borderRadius:100,padding:"9px 22px",fontSize:12.5,fontWeight:800,color:"#92400e",boxShadow:"0 4px 14px rgba(245,158,11,0.18)"}}>
