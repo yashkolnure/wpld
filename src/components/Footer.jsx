@@ -120,7 +120,14 @@ export default function Footer() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "10px", fontWeight: 800, color: "#64748b" }}>🛡️ AES-256</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "10px", fontWeight: 800, color: "#64748b" }}>💎 META PARTNER</div>
+              {/* Meta Tech Provider Badge */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "6px 12px" }}>
+                <img
+                  src="/images/metatechprovider.png"
+                  alt="Meta Tech Provider"
+                  style={{ height: 22, width: "auto", objectFit: "contain", display: "block" }}
+                />
+              </div>
               <div style={{ fontSize: "10px", fontWeight: 800, color: "#94a3b8" }}>V2.0.45</div>
             </div>
           </div>
