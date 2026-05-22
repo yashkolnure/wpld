@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import WorkflowBuilderPreview from "../components/WorkflowBuilderPreview";
+import PricingComparisonSection from "../components/PricingCompare";
 
 /* ─────────────────────────────
    ICONS
@@ -116,6 +117,7 @@ const plans = [
   {
     name: "Pro",
     price: "Free",
+    originalPrice: "$25",
     sub: "All features included — no card needed",
     cta: "Start for free",
     popular: true,
@@ -163,6 +165,7 @@ const logos = ["QuickKart","Finova","Bolt Co.","Nuvora","ShopFlow","PrimeHub","Z
 export default function LandingPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [scrolled,   setScrolled]   = useState(false);
+  const [pricingTier, setPricingTier] = useState(0);
   const navigate = (p) => { if(typeof window!=="undefined") window.location.href=p; };
 
   // Sync How It Works Terminal
@@ -361,14 +364,16 @@ export default function LandingPage() {
           ))}
         </div>
       </div>
-<WorkflowBuilderPreview />
+      <div className="hidden md:block">
+      <WorkflowBuilderPreview />
+    </div>
       {/* ══ USE CASES — PHONE MOCKUPS ══ */}
       <section style={{ padding: "clamp(80px,8vw,120px) clamp(20px,5vw,60px)", background: "#f8fafc", borderTop: "1px solid rgba(0,0,0,0.04)" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto" }}>
           {/* Header */}
           <div style={{ textAlign: "center", marginBottom: 80 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(37,211,102,0.08)", border: "1px solid rgba(37,211,102,0.2)", borderRadius: 100, padding: "5px 14px", fontSize: 10.5, fontFamily: "'DM Mono',monospace", fontWeight: 500, letterSpacing: 2, color: "#16a34a", textTransform: "uppercase", marginBottom: 18 }}>Real Use Cases</div>
-            <h2 style={{ fontSize: "clamp(34px,4vw,52px)", fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.08, marginBottom: 16, color: "#0a0a0a" }}>See WPLeads in action</h2>
+            <h2 style={{ fontSize: "clamp(34px,4vw,52px)", fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.08, marginBottom: 16, color: "#0a0a0a" }}>See WP<span style={{ color: "#16a34a" }}>Leads</span> in action</h2>
             <p style={{ fontSize: 16, color: "rgba(0,0,0,0.5)", maxWidth: 500, margin: "0 auto", lineHeight: 1.7 }}>From e-commerce to restaurants — businesses across industries automate WhatsApp with WPLeads.</p>
           </div>
 
@@ -421,7 +426,7 @@ export default function LandingPage() {
           {/* ── Use Case 2: Restaurants / Food ── */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))", gap: 60, alignItems: "center", marginBottom: 110 }}>
             {/* Phone + floating elements */}
-            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 520, order: isMobile ? 1 : 0 }}>
+            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 520, order: isMobile ? 2 : 0 }}>
               {/* Floating: Food Menu card */}
               <div style={{ position: "absolute", top: 30, right: 0, background: "#fff", borderRadius: 16, padding: "12px 14px", width: 160, boxShadow: "0 8px 28px rgba(0,0,0,0.09)", border: "1px solid rgba(0,0,0,0.06)", zIndex: 20, animation: "wpl-float2 5.5s ease-in-out infinite 0.3s" }}>
                 <div style={{ height: 60, background: "linear-gradient(135deg,#f59e0b,#d97706)", borderRadius: 10, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🍽️</div>
@@ -441,7 +446,7 @@ export default function LandingPage() {
               />
             </div>
             {/* Text */}
-            <div style={{ order: isMobile ? 0 : 1 }}>
+            <div style={{ order: isMobile ? 1 : 1 }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 100, padding: "5px 14px", fontSize: 10.5, fontFamily: "'DM Mono',monospace", fontWeight: 600, letterSpacing: 1.5, color: "#b45309", textTransform: "uppercase", marginBottom: 20 }}>🍽️ Restaurants & Food</div>
               <h3 style={{ fontSize: "clamp(26px,3vw,38px)", fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 16, color: "#0a0a0a" }}>Automate orders &<br />delight customers</h3>
               <p style={{ fontSize: 16, color: "rgba(0,0,0,0.55)", lineHeight: 1.7, marginBottom: 28 }}>Send order confirmations, delivery updates, and menu promotions directly on WhatsApp. No app needed — your customers already have it.</p>
@@ -575,56 +580,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Feature 2: Broadcast Campaigns */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(380px,1fr))",gap:60,alignItems:"center",marginBottom:100}}>
-            <div style={{order:isMobile?0:1}}>
-              <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontFamily:"'DM Mono',monospace",fontWeight:600,letterSpacing:1.5,color:"#2563eb",textTransform:"uppercase",marginBottom:20}}>📢 Broadcast Campaigns</div>
-              <h3 style={{fontSize:"clamp(28px,3vw,40px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.1,marginBottom:16,color:"#0a0a0a"}}>Target your contacts<br/>by tag or activity</h3>
-              <p style={{fontSize:16,color:"rgba(0,0,0,0.55)",lineHeight:1.7,marginBottom:28}}>Send broadcast messages to your saved contacts. Filter by tag (e.g. "leads", "customers") or only target people who messaged in the last 24 hours — and pay the cheaper service rate.</p>
-              <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                {[
-                  {icon:"🏷️", text:"Filter by contact tags for laser-targeted sends"},
-                  {icon:"⏱️", text:"24-hour active filter saves up to 78% on message costs"},
-                  {icon:"📩", text:"Support for text, buttons, lists, images & templates"},
-                  {icon:"📈", text:"Real-time delivery and read receipt tracking"},
-                ].map((f,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,fontSize:14.5,color:"rgba(0,0,0,0.65)"}}>
-                    <span style={{fontSize:16,flexShrink:0,marginTop:1}}>{f.icon}</span>{f.text}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div style={{order:isMobile?1:0,background:"#fff",borderRadius:24,padding:"28px",boxShadow:"0 24px 60px rgba(0,0,0,0.08)",border:"1px solid rgba(0,0,0,0.07)"}}>
-              <div style={{fontSize:13,fontWeight:800,color:"#0a0a0a",marginBottom:20}}>Create Broadcast</div>
-              <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                <div style={{padding:"12px 16px",borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0"}}>
-                  <div style={{fontSize:10,color:"#94a3b8",marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Filter by tag</div>
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {["leads","customers","vip","follow-up"].map((t,i)=>(
-                      <span key={t} style={{padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:700,background:i<2?"#dcfce7":"#f1f5f9",color:i<2?"#16a34a":"#64748b",border:i<2?"1px solid #bbf7d0":"1px solid #e2e8f0"}}>{t} {i<2?"✓":""}</span>
-                    ))}
-                  </div>
-                </div>
-                <div style={{padding:"12px 16px",borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div>
-                    <div style={{fontSize:10,color:"#94a3b8",fontWeight:600,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Active in last 24h only</div>
-                    <div style={{fontSize:12,color:"#0a0a0a",fontWeight:700}}>348 contacts · ₹0.20/msg</div>
-                  </div>
-                  <div style={{width:36,height:20,borderRadius:10,background:"#25d366",display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"0 4px"}}>
-                    <div style={{width:14,height:14,borderRadius:"50%",background:"#fff"}}/>
-                  </div>
-                </div>
-                <div style={{padding:"14px 16px",borderRadius:12,background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:800,color:"#fff"}}>Estimated cost</div>
-                    <div style={{fontSize:11,color:"rgba(255,255,255,0.7)"}}>348 contacts × ₹0.20</div>
-                  </div>
-                  <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>₹69.60</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Feature 3: Template Management */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(380px,1fr))",gap:60,alignItems:"center"}}>
             <div>
@@ -667,153 +622,155 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ══ UPGRADED HOW IT WORKS ══ */}
-      <section id="how-it-works" style={{padding:"clamp(80px,8vw,120px) clamp(20px,5vw,60px)",background:"#f8fafc",maxWidth:"100%", borderTop:"1px solid rgba(0,0,0,0.04)", borderBottom:"1px solid rgba(0,0,0,0.04)"}}>
-        <div style={{maxWidth:1280,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(400px, 1fr))",gap:40,alignItems:"center"}}>
-          <div>
-            <div style={{display:"inline-flex",alignItems:"center",gap:2,background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.2)",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontFamily:"'DM Mono',monospace",fontWeight:500,letterSpacing:2,color:"#16a34a",textTransform:"uppercase",marginBottom:18}}>Fast Setup</div>
-            <h2 style={{fontSize:"clamp(34px,4vw,52px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.08,marginBottom:16,color:"#0a0a0a"}}>Live in under<br/>5 minutes</h2>
-            <p style={{fontSize:16,color:"rgba(0,0,0,0.5)",lineHeight:1.7,marginBottom:44}}>No developer needed. No complex setup. Connect your account, build your flow, and go live.</p>
-            
-            <div style={{display:"flex",flexDirection:"column", gap:0}}>
-              {steps.map((s,i)=>(
-                <div key={i} onClick={()=>setActiveStep(i)} style={{
-                  display:"flex", gap:20, padding: 20, borderRadius: 20, cursor:"pointer", transition: "all 0.3s ease",
-                  background: activeStep === i ? "#fff" : "transparent",
-                  border: activeStep === i ? "1px solid rgba(0,0,0,0.08)" : "1px solid transparent",
-                  boxShadow: activeStep === i ? "0 12px 24px rgba(0,0,0,0.03)" : "none"
-                }}>
-                  <div style={{
-                    width:48, height:48, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:14, fontWeight:900, fontFamily:"'DM Mono',monospace", transition:"all 0.3s",
-                    background: activeStep===i ? "linear-gradient(135deg,#25d366,#16a34a)" : "rgba(0,0,0,0.04)",
-                    color: activeStep===i ? "#fff" : "rgba(0,0,0,0.3)",
-                    boxShadow: activeStep===i ? "0 8px 20px rgba(37,211,102,0.25)" : "none"
-                  }}>{s.n}</div>
-                  <div style={{flex:1, paddingTop:2}}>
-                    <div style={{fontSize:16, fontWeight:800, marginBottom:6, color:activeStep===i?"#111":"rgba(0,0,0,0.5)", transition:"color 0.3s"}}>{s.title}</div>
-                    <div style={{fontSize:14, color:"rgba(0,0,0,0.5)", lineHeight:1.6, height: activeStep===i ? "auto" : 0, overflow:"hidden", opacity: activeStep===i ? 1 : 0, transition:"opacity 0.3s"}}>{s.desc}</div>
-                  </div>
-                </div>
-              ))}
+
+      {/* ══ REDESIGNED PRICING ══ */}
+      <section id="pricing" style={{padding:"clamp(80px,8vw,120px) clamp(20px,5vw,60px)", background:"#f8fafc", borderTop:"1px solid rgba(0,0,0,0.04)"}}>
+        <div style={{maxWidth:1280, margin:"0 auto"}}>
+
+          {/* Heading */}
+          <div style={{textAlign:"center", marginBottom:64}}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.2)",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontFamily:"'DM Mono',monospace",fontWeight:500,letterSpacing:2,color:"#16a34a",textTransform:"uppercase",marginBottom:18}}>
+              Simple Pricing
+            </div>
+            <h2 style={{fontSize:"clamp(34px,4vw,52px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.08,marginBottom:16,color:"#0a0a0a"}}>
+              Scale without limits
+            </h2>
+            <p style={{fontSize:16,color:"rgba(0,0,0,0.5)",maxWidth:460,margin:"0 auto 28px",lineHeight:1.7}}>
+              No subscription fees. Pay only per message sent.
+            </p>
+            {/* Limited time banner */}
+            <div style={{display:"inline-flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,#fef3c7,#fde68a)",border:"1.5px solid #f59e0b",borderRadius:100,padding:"9px 22px",fontSize:12.5,fontWeight:800,color:"#92400e",boxShadow:"0 4px 14px rgba(245,158,11,0.18)"}}>
+              🎉 &nbsp;Limited Time — Pro plan is completely <span style={{color:"#b45309",textDecoration:"underline",textUnderlineOffset:3}}>FREE</span> right now
             </div>
           </div>
 
-          {/* Upgraded Dynamic Terminal */}
-          <div style={{background:"#0f172a",borderRadius:28, minHeight: 500,overflow:"hidden",boxShadow:"0 32px 80px rgba(0,0,0,0.2)", border:"1px solid rgba(255,255,255,0.1)"}}>
-            <div style={{background:"#1e293b",padding:"16px 20px",display:"flex",alignItems:"center",gap:8,borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-              <div style={{display:"flex",gap:6}}>{["#ff5f57","#ffbd2e","#28c840"].map(c=><div key={c} style={{width:12,height:12,borderRadius:"50%",background:c}}/>)}</div>
-              <span style={{fontSize:10,fontFamily:"'DM Mono',monospace",color:"rgba(255,255,255,0.4)",letterSpacing:2,marginLeft:10}}>DEPLOYMENT LOG</span>
-            </div>
-            <div style={{padding:"32px", fontFamily: "'DM Mono', monospace", fontSize: 13, lineHeight: 1.8}}>
-              {[
-                {step: 0, text: "> Auth check: Verifying Meta credentials..."},
-                {step: 0, text: "> Status: 200 OK (Authenticated)", color: "#4ade80"},
-                {step: 1, text: "> Registering Webhook URL endpoint..."},
-                {step: 1, text: "> Callback attached successfully.", color: "#4ade80"},
-                {step: 2, text: "> Compiling visual nodes to JSON payload..."},
-                {step: 2, text: "> Nodes valid. Branching logic mapped.", color: "#4ade80"},
-                {step: 3, text: "> Deploying workflow to edge network..."},
-                {step: 3, text: "> SYSTEM LIVE. 0ms Latency.", color: "#4ade80", highlight: true},
-              ].map((line, idx) => (
-                <div key={idx} style={{
-                  opacity: activeStep >= line.step ? 1 : 0.2, 
-                  color: line.color || "rgba(255,255,255,0.7)",
-                  background: (line.highlight && activeStep >= 3) ? "rgba(74, 222, 128, 0.15)" : "transparent",
-                  padding: line.highlight ? "4px 8px" : "2px 0",
-                  borderRadius: 6,
-                  transition: "opacity 0.4s ease",
-                  marginBottom: 8
-                }}>
-                  {line.text}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ UPGRADED PRICING ══ */}
-      <section id="pricing" style={{padding:"clamp(80px,8vw,120px) clamp(20px,5vw,60px)",maxWidth:1280,margin:"0 auto"}}>
-        <div style={{textAlign:"center",marginBottom:70}}>
-          <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.2)",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontFamily:"'DM Mono',monospace",fontWeight:500,letterSpacing:2,color:"#16a34a",textTransform:"uppercase",marginBottom:18}}>Simple Pricing</div>
-          <h2 style={{fontSize:"clamp(34px,4vw,52px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.08,marginBottom:16,color:"#0a0a0a"}}>Scale without limits</h2>
-          <p style={{fontSize:16,color:"rgba(0,0,0,0.5)",maxWidth:460,margin:"0 auto",lineHeight:1.7}}>No subscription fees. Pay only per message sent — starting at ₹0.20/msg.</p>
-        </div>
-        
-        
-<div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(300px, 1fr))", gap:24, maxWidth:1100, margin:"0 auto", alignItems:"stretch"}}>
-  {plans.map((p, i) => (
-    <div key={i} style={{
-      borderRadius: p.popular ? 32 : 28, 
-      padding: p.popular ? 3 : 1, // Subtle gradient border
-      background: p.popular ? "linear-gradient(135deg, #25d366, #16a34a)" : "rgba(0,0,0,0.1)",
-      transform: p.popular ? "scale(1.02)" : "scale(1)",
-      boxShadow: p.popular ? "0 32px 64px rgba(37,211,102,0.18)" : "0 4px 12px rgba(0,0,0,0.03)",
-      position: "relative", 
-      zIndex: p.popular ? 10 : 1,
-      transition: "all 0.3s ease"
-    }}>
-      <div style={{
-        background: "#fff",
-        borderRadius: p.popular ? 29 : 27,
-        padding: "40px 32px", 
-        height: "100%", 
-        display: "flex", 
-        flexDirection: "column"
-      }}>
-        {p.popular && (
-          <div style={{position:"absolute", top:-12, left:"50%", transform:"translateX(-50%)", background:"#16a34a", color:"#fff", fontSize:10, fontWeight:800, fontFamily:"monospace", letterSpacing:1.5, padding:"6px 16px", borderRadius:100}}>
-            MOST POPULAR
-          </div>
-        )}
-        
-        <div style={{fontSize:11, color:"rgba(0,0,0,0.4)", letterSpacing:2, textTransform:"uppercase", marginBottom:12, fontWeight: 700}}>{p.name}</div>
-        
-        <div style={{marginBottom:6, display: "flex", alignItems: "baseline", gap: 8}}>
-          <span style={{fontSize:40, fontWeight:900, letterSpacing:"-0.04em", color:"#0a0a0a"}}>{p.price}</span>
-          {p.originalPrice && (
-            <span style={{fontSize:18, color:"rgba(0,0,0,0.3)", textDecoration:"line-through", fontWeight:500}}>{p.originalPrice}</span>
-          )}
-          {/* Only show /mo if price is numeric */}
-          {(p.price !== "Free" && p.price !== "Custom") && (
-            <span style={{fontSize:14, color:"rgba(0,0,0,0.4)", fontWeight:500}}>/mo</span>
-          )}
-        </div>
-        
-        <div style={{fontSize:13, color:"rgba(0,0,0,0.5)", marginBottom:32, minHeight: "40px"}}>{p.sub}</div>
-        
-        <ul style={{listStyle:"none", display:"flex", flexDirection:"column", gap:14, marginBottom:40, flex: 1, padding:0}}>
-          {p.features.map((f, j) => (
-            <li key={j} style={{
-                display:"flex", 
-                alignItems:"flex-start", 
-                gap:12, 
-                fontSize:14, 
-                color: f.includes("WhatsApp API") ? "#16a34a" : "rgba(0,0,0,0.65)", // Highlight specific feature
-                fontWeight: f.includes("WhatsApp API") ? "600" : "400"
+          {/* Cards */}
+          <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(300px, 1fr))", gap:24, maxWidth:1100, margin:"0 auto", alignItems:"center"}}>
+            {plans.map((p, i) => (
+              <div key={i} style={{
+                position:"relative",
+                borderRadius: p.popular ? 32 : 26,
+                background: p.popular ? "#0f172a" : "#fff",
+                border: p.popular ? "none" : "1px solid rgba(0,0,0,0.08)",
+                padding:"40px 32px",
+                boxShadow: p.popular ? "0 40px 80px rgba(15,23,42,0.28), 0 0 0 1px rgba(37,211,102,0.12)" : "0 4px 20px rgba(0,0,0,0.04)",
+                transform: p.popular ? "scale(1.05)" : "scale(1)",
+                zIndex: p.popular ? 10 : 1,
+                display:"flex", flexDirection:"column",
+                overflow:"hidden",
+                transition:"all 0.3s ease"
               }}>
-              <CheckIcon dark={p.popular} color={f.includes("WhatsApp API") ? "#16a34a" : undefined} /> 
-              {f}
-            </li>
-          ))}
-        </ul>
-        
-        <button 
-          onClick={() => navigate(p.price === "Custom" ? "/contact" : "/register")} 
-          style={{
-            width:"100%", padding:"16px 0", borderRadius:14, fontSize:14, fontWeight:800, cursor:"pointer", border:"none", transition:"all 0.2s",
-            background: p.popular ? "linear-gradient(135deg,#25d366,#16a34a)" : "rgba(0,0,0,0.06)",
-            color: p.popular ? "#fff" : "#111",
-          }}
-          onMouseOver={e => e.currentTarget.style.opacity = "0.9"}
-          onMouseOut={e => e.currentTarget.style.opacity = "1"}
-        >
-          {p.cta}
-        </button>
-      </div>
-    </div>
-  ))}
-</div>
+                {/* Glow blob for Pro */}
+                {p.popular && (
+                  <div style={{position:"absolute",top:-80,right:-80,width:260,height:260,borderRadius:"50%",background:"rgba(37,211,102,0.12)",filter:"blur(70px)",pointerEvents:"none"}}/>
+                )}
+
+                {/* MOST POPULAR chip */}
+                {p.popular && (
+                  <div style={{
+                    position:"absolute", top:22, right:22,
+                    background:"linear-gradient(135deg,#25d366,#16a34a)",
+                    color:"#fff", fontSize:9, fontWeight:800,
+                    padding:"5px 13px", borderRadius:100, letterSpacing:1.6,
+                    textTransform:"uppercase", boxShadow:"0 4px 12px rgba(37,211,102,0.4)"
+                  }}>🔥 LIMITED FREE</div>
+                )}
+
+                {/* Plan name */}
+                <div style={{
+                  fontSize:11, letterSpacing:2, textTransform:"uppercase",
+                  fontWeight:800, marginBottom:20,
+                  color: p.popular ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.4)"
+                }}>{p.name}</div>
+
+                {/* Price */}
+                {p.originalPrice ? (
+                  <div style={{marginBottom:8}}>
+                    {/* Strikethrough original */}
+                    <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:6}}>
+                      <span style={{
+                        fontSize:22, fontWeight:700,
+                        color: "rgba(255,255,255,0.25)",
+                        textDecoration:"line-through",
+                        textDecorationThickness:2,
+                        fontFamily:"'DM Mono',monospace",
+                        letterSpacing:"-0.02em"
+                      }}>{p.originalPrice}/mo</span>
+                      <span style={{
+                        fontSize:10, fontWeight:800, color:"#25d366",
+                        background:"rgba(37,211,102,0.15)",
+                        padding:"4px 10px", borderRadius:100,
+                        border:"1px solid rgba(37,211,102,0.3)",
+                        letterSpacing:1
+                      }}>100% OFF</span>
+                    </div>
+                    {/* Free price big */}
+                    <div style={{display:"flex", alignItems:"baseline", gap:8}}>
+                      <span style={{
+                        fontSize:58, fontWeight:900,
+                        letterSpacing:"-0.05em", lineHeight:1,
+                        background:"linear-gradient(135deg,#25d366,#4ade80)",
+                        WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent"
+                      }}>Free</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{marginBottom:8, display:"flex", alignItems:"baseline", gap:6}}>
+                    <span style={{
+                      fontSize:52, fontWeight:900, letterSpacing:"-0.05em", lineHeight:1,
+                      color: p.popular ? "#fff" : "#0a0a0a"
+                    }}>{p.price}</span>
+                    {p.price !== "Free" && p.price !== "Custom" && (
+                      <span style={{fontSize:14, color:"rgba(0,0,0,0.4)", fontWeight:500}}>/mo</span>
+                    )}
+                  </div>
+                )}
+
+                <div style={{
+                  fontSize:13, marginBottom:32, minHeight:38, lineHeight:1.6,
+                  color: p.popular ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.5)"
+                }}>{p.sub}</div>
+
+                {/* Divider */}
+                <div style={{height:1, background: p.popular ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)", marginBottom:28}}/>
+
+                {/* Features */}
+                <ul style={{listStyle:"none", display:"flex", flexDirection:"column", gap:13, marginBottom:36, flex:1, padding:0}}>
+                  {p.features.map((f, j) => (
+                    <li key={j} style={{display:"flex", alignItems:"flex-start", gap:11, fontSize:13.5, color: p.popular ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.65)"}}>
+                      <CheckIcon dark={p.popular}/>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA */}
+                <button
+                  onClick={() => navigate(p.price === "Custom" ? "/contact" : "/register")}
+                  style={{
+                    width:"100%", padding:"16px 0", borderRadius:14,
+                    fontSize:14, fontWeight:800, cursor:"pointer", border:"none",
+                    transition:"all 0.25s",
+                    background: p.popular
+                      ? "linear-gradient(135deg,#25d366,#16a34a)"
+                      : p.name === "Enterprise"
+                        ? "#0f172a"
+                        : "rgba(0,0,0,0.06)",
+                    color: p.popular || p.name === "Enterprise" ? "#fff" : "#111",
+                    boxShadow: p.popular ? "0 10px 28px rgba(37,211,102,0.38)" : "none",
+                    letterSpacing:0.3
+                  }}
+                  onMouseOver={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.opacity = "0.92"; }}
+                  onMouseOut={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.opacity = "1"; }}
+                >
+                  {p.cta} →
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <PricingComparisonSection />
+        </div>
       </section>
 
       {/* ══ UPGRADED TESTIMONIALS (WhatsApp Chat Style) ══ */}
