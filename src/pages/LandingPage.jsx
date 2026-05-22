@@ -785,7 +785,7 @@ export default function LandingPage() {
 
                 {/* CTA */}
                 <button
-                  onClick={() => navigate(p.price === "Custom" ? "/contact" : "/register")}
+                  onClick={() => p.price === "Custom" ? window.open("https://wa.me/917499835687?text=Hi!%20I'm%20interested%20in%20the%20WPLeads%20Enterprise%20plan.%20Can%20we%20talk?", "_blank") : navigate("/register")}
                   style={{
                     width:"100%", padding:"16px 0", borderRadius:14,
                     fontSize:14, fontWeight:800, cursor:"pointer", border:"none",
