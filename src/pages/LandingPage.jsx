@@ -44,36 +44,51 @@ function HeroIllustration() {
   },[]);
 
   return (
-    <div style={{position:"relative",width:"100%",overflow:"visible",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{position:"relative", width:"100%", minHeight:480}}>
 
-      {/* ── Centre image — the photo already has phone, cards, bubble, WA logo, cart icon ── */}
-      <div style={{position:"relative",zIndex:10,animation:"wpl-float 7s ease-in-out infinite",width:"100%",maxWidth:580}}>
-        <img
-          src="/images/hero-phone.webp"
-          alt="WPLeads WhatsApp automation"
-          style={{width:"100%",display:"block",filter:"drop-shadow(0 30px 60px rgba(0,0,0,0.14))"}}
-        />
-      </div>
+      {/* ── Centre image ── */}
+      <img
+        src="/images/hero-phone.webp"
+        alt="WPLeads WhatsApp automation"
+        style={{
+          display:"block",
+          width:"100%",
+          maxWidth:560,
+          margin:"0 auto",
+          filter:"drop-shadow(0 30px 60px rgba(0,0,0,0.14))",
+          animation:"wpl-float 7s ease-in-out infinite",
+          position:"relative",
+          zIndex:10,
+        }}
+      />
 
-      {/* ── TOP-RIGHT outside image · Live messages counter ── */}
-      <div style={{position:"absolute",top:"2%",right:"-8%",zIndex:20,animation:"wpl-float3 6s ease-in-out infinite 0.8s",filter:"drop-shadow(0 8px 24px rgba(0,0,0,0.10))"}}>
-        <div style={{background:"#fff",borderRadius:50,padding:"10px 18px",display:"flex",alignItems:"center",gap:11,boxShadow:"0 4px 20px rgba(0,0,0,0.09)",border:"1px solid rgba(0,0,0,0.05)"}}>
-          <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 3px 10px rgba(37,211,102,0.35)"}}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      {/* ── Messages counter — top right, fixed pixels ── */}
+      <div style={{
+        position:"absolute", top:16, right:0,
+        zIndex:20, animation:"wpl-float3 6s ease-in-out infinite 0.8s",
+        filter:"drop-shadow(0 6px 20px rgba(0,0,0,0.09))",
+      }}>
+        <div style={{background:"#fff",borderRadius:50,padding:"9px 16px",display:"flex",alignItems:"center",gap:10,boxShadow:"0 4px 18px rgba(0,0,0,0.08)",border:"1px solid rgba(0,0,0,0.05)"}}>
+          <div style={{width:34,height:34,borderRadius:"50%",background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 3px 8px rgba(37,211,102,0.35)"}}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
           </div>
           <div>
-            <div style={{fontSize:17,fontWeight:900,color:"#111",fontFamily:"system-ui",letterSpacing:"-0.04em",lineHeight:1}}>{sent.toLocaleString()}</div>
+            <div style={{fontSize:16,fontWeight:900,color:"#111",fontFamily:"system-ui",letterSpacing:"-0.04em",lineHeight:1}}>{sent.toLocaleString()}</div>
             <div style={{fontSize:9,color:"#6b7280",fontFamily:"system-ui",marginTop:2}}>messages sent</div>
           </div>
         </div>
       </div>
 
-      {/* ── BOTTOM-RIGHT outside image · Bot active + leads ── */}
-      <div style={{position:"absolute",bottom:"4%",right:"-6%",zIndex:20,animation:"wpl-float2 6.5s ease-in-out infinite 1.5s",filter:"drop-shadow(0 6px 16px rgba(0,0,0,0.09))"}}>
-        <div style={{background:"#0f172a",borderRadius:50,padding:"10px 20px",display:"flex",alignItems:"center",gap:9,boxShadow:"0 6px 20px rgba(15,23,42,0.3)"}}>
-          <div style={{width:8,height:8,borderRadius:"50%",background:"#25d366",boxShadow:"0 0 8px #25d366",animation:"wpl-ping 1.4s ease-in-out infinite"}}/>
-          <span style={{fontSize:11,fontWeight:700,color:"#fff",fontFamily:"system-ui"}}>AI Bot Active</span>
-          <span style={{fontSize:10,fontWeight:600,color:"#25d366",fontFamily:"'DM Mono',monospace"}}>+{leads} leads today</span>
+      {/* ── AI Bot pill — bottom right, fixed pixels ── */}
+      <div style={{
+        position:"absolute", bottom:16, right:0,
+        zIndex:20, animation:"wpl-float2 6.5s ease-in-out infinite 1.5s",
+        filter:"drop-shadow(0 4px 14px rgba(15,23,42,0.25))",
+      }}>
+        <div style={{background:"#0f172a",borderRadius:50,padding:"9px 18px",display:"flex",alignItems:"center",gap:9,boxShadow:"0 6px 18px rgba(15,23,42,0.28)"}}>
+          <div style={{width:8,height:8,borderRadius:"50%",background:"#25d366",boxShadow:"0 0 8px #25d366",animation:"wpl-ping 1.4s ease-in-out infinite",flexShrink:0}}/>
+          <span style={{fontSize:11,fontWeight:700,color:"#fff",fontFamily:"system-ui",whiteSpace:"nowrap"}}>AI Bot Active</span>
+          <span style={{fontSize:10,fontWeight:600,color:"#25d366",fontFamily:"'DM Mono',monospace",whiteSpace:"nowrap"}}>+{leads} leads</span>
         </div>
       </div>
     </div>
