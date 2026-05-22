@@ -106,8 +106,16 @@ const plans = [
     sub: "Forever free, no card needed",
     cta: "Get started free",
     popular: false,
+    meta: [
+      { icon: "🔁", label: "2 Active Workflows", note: "+ ₹100 / extra workflow" },
+      { icon: "💬", label: "Unlimited Messages",  note: "No cap on sends" },
+      { icon: "📈", label: "25% Markup Fee",       note: "on each message sent" },
+    ],
     features: [
-      "1 Active Workflow",
+      "2 Active Workflows",
+      "₹100 per extra workflow",
+      "Unlimited Message Limit",
+      "25% Markup Fee on messages",
       "Basic Message Types",
       "1 WhatsApp Number",
       "Community Support",
@@ -121,14 +129,20 @@ const plans = [
     sub: "All features included — no card needed",
     cta: "Start for free",
     popular: true,
+    meta: [
+      { icon: "♾️", label: "Unlimited Workflows",  note: "No restrictions" },
+      { icon: "💬", label: "Unlimited Messages",   note: "No cap on sends" },
+      { icon: "🏷️", label: "0% Markup Fee",        note: "Pay Meta rate only" },
+    ],
     features: [
       "Unlimited Workflows",
+      "Unlimited Message Limit",
+      "0% Markup — Pay Meta rate only",
       "Bulk Cold Outreach",
       "Broadcast Campaigns",
       "Template Management",
       "All Interactive Message Types",
       "Built-in CRM & Contact Tags",
-      "Wallet & Pay-per-message",
       "Analytics Dashboard",
       "Priority Support"
     ]
@@ -139,6 +153,11 @@ const plans = [
     sub: "Tailored for large scale teams",
     cta: "Talk to sales",
     popular: false,
+    meta: [
+      { icon: "♾️", label: "Unlimited Everything",  note: "Flows, numbers, msgs" },
+      { icon: "🔒", label: "Dedicated Instance",     note: "Isolated infrastructure" },
+      { icon: "🤝", label: "Custom Markup Deal",     note: "Negotiated per volume" },
+    ],
     features: [
       "Everything in Pro",
       "Unlimited WhatsApp Numbers",
@@ -635,8 +654,8 @@ export default function LandingPage() {
             <h2 style={{fontSize:"clamp(34px,4vw,52px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.08,marginBottom:16,color:"#0a0a0a"}}>
               Scale without limits
             </h2>
-            <p style={{fontSize:16,color:"rgba(0,0,0,0.5)",maxWidth:460,margin:"0 auto 28px",lineHeight:1.7}}>
-              No subscription fees. Pay only per message sent.
+            <p style={{fontSize:16,color:"rgba(0,0,0,0.5)",maxWidth:520,margin:"0 auto 28px",lineHeight:1.7}}>
+              No subscription fees. Starter includes 2 workflows + ₹100/extra. Pro is fully unlimited with 0% markup.
             </p>
             {/* Limited time banner */}
             <div style={{display:"inline-flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,#fef3c7,#fde68a)",border:"1.5px solid #f59e0b",borderRadius:100,padding:"9px 22px",fontSize:12.5,fontWeight:800,color:"#92400e",boxShadow:"0 4px 14px rgba(245,158,11,0.18)"}}>
@@ -727,17 +746,37 @@ export default function LandingPage() {
                 )}
 
                 <div style={{
-                  fontSize:13, marginBottom:32, minHeight:38, lineHeight:1.6,
+                  fontSize:13, marginBottom:20, minHeight:38, lineHeight:1.6,
                   color: p.popular ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.5)"
                 }}>{p.sub}</div>
 
+                {/* ── Key stats pills ── */}
+                {p.meta && (
+                  <div style={{display:"flex", flexDirection:"column", gap:8, marginBottom:22}}>
+                    {p.meta.map((m, mi) => (
+                      <div key={mi} style={{
+                        display:"flex", alignItems:"center", gap:10,
+                        background: p.popular ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)",
+                        border: p.popular ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(0,0,0,0.07)",
+                        borderRadius:10, padding:"9px 12px",
+                      }}>
+                        <span style={{fontSize:14, flexShrink:0}}>{m.icon}</span>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:12, fontWeight:800, color: p.popular ? "#fff" : "#0a0a0a", lineHeight:1.2}}>{m.label}</div>
+                          <div style={{fontSize:10, color: p.popular ? "rgba(255,255,255,0.38)" : "rgba(0,0,0,0.38)", marginTop:1}}>{m.note}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {/* Divider */}
-                <div style={{height:1, background: p.popular ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)", marginBottom:28}}/>
+                <div style={{height:1, background: p.popular ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)", marginBottom:20}}/>
 
                 {/* Features */}
-                <ul style={{listStyle:"none", display:"flex", flexDirection:"column", gap:13, marginBottom:36, flex:1, padding:0}}>
+                <ul style={{listStyle:"none", display:"flex", flexDirection:"column", gap:11, marginBottom:32, flex:1, padding:0}}>
                   {p.features.map((f, j) => (
-                    <li key={j} style={{display:"flex", alignItems:"flex-start", gap:11, fontSize:13.5, color: p.popular ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.65)"}}>
+                    <li key={j} style={{display:"flex", alignItems:"flex-start", gap:11, fontSize:13, color: p.popular ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.65)"}}>
                       <CheckIcon dark={p.popular}/>
                       {f}
                     </li>
