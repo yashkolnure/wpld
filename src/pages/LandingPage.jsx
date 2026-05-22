@@ -201,7 +201,11 @@ const features = [
   { icon:"🎨", title:"Visual flow builder",     desc:"Build complex conversation trees without a single line of code using our drag-and-drop canvas.", col:"#2563eb", bg:"#eff6ff" },
   { icon:"💬", title:"Interactive messages",    desc:"Send rich menus, image cards, and attachments. Native WhatsApp interactive features supported.", col:"#7c3aed", bg:"#f5f3ff" },
   { icon:"🔀", title:"Conversational branches", desc:"Route users down specific paths automatically based on the buttons they tap. True dynamic logic.", col:"#d97706", bg:"#fffbeb" },
-  { icon:"👥", title:"Built-in CRM",            desc:"Every contact is automatically saved, tagged, and searchable. Manage your audience effortlessly.", col:"#0891b2", bg:"#ecfeff" },
+  { icon:"📢", title:"Broadcast campaigns",     desc:"Send targeted messages to all your contacts or filter by tag. Reach the right audience in one click.", col:"#0891b2", bg:"#ecfeff" },
+  { icon:"📤", title:"Bulk cold outreach",      desc:"Upload a list of phone numbers and send approved WhatsApp templates at scale. Perfect for marketing campaigns.", col:"#16a34a", bg:"#f0fdf4" },
+  { icon:"📋", title:"Template management",     desc:"Create, submit, and manage WhatsApp message templates directly from your dashboard. No Meta portal needed.", col:"#7c3aed", bg:"#f5f3ff" },
+  { icon:"👥", title:"Built-in CRM",            desc:"Every contact is automatically saved, tagged, and searchable. Manage your audience effortlessly.", col:"#2563eb", bg:"#eff6ff" },
+  { icon:"💰", title:"Wallet & pay-per-message", desc:"Recharge your wallet once and pay only for what you send. Full transaction history, no surprise bills.", col:"#d97706", bg:"#fffbeb" },
   { icon:"🔒", title:"Enterprise security",     desc:"Your Meta credentials are encrypted securely. SOC 2 ready infrastructure with strict data privacy.", col:"#db2777", bg:"#fdf2f8" },
 ];
 
@@ -213,52 +217,53 @@ const steps = [
 ];
 
 const plans = [
-  { 
-    name: "Free", 
-    price: "Free", 
-    sub: "Forever free, no card needed", 
-    cta: "Get started free", 
+  {
+    name: "Starter",
+    price: "Free",
+    sub: "Forever free, no card needed",
+    cta: "Get started free",
     popular: false,
     features: [
-      "1 Active Workflow", 
-      "500 Message Triggers / mo", 
-      "Limited Message Types", 
-      "1 WhatsApp Number", 
-      "Community Support"
-    ] 
+      "1 Active Workflow",
+      "Basic Message Types",
+      "1 WhatsApp Number",
+      "Community Support",
+      "Pay-per-message wallet"
+    ]
   },
-  { 
-    name: "Premium", 
-    price: "₹1,499", 
-    originalPrice: "₹2,999", 
-    sub: "50% Off — Billed monthly", 
-    cta: "Upgrade to Premium", 
+  {
+    name: "Pro",
+    price: "Free",
+    sub: "All features included — no card needed",
+    cta: "Start for free",
     popular: true,
     features: [
-      "Free WhatsApp API Setup", // Your special offer
-      "Unlimited Workflows", 
-      "15,000 Message Triggers / mo", 
-      "All Interactive Message Types", 
-      "5 WhatsApp Numbers", 
-      "Priority 1-on-1 Support", 
-      "Analytics Dashboard"
-    ] 
+      "Unlimited Workflows",
+      "Bulk Cold Outreach",
+      "Broadcast Campaigns",
+      "Template Management",
+      "All Interactive Message Types",
+      "Built-in CRM & Contact Tags",
+      "Wallet & Pay-per-message",
+      "Analytics Dashboard",
+      "Priority Support"
+    ]
   },
-  { 
-    name: "Enterprise", 
-    price: "Custom", 
-    sub: "Tailored for large scale teams", 
-    cta: "Talk to sales", 
+  {
+    name: "Enterprise",
+    price: "Custom",
+    sub: "Tailored for large scale teams",
+    cta: "Talk to sales",
     popular: false,
     features: [
-      "Unlimited Workflows & Triggers", 
-      "Unlimited WhatsApp Numbers", 
-      "Dedicated Instance", 
-      "Custom API & Webhooks", 
-      "SLA & Uptime Guarantee", 
-      "Personal Account Manager", 
+      "Everything in Pro",
+      "Unlimited WhatsApp Numbers",
+      "Dedicated Instance",
+      "Custom API & Webhooks",
+      "SLA & Uptime Guarantee",
+      "Personal Account Manager",
       "Onboarding Assistance"
-    ] 
+    ]
   },
 ];
 const testimonials = [
@@ -505,6 +510,155 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ══ NEW FEATURES DEEP DIVE ══ */}
+      <section style={{padding:"clamp(80px,8vw,120px) clamp(20px,5vw,60px)",background:"#f8fafc",borderTop:"1px solid rgba(0,0,0,0.04)"}}>
+        <div style={{maxWidth:1280,margin:"0 auto"}}>
+          <div style={{textAlign:"center",marginBottom:70}}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.2)",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontFamily:"'DM Mono',monospace",fontWeight:500,letterSpacing:2,color:"#16a34a",textTransform:"uppercase",marginBottom:18}}>New Features</div>
+            <h2 style={{fontSize:"clamp(34px,4vw,52px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.08,marginBottom:16,color:"#0a0a0a"}}>Everything you need<br/>to grow on WhatsApp</h2>
+            <p style={{fontSize:16,color:"rgba(0,0,0,0.5)",maxWidth:480,margin:"0 auto",lineHeight:1.7}}>From automated replies to bulk campaigns — all included free in the Pro plan.</p>
+          </div>
+
+          {/* Feature 1: Bulk Cold Outreach */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(380px,1fr))",gap:60,alignItems:"center",marginBottom:100}}>
+            <div>
+              <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontFamily:"'DM Mono',monospace",fontWeight:600,letterSpacing:1.5,color:"#16a34a",textTransform:"uppercase",marginBottom:20}}>📤 Bulk Cold Outreach</div>
+              <h3 style={{fontSize:"clamp(28px,3vw,40px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.1,marginBottom:16,color:"#0a0a0a"}}>Reach thousands<br/>with one click</h3>
+              <p style={{fontSize:16,color:"rgba(0,0,0,0.55)",lineHeight:1.7,marginBottom:28}}>Upload a CSV of phone numbers, pick an approved WhatsApp template, and send at scale. Our system throttles sends to stay within Meta's rate limits — so every message lands.</p>
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                {[
+                  {icon:"✅", text:"Only approved templates — 100% Meta compliant"},
+                  {icon:"⚡", text:"4 messages/second with smart throttling"},
+                  {icon:"📊", text:"Live delivery, read & failed tracking per campaign"},
+                  {icon:"💰", text:"Pay only ₹0.90 per message sent — no monthly fee"},
+                ].map((f,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,fontSize:14.5,color:"rgba(0,0,0,0.65)"}}>
+                    <span style={{fontSize:16,flexShrink:0,marginTop:1}}>{f.icon}</span>{f.text}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{background:"#0f172a",borderRadius:24,padding:"28px",boxShadow:"0 24px 60px rgba(0,0,0,0.18)",border:"1px solid rgba(255,255,255,0.08)"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+                <span style={{fontSize:13,fontWeight:800,color:"#fff",fontFamily:"'DM Mono',monospace"}}>Cold Outreach Campaign</span>
+                <span style={{padding:"4px 12px",borderRadius:20,background:"rgba(37,211,102,0.2)",fontSize:10,fontWeight:700,color:"#4ade80",border:"1px solid rgba(37,211,102,0.3)"}}>RUNNING</span>
+              </div>
+              {[
+                {label:"Campaign name",    val:"Summer Sale 2025"},
+                {label:"Template",         val:"summer_promo_v2"},
+                {label:"Recipients",       val:"2,480 numbers"},
+                {label:"Sent",             val:"1,843  (74%)",  color:"#4ade80"},
+                {label:"Delivered",        val:"1,712  (69%)",  color:"#60a5fa"},
+                {label:"Failed",           val:"131  (5%)",     color:"#f87171"},
+              ].map((r,i)=>(
+                <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
+                  <span style={{fontSize:11.5,color:"rgba(255,255,255,0.45)",fontFamily:"'DM Mono',monospace"}}>{r.label}</span>
+                  <span style={{fontSize:12,fontWeight:700,color:r.color||"rgba(255,255,255,0.85)",fontFamily:"'DM Mono',monospace"}}>{r.val}</span>
+                </div>
+              ))}
+              <div style={{marginTop:16,height:6,borderRadius:99,background:"rgba(255,255,255,0.08)",overflow:"hidden"}}>
+                <div style={{height:"100%",width:"74%",borderRadius:99,background:"linear-gradient(90deg,#25d366,#4ade80)"}}/>
+              </div>
+              <div style={{marginTop:8,display:"flex",justifyContent:"space-between"}}>
+                <span style={{fontSize:10,color:"rgba(255,255,255,0.3)",fontFamily:"'DM Mono',monospace"}}>0</span>
+                <span style={{fontSize:10,color:"#4ade80",fontFamily:"'DM Mono',monospace",fontWeight:700}}>74% complete</span>
+                <span style={{fontSize:10,color:"rgba(255,255,255,0.3)",fontFamily:"'DM Mono',monospace"}}>2,480</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature 2: Broadcast Campaigns */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(380px,1fr))",gap:60,alignItems:"center",marginBottom:100}}>
+            <div style={{order:isMobile?0:1}}>
+              <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontFamily:"'DM Mono',monospace",fontWeight:600,letterSpacing:1.5,color:"#2563eb",textTransform:"uppercase",marginBottom:20}}>📢 Broadcast Campaigns</div>
+              <h3 style={{fontSize:"clamp(28px,3vw,40px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.1,marginBottom:16,color:"#0a0a0a"}}>Target your contacts<br/>by tag or activity</h3>
+              <p style={{fontSize:16,color:"rgba(0,0,0,0.55)",lineHeight:1.7,marginBottom:28}}>Send broadcast messages to your saved contacts. Filter by tag (e.g. "leads", "customers") or only target people who messaged in the last 24 hours — and pay the cheaper service rate.</p>
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                {[
+                  {icon:"🏷️", text:"Filter by contact tags for laser-targeted sends"},
+                  {icon:"⏱️", text:"24-hour active filter saves up to 78% on message costs"},
+                  {icon:"📩", text:"Support for text, buttons, lists, images & templates"},
+                  {icon:"📈", text:"Real-time delivery and read receipt tracking"},
+                ].map((f,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,fontSize:14.5,color:"rgba(0,0,0,0.65)"}}>
+                    <span style={{fontSize:16,flexShrink:0,marginTop:1}}>{f.icon}</span>{f.text}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{order:isMobile?1:0,background:"#fff",borderRadius:24,padding:"28px",boxShadow:"0 24px 60px rgba(0,0,0,0.08)",border:"1px solid rgba(0,0,0,0.07)"}}>
+              <div style={{fontSize:13,fontWeight:800,color:"#0a0a0a",marginBottom:20}}>Create Broadcast</div>
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                <div style={{padding:"12px 16px",borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0"}}>
+                  <div style={{fontSize:10,color:"#94a3b8",marginBottom:4,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Filter by tag</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {["leads","customers","vip","follow-up"].map((t,i)=>(
+                      <span key={t} style={{padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:700,background:i<2?"#dcfce7":"#f1f5f9",color:i<2?"#16a34a":"#64748b",border:i<2?"1px solid #bbf7d0":"1px solid #e2e8f0"}}>{t} {i<2?"✓":""}</span>
+                    ))}
+                  </div>
+                </div>
+                <div style={{padding:"12px 16px",borderRadius:12,background:"#f8fafc",border:"1px solid #e2e8f0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontSize:10,color:"#94a3b8",fontWeight:600,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Active in last 24h only</div>
+                    <div style={{fontSize:12,color:"#0a0a0a",fontWeight:700}}>348 contacts · ₹0.20/msg</div>
+                  </div>
+                  <div style={{width:36,height:20,borderRadius:10,background:"#25d366",display:"flex",alignItems:"center",justifyContent:"flex-end",padding:"0 4px"}}>
+                    <div style={{width:14,height:14,borderRadius:"50%",background:"#fff"}}/>
+                  </div>
+                </div>
+                <div style={{padding:"14px 16px",borderRadius:12,background:"linear-gradient(135deg,#25d366,#16a34a)",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#fff"}}>Estimated cost</div>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,0.7)"}}>348 contacts × ₹0.20</div>
+                  </div>
+                  <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>₹69.60</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature 3: Template Management */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(380px,1fr))",gap:60,alignItems:"center"}}>
+            <div>
+              <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontFamily:"'DM Mono',monospace",fontWeight:600,letterSpacing:1.5,color:"#7c3aed",textTransform:"uppercase",marginBottom:20}}>📋 Template Management</div>
+              <h3 style={{fontSize:"clamp(28px,3vw,40px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.1,marginBottom:16,color:"#0a0a0a"}}>Create & submit<br/>templates in seconds</h3>
+              <p style={{fontSize:16,color:"rgba(0,0,0,0.55)",lineHeight:1.7,marginBottom:28}}>Build WhatsApp message templates with headers, body, footers and buttons — then submit directly for Meta approval from within your dashboard. No need to navigate the Meta Business portal.</p>
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                {[
+                  {icon:"🖊️", text:"Visual template builder with live preview"},
+                  {icon:"🚀", text:"Submit for Meta approval with one click"},
+                  {icon:"✅", text:"See approval status — Pending, Approved, Rejected"},
+                  {icon:"🔁", text:"Reuse approved templates in workflows & campaigns"},
+                ].map((f,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,fontSize:14.5,color:"rgba(0,0,0,0.65)"}}>
+                    <span style={{fontSize:16,flexShrink:0,marginTop:1}}>{f.icon}</span>{f.text}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{background:"#fff",borderRadius:24,padding:"28px",boxShadow:"0 24px 60px rgba(0,0,0,0.08)",border:"1px solid rgba(0,0,0,0.07)"}}>
+              <div style={{fontSize:13,fontWeight:800,color:"#0a0a0a",marginBottom:16}}>Your Templates</div>
+              {[
+                {name:"welcome_msg",    cat:"MARKETING", status:"APPROVED",  color:"#16a34a", bg:"#dcfce7"},
+                {name:"order_confirm",  cat:"UTILITY",   status:"APPROVED",  color:"#16a34a", bg:"#dcfce7"},
+                {name:"summer_promo",   cat:"MARKETING", status:"PENDING",   color:"#d97706", bg:"#fef3c7"},
+                {name:"cart_reminder",  cat:"MARKETING", status:"REJECTED",  color:"#dc2626", bg:"#fee2e2"},
+              ].map((t,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid #f1f5f9"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#0a0a0a",fontFamily:"'DM Mono',monospace"}}>{t.name}</div>
+                    <div style={{fontSize:10,color:"#94a3b8",marginTop:2}}>{t.cat}</div>
+                  </div>
+                  <span style={{padding:"3px 10px",borderRadius:20,fontSize:10,fontWeight:700,color:t.color,background:t.bg}}>{t.status}</span>
+                </div>
+              ))}
+              <button style={{marginTop:16,width:"100%",padding:"11px 0",borderRadius:12,background:"linear-gradient(135deg,#7c3aed,#6d28d9)",border:"none",color:"#fff",fontSize:12.5,fontWeight:700,cursor:"pointer"}}>+ Create New Template</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       {/* ══ UPGRADED HOW IT WORKS ══ */}
       <section id="how-it-works" style={{padding:"clamp(80px,8vw,120px) clamp(20px,5vw,60px)",background:"#f8fafc",maxWidth:"100%", borderTop:"1px solid rgba(0,0,0,0.04)", borderBottom:"1px solid rgba(0,0,0,0.04)"}}>
         <div style={{maxWidth:1280,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(400px, 1fr))",gap:40,alignItems:"center"}}>
@@ -575,7 +729,7 @@ export default function LandingPage() {
         <div style={{textAlign:"center",marginBottom:70}}>
           <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.2)",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontFamily:"'DM Mono',monospace",fontWeight:500,letterSpacing:2,color:"#16a34a",textTransform:"uppercase",marginBottom:18}}>Simple Pricing</div>
           <h2 style={{fontSize:"clamp(34px,4vw,52px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.08,marginBottom:16,color:"#0a0a0a"}}>Scale without limits</h2>
-          <p style={{fontSize:16,color:"rgba(0,0,0,0.5)",maxWidth:460,margin:"0 auto",lineHeight:1.7}}>No hidden fees. No per-message charges on paid plans.</p>
+          <p style={{fontSize:16,color:"rgba(0,0,0,0.5)",maxWidth:460,margin:"0 auto",lineHeight:1.7}}>No subscription fees. Pay only per message sent — starting at ₹0.20/msg.</p>
         </div>
         
         
@@ -713,7 +867,7 @@ export default function LandingPage() {
               <span style={{color:"#4ade80"}}>5 minutes away</span>
             </h2>
             <p style={{fontSize:16,color:"rgba(255,255,255,0.7)",margin:"0 auto 40px",lineHeight:1.7,maxWidth:420}}>
-              Free forever on the Starter plan. No credit card required. Start automating today.
+              Pro plan is free forever. No credit card required. Pay only per message sent.
             </p>
             <div style={{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap"}}>
               <button onClick={()=>navigate("/register")} style={{display:"inline-flex",alignItems:"center",gap:10,background:"#fff",color:"#065f56",border:"none",borderRadius:14,padding:"16px 32px",fontSize:15,fontWeight:800,cursor:"pointer",boxShadow:"0 12px 32px rgba(0,0,0,0.2)",transition:"all 0.2s",fontFamily:"inherit"}}

@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { WaIcon } from "../components/Icons";
 
+const API = process.env.REACT_APP_API_URL || 'http://localhost:5005';
+
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -12,7 +14,7 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post("https://wpleads.in/api/auth/login", form);
+      const res = await axios.post(`${API}/api/auth/login`, form);
       localStorage.setItem("token", res.data.token);
       navigate("/dashboard");
     } catch (err) {
@@ -24,7 +26,7 @@ export default function Login() {
 
   const handleGoogleLogin = () => {
     // Redirect to your backend Google Auth URL
-    window.location.href = 'https://wpleads.in/api/auth/google';
+    window.location.href = `${API}/api/auth/google`;
   };
 
   return (
