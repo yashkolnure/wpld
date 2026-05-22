@@ -1,10 +1,11 @@
 import express from 'express';
-import { connect, getStatus, disconnect, addPhoneNumber, requestOtp, verifyOtp, registerPhoneNumber, getOnboardingProgress, saveOnboardingProgress, clearOnboardingProgress } from '../controllers/whatsappController.js';
+import { connect, getStatus, disconnect, addPhoneNumber, requestOtp, verifyOtp, registerPhoneNumber, getOnboardingProgress, saveOnboardingProgress, clearOnboardingProgress, embeddedConnect } from '../controllers/whatsappController.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.post  ('/connect',    protect, connect);
+router.post  ('/connect',           protect, connect);
+router.post  ('/embedded-connect',  protect, embeddedConnect);
 router.get   ('/status',     protect, getStatus);
 router.delete('/disconnect', protect, disconnect);
 

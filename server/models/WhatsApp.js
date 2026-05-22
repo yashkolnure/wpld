@@ -9,6 +9,10 @@ const whatsappSchema = new mongoose.Schema({
   verifiedName:   { type: String },
   wabaId:         { type: String },
 
+  // 'own' = user brought their own Meta Business WABA
+  // 'platform' = WPLeads added their number to WPLeads' shared WABA
+  connectionType: { type: String, enum: ['own', 'platform'], default: 'own' },
+
   // Security & Finalization
   encryptedToken: { type: String },
   isVerified:     { type: Boolean, default: false },

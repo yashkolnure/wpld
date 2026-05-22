@@ -25,6 +25,32 @@ router.get("/chats", protect, async (req, res) => {
   }
 });
 
+// --- 1b. GET SAVED MESSAGES (must be before /:contactId to avoid param collision) ---
+router.get("/chats/saved", protect, async (req, res) => {
+  try {
+    const msgs = await Message.find({ userId: req.user._id, saved: true })
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .populate("contactId", "name phone");
+    res.json(msgs);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to load saved messages" });
+  }
+});
+
+// --- 1c. TOGGLE SAVED on a message ---
+router.patch("/chats/messages/:messageId/save", protect, async (req, res) => {
+  try {
+    const msg = await Message.findOne({ _id: req.params.messageId, userId: req.user._id });
+    if (!msg) return res.status(404).json({ error: "Message not found" });
+    msg.saved = !msg.saved;
+    await msg.save();
+    res.json({ saved: msg.saved });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to toggle saved" });
+  }
+});
+
 // --- 2. GET MESSAGE HISTORY (paginated) ---
 // ?limit=30&before=<messageId>  → returns oldest-first slice ending before that id
 router.get("/chats/:contactId/messages", protect, async (req, res) => {

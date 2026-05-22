@@ -76,7 +76,7 @@ export const connect = async (req, res) => {
 
     const wa = await WhatsApp.findOneAndUpdate(
       { userId: req.user._id },
-      { phoneNumberId, wabaId, encryptedToken, isVerified: true, connectedAt: new Date() },
+      { phoneNumberId, wabaId, encryptedToken, isVerified: true, connectedAt: new Date(), connectionType: 'own' },
       { upsert: true, new: true }
     );
 
@@ -95,11 +95,12 @@ export const getStatus = async (req, res) => {
     if (!wa) return res.json({ connected: false });
 
     res.json({
-      connected: true,
-      isVerified: wa.isVerified,
-      phoneNumberId: wa.phoneNumberId,
-      wabaId: wa.wabaId,
-      connectedAt: wa.connectedAt,
+      connected:      true,
+      isVerified:     wa.isVerified,
+      phoneNumberId:  wa.phoneNumberId,
+      wabaId:         wa.wabaId,
+      connectedAt:    wa.connectedAt,
+      connectionType: wa.connectionType || 'own',
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -117,20 +118,22 @@ export const disconnect = async (req, res) => {
 
 // POST /api/whatsapp/numbers/add
 // Adds a phone number to the connected WABA via Meta Graph API
+// Uses platform SYSTEM_USER_TOKEN + WABA_ID (this wizard is for platform-managed numbers)
 export const addPhoneNumber = async (req, res) => {
   try {
-    const wa = await WhatsApp.findOne({ userId: req.user._id });
-    if (!wa) return res.status(400).json({ message: 'No WhatsApp account connected' });
-
     const { countryCode, phoneNumber, verifiedName } = req.body;
     if (!countryCode || !phoneNumber || !verifiedName) {
       return res.status(400).json({ message: 'countryCode, phoneNumber and verifiedName are required' });
     }
 
-    const token = decrypt(wa.encryptedToken);
+    const token  = process.env.SYSTEM_USER_TOKEN;
+    const wabaId = process.env.WABA_ID;
+    if (!token || !wabaId) {
+      return res.status(500).json({ message: 'Platform WhatsApp credentials not configured' });
+    }
 
     const metaRes = await axios.post(
-      `https://graph.facebook.com/v19.0/${wa.wabaId}/phone_numbers`,
+      `https://graph.facebook.com/v19.0/${wabaId}/phone_numbers`,
       {
         cc: countryCode,
         phone_number: phoneNumber,
@@ -154,15 +157,13 @@ export const addPhoneNumber = async (req, res) => {
 // Requests OTP via SMS or VOICE for a pending phone number
 export const requestOtp = async (req, res) => {
   try {
-    const wa = await WhatsApp.findOne({ userId: req.user._id });
-    if (!wa) return res.status(400).json({ message: 'No WhatsApp account connected' });
-
     const { phoneNumberId, method } = req.body;
     if (!phoneNumberId || !method) {
       return res.status(400).json({ message: 'phoneNumberId and method (SMS|VOICE) are required' });
     }
 
-    const token = decrypt(wa.encryptedToken);
+    const token = process.env.SYSTEM_USER_TOKEN;
+    if (!token) return res.status(500).json({ message: 'Platform credentials not configured' });
 
     await axios.post(
       `https://graph.facebook.com/v19.0/${phoneNumberId}/request_code`,
@@ -184,15 +185,13 @@ export const requestOtp = async (req, res) => {
 // Verifies the OTP received on the phone
 export const verifyOtp = async (req, res) => {
   try {
-    const wa = await WhatsApp.findOne({ userId: req.user._id });
-    if (!wa) return res.status(400).json({ message: 'No WhatsApp account connected' });
-
     const { phoneNumberId, code } = req.body;
     if (!phoneNumberId || !code) {
       return res.status(400).json({ message: 'phoneNumberId and code are required' });
     }
 
-    const token = decrypt(wa.encryptedToken);
+    const token = process.env.SYSTEM_USER_TOKEN;
+    if (!token) return res.status(500).json({ message: 'Platform credentials not configured' });
 
     await axios.post(
       `https://graph.facebook.com/v19.0/${phoneNumberId}/verify_code`,
@@ -214,20 +213,25 @@ export const verifyOtp = async (req, res) => {
 // Registers the verified number with WhatsApp (sets 2FA PIN)
 export const registerPhoneNumber = async (req, res) => {
   try {
-    const wa = await WhatsApp.findOne({ userId: req.user._id });
-    if (!wa) return res.status(400).json({ message: 'No WhatsApp account connected' });
-
     const { phoneNumberId, pin } = req.body;
     if (!phoneNumberId || !pin) {
       return res.status(400).json({ message: 'phoneNumberId and pin are required' });
     }
 
-    const token = decrypt(wa.encryptedToken);
+    const token = process.env.SYSTEM_USER_TOKEN;
+    if (!token) return res.status(500).json({ message: 'Platform credentials not configured' });
 
     await axios.post(
       `https://graph.facebook.com/v19.0/${phoneNumberId}/register`,
       { messaging_product: 'whatsapp', pin },
       { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // Mark as platform-managed and store their phoneNumberId
+    await WhatsApp.findOneAndUpdate(
+      { userId: req.user._id },
+      { connectionType: 'platform', phoneNumberId, wabaId: process.env.WABA_ID, isVerified: true, connectedAt: new Date() },
+      { upsert: true, new: true }
     );
 
     res.json({ success: true, message: 'Phone number registered successfully' });
@@ -237,5 +241,62 @@ export const registerPhoneNumber = async (req, res) => {
       message: metaErr?.message || err.message,
       code: metaErr?.code,
     });
+  }
+};
+
+// POST /api/whatsapp/embedded-connect
+// Called after user completes the Facebook Embedded Signup popup.
+// As a Tech Provider, our SYSTEM_USER_TOKEN already has access to the user's WABA
+// after Embedded Signup — no code exchange needed. We subscribe the WABA to our
+// webhook and store the WABA/phone credentials.
+export const embeddedConnect = async (req, res) => {
+  try {
+    const { wabaId, phoneNumberId } = req.body;
+    if (!wabaId || !phoneNumberId) {
+      return res.status(400).json({ message: 'wabaId and phoneNumberId are required' });
+    }
+
+    const systemToken = process.env.SYSTEM_USER_TOKEN;
+    if (!systemToken) {
+      return res.status(500).json({ message: 'Platform credentials not configured on server' });
+    }
+
+    // Subscribe app to this WABA so webhooks flow to wpleads.in/api/webhook
+    await axios.post(
+      `https://graph.facebook.com/v19.0/${wabaId}/subscribed_apps`,
+      {},
+      { headers: { Authorization: `Bearer ${systemToken}` } }
+    ).catch(() => {}); // non-fatal
+
+    // Verify our system token can access this phone number (confirms ES completed)
+    const metaRes = await axios.get(
+      `https://graph.facebook.com/v19.0/${phoneNumberId}`,
+      { headers: { Authorization: `Bearer ${systemToken}` } }
+    );
+    if (!metaRes.data?.id) {
+      return res.status(401).json({ message: 'Could not access this WhatsApp number. Please complete the Facebook signup again.' });
+    }
+
+    // Store with system token — same as platform users but with their own WABA/phone
+    const encryptedToken = encrypt(systemToken);
+    const wa = await WhatsApp.findOneAndUpdate(
+      { userId: req.user._id },
+      { phoneNumberId, wabaId, encryptedToken, isVerified: true,
+        connectedAt: new Date(), connectionType: 'own' },
+      { upsert: true, new: true }
+    );
+
+    res.json({
+      connected:      true,
+      message:        'WhatsApp connected successfully',
+      isVerified:     wa.isVerified,
+      connectionType: 'own',
+      phoneNumberId,
+      wabaId,
+      connectedAt:    wa.connectedAt,
+    });
+  } catch (err) {
+    const msg = err.response?.data?.error?.message || err.message;
+    res.status(err.response?.status || 500).json({ message: msg });
   }
 };

@@ -40,7 +40,8 @@ const messageSchema = new mongoose.Schema(
     metadata: mongoose.Schema.Types.Mixed, 
     
     error: mongoose.Schema.Types.Mixed, 
-    nodeId: String, 
+    nodeId: String,
+    saved: { type: Boolean, default: false },  // user-bookmarked messages
   },
   { timestamps: true }
 );
