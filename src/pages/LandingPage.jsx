@@ -664,7 +664,7 @@ export default function LandingPage() {
           </div>
 
           {/* Cards */}
-          <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(300px, 1fr))", gap:24, maxWidth:1100, margin:"0 auto", alignItems:"center"}}>
+          <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(300px, 1fr))", gap:24, maxWidth:1100, alignItems:"center"}}>
             {plans.map((p, i) => (
               <div key={i} style={{
                 position:"relative",
