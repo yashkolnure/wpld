@@ -48,13 +48,6 @@ function HeroIllustration() {
       <img
         src="/images/hero-phone.webp"
         alt="WPLeads WhatsApp automation"
-        style={{
-          display:"block",
-          width:"100%",
-          borderRadius:16,
-          animation:"wpl-float 7s ease-in-out infinite",
-          filter:"drop-shadow(0 20px 40px rgba(0,0,0,0.12))",
-        }}
       />
 
       {/* messages sent — anchored inside top-left of image */}
