@@ -1,207 +1,381 @@
 import React from 'react';
 
-const palette = [
-  { type: 'trigger', label: 'Keyword trigger', color: '#534AB7', bg: '#EEEDFE', border: '#AFA9EC', icon: '⚡' },
-  { type: 'text',    label: 'Text message',    color: '#0F6E56', bg: '#E1F5EE', border: '#5DCAA5', icon: '💬' },
-  { type: 'button',  label: 'Button message',  color: '#185FA5', bg: '#E6F1FB', border: '#85B7EB', icon: '🔘' },
-  { type: 'list',    label: 'List message',    color: '#854F0B', bg: '#FAEEDA', border: '#EF9F27', icon: '📜' },
-  { type: 'media',   label: 'Media message',   color: '#993C1D', bg: '#FAECE7', border: '#F0997B', icon: '🖼️' },
-  { type: 'delay',   label: 'Delay',           color: '#5F5E5A', bg: '#F1EFE8', border: '#B4B2A9', icon: '⏳' },
+/* ── Palette ── */
+const PALETTE = [
+  { type:'trigger', label:'Keyword Trigger', color:'#7c3aed', bg:'#f5f3ff', border:'#c4b5fd', icon:'⚡' },
+  { type:'text',    label:'Text Message',    color:'#0f766e', bg:'#f0fdfa', border:'#5eead4', icon:'💬' },
+  { type:'button',  label:'Buttons',         color:'#1d4ed8', bg:'#eff6ff', border:'#93c5fd', icon:'🔘' },
+  { type:'list',    label:'List Message',    color:'#b45309', bg:'#fffbeb', border:'#f59e0b', icon:'📋' },
+  { type:'media',   label:'Media',           color:'#be185d', bg:'#fdf2f8', border:'#f9a8d4', icon:'🖼️' },
+  { type:'delay',   label:'Delay',           color:'#475569', bg:'#f8fafc', border:'#cbd5e1', icon:'⏱️' },
+];
+const PAL = Object.fromEntries(PALETTE.map(p => [p.type, p]));
+
+/*
+  FLOW LAYOUT  (all dimensions in px)
+  ─────────────────────────────────────────────────────────────
+  Node              x     y    w    approx-h   cx      cy-bot
+  ─────────────────────────────────────────────────────────────
+  Trigger          390    20   210     88       495      108
+  Welcome          350   162   260    108       480      270
+  Menu             325   330   270    198       460      528
+  Electronics       30   582   240    196       150      ─
+  Fashion          700   582   240    196       820      ─
+  ─────────────────────────────────────────────────────────────
+
+  EDGES  (from-cx, from-bot)  →  (to-cx, to-top)
+  1  495,108  →  480,162   straight down
+  2  480,270  →  460,330   straight down
+  3  460,528  →  150,582   branch left
+  4  460,528  →  820,582   branch right
+*/
+
+const NODES = [
+  {
+    id:'trigger', x:390, y:20, w:210, type:'trigger',
+    label:'Keyword Trigger',
+    title: '"catalog"',
+    sub:   'Match: Contains',
+  },
+  {
+    id:'welcome', x:350, y:162, w:260, type:'text',
+    label:'Text Message',
+    title: 'Welcome! 👋',
+    sub:   'Hi! Welcome to WPLeads Store.\nHow can I help you today?',
+  },
+  {
+    id:'menu', x:325, y:330, w:270, type:'button',
+    label:'Button Message',
+    title: 'Browse our catalog',
+    sub:   'Choose a category to explore:',
+    btns:  ['📱 Electronics', '👕 Fashion'],
+  },
+  {
+    id:'electronics', x:30, y:582, w:245, type:'list',
+    label:'List Message',
+    title: 'Electronics',
+    sub:   'Tap a product to learn more:',
+    items: ['iPhone 15 Pro', 'MacBook Air M3', 'AirPods Pro'],
+  },
+  {
+    id:'fashion', x:695, y:582, w:245, type:'list',
+    label:'List Message',
+    title: 'Fashion',
+    sub:   'Tap a product to learn more:',
+    items: ['Summer Dress', 'Denim Jacket', 'Sneakers'],
+  },
 ];
 
-const Handle = ({ position, color = "#6366f1" }) => (
-  <div style={{
-    position: "absolute",
-    ...position,
-    width: 10,
-    height: 10,
-    background: "#fff",
-    border: `2px solid ${color}`,
-    borderRadius: "50%",
-    zIndex: 10
-  }} />
-);
+const EDGES = [
+  { d:'M 495 108 C 495 135 480 135 480 162', color:'#a78bfa' },
+  { d:'M 480 270 C 480 300 460 300 460 330', color:'#34d399' },
+  { d:'M 460 528 C 460 555 152 555 152 582', color:'#60a5fa', dashed:true },
+  { d:'M 460 528 C 460 555 817 555 817 582', color:'#60a5fa', dashed:true },
+];
 
-function NodeBox({ x, y, label, content, nodePalette, btns, listItems, active, width = 230 }) {
+/* ── Single node ── */
+function FlowNode({ n }) {
+  const p = PAL[n.type];
   return (
     <div style={{
-      position: "absolute", left: x, top: y, width: width,
-      background: "#fff", border: `1.5px solid ${active ? '#6366f1' : '#e2e8f0'}`, borderRadius: 12,
-      boxShadow: active ? "0 0 0 3px rgba(99, 102, 241, 0.1), 0 10px 30px -10px rgba(0,0,0,0.1)" : "0 4px 20px -10px rgba(0,0,0,0.08)",
-      zIndex: 5, transition: "all 0.2s ease"
+      position:'absolute', left:n.x, top:n.y, width:n.w,
+      background:'#fff', borderRadius:13,
+      border:`1.5px solid ${p.border}`,
+      boxShadow:'0 2px 16px rgba(0,0,0,0.07)',
+      zIndex:5,
     }}>
-      {/* Node Header */}
-      <div style={{ background: nodePalette.bg, padding: "8px 12px", borderRadius: "11px 11px 0 0", borderBottom: `1px solid ${nodePalette.border}`, display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{fontSize: 12}}>{nodePalette.icon}</span>
-        <span style={{ fontSize: 9, fontWeight: 800, color: nodePalette.color, textTransform: "uppercase", letterSpacing: 0.8 }}>{label}</span>
+      {/* Header */}
+      <div style={{
+        background:p.bg, padding:'7px 11px',
+        borderRadius:'12px 12px 0 0',
+        borderBottom:`1px solid ${p.border}`,
+        display:'flex', alignItems:'center', gap:7,
+      }}>
+        <span style={{fontSize:11}}>{p.icon}</span>
+        <span style={{fontSize:9,fontWeight:800,color:p.color,textTransform:'uppercase',letterSpacing:0.9,flex:1}}>{n.label}</span>
+        <div style={{width:6,height:6,borderRadius:'50%',background:p.color,opacity:0.5}}/>
       </div>
-
-      {/* Node Body */}
-      <div style={{ padding: "14px", fontSize: 12, color: "#1e293b" }}>
-        <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 13 }}>{content.title}</div>
-        <div style={{ fontSize: 11, color: "#64748b", lineHeight: 1.5 }}>{content.body}</div>
-        
-        {listItems && (
-          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-            {listItems.map((item, idx) => (
-              <div key={idx} style={{ position: 'relative', padding: "8px 12px", border: "1.2px solid #f1f5f9", borderRadius: 8, fontSize: 11, background: "#f8fafc", color: "#475569", fontWeight: 500, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      {/* Body */}
+      <div style={{padding:'11px 13px'}}>
+        <div style={{fontSize:12,fontWeight:700,color:'#1e293b',marginBottom:3}}>{n.title}</div>
+        <div style={{fontSize:10.5,color:'#64748b',lineHeight:1.5,whiteSpace:'pre-line'}}>{n.sub}</div>
+        {n.btns && (
+          <div style={{marginTop:9,display:'flex',flexDirection:'column',gap:5}}>
+            {n.btns.map((b,i)=>(
+              <div key={i} style={{
+                padding:'6px 10px', border:'1.5px solid #dbeafe',
+                borderRadius:8, textAlign:'center',
+                fontSize:10.5, color:'#1d4ed8', fontWeight:700, background:'#eff6ff',
+              }}>{b}</div>
+            ))}
+          </div>
+        )}
+        {n.items && (
+          <div style={{marginTop:9,display:'flex',flexDirection:'column',gap:4}}>
+            {n.items.map((item,i)=>(
+              <div key={i} style={{
+                padding:'5px 9px', background:'#f8fafc',
+                border:'1px solid #f1f5f9', borderRadius:7,
+                fontSize:10.5, color:'#475569', fontWeight:500,
+                display:'flex', justifyContent:'space-between', alignItems:'center',
+              }}>
                 {item}
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#cbd5e1" }} />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {btns && (
-          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 6 }}>
-            {btns.map((b, idx) => (
-              <div key={idx} style={{ padding: "8px", border: "1.5px solid #e2e8f0", borderRadius: 10, textAlign: "center", fontSize: 11, background: "#fff", color: "#185FA5", fontWeight: 700, cursor: "default" }}>
-                {b}
+                <span style={{color:'#cbd5e1',fontSize:12}}>›</span>
               </div>
             ))}
           </div>
         )}
       </div>
-
-      {/* Logic Handles (Matching your image) */}
-      <Handle position={{ top: -6, left: "50%", marginLeft: -5 }} color={nodePalette.color} />
-      <Handle position={{ bottom: -6, left: "50%", marginLeft: -5 }} color={nodePalette.color} />
-      <Handle position={{ top: "50%", right: -6, marginTop: -5 }} color={nodePalette.color} />
-      <Handle position={{ top: "50%", left: -6, marginTop: -5 }} color={nodePalette.color} />
+      {/* Handles */}
+      {n.id !== 'electronics' && n.id !== 'fashion' && (
+        <div style={{position:'absolute',bottom:-6,left:'50%',transform:'translateX(-50%)',width:10,height:10,background:'#fff',border:`2px solid ${p.color}`,borderRadius:'50%',zIndex:10}}/>
+      )}
+      {n.id !== 'trigger' && (
+        <div style={{position:'absolute',top:-6,left:'50%',transform:'translateX(-50%)',width:10,height:10,background:'#fff',border:`2px solid ${p.color}`,borderRadius:'50%',zIndex:10}}/>
+      )}
     </div>
   );
 }
 
+/* ── Main export ── */
 export default function WorkflowBuilderPreview() {
   return (
-    <section id="builder" style={{ padding: "80px 20px", background: "#fff" }}>
-      <div style={{ maxWidth: 1440, margin: "0 auto" }}>
-        
-        {/* Production Frame */}
-        <div style={{ 
-          display: "flex", flexDirection: "column", height: 750, background: "#fff", borderRadius: 24, overflow: "hidden", 
-          border: "1px solid #e2e8f0", boxShadow: "0 40px 120px -20px rgba(0,0,0,0.12)" 
+    <section id="builder" style={{padding:'clamp(60px,7vw,100px) clamp(16px,4vw,48px)',background:'#fff'}}>
+      <div style={{maxWidth:1400,margin:'0 auto'}}>
+
+        {/* Section heading */}
+        <div style={{textAlign:'center',marginBottom:52}}>
+          <div style={{
+            display:'inline-flex',alignItems:'center',gap:8,
+            background:'rgba(99,102,241,0.07)',border:'1px solid rgba(99,102,241,0.18)',
+            borderRadius:100,padding:'5px 14px',
+            fontSize:10.5,fontWeight:700,letterSpacing:1.5,color:'#6366f1',textTransform:'uppercase',
+            marginBottom:16,
+          }}>Visual Builder</div>
+          <h2 style={{fontSize:'clamp(28px,3.5vw,46px)',fontWeight:900,letterSpacing:'-0.03em',lineHeight:1.1,marginBottom:12,color:'#0a0a0a'}}>
+            Build flows visually.<br/>Zero code needed.
+          </h2>
+          <p style={{fontSize:15,color:'rgba(0,0,0,0.5)',maxWidth:460,margin:'0 auto',lineHeight:1.7}}>
+            Drag nodes, connect them, publish instantly. Every conversation path visible at a glance.
+          </p>
+        </div>
+
+        {/* App chrome */}
+        <div style={{
+          background:'#fff', borderRadius:20, overflow:'hidden',
+          border:'1px solid #e2e8f0',
+          boxShadow:'0 30px 80px -16px rgba(0,0,0,0.13)',
+          display:'flex', flexDirection:'column',
+          height:680,
         }}>
-          
-          {/* TOP NAV BAR */}
-          <div style={{ height: 60, borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>Product catalog</span>
-              <span style={{ fontSize: 11, color: "#10b981", background: "#ecfdf5", padding: "2px 8px", borderRadius: 100 }}>✓ Saved</span>
+
+          {/* Title bar */}
+          <div style={{
+            height:52, borderBottom:'1px solid #f1f5f9',
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+            padding:'0 18px', flexShrink:0,
+            background:'#fff',
+          }}>
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              <div style={{display:'flex',gap:5}}>
+                <div style={{width:11,height:11,borderRadius:'50%',background:'#ef4444'}}/>
+                <div style={{width:11,height:11,borderRadius:'50%',background:'#f59e0b'}}/>
+                <div style={{width:11,height:11,borderRadius:'50%',background:'#22c55e'}}/>
+              </div>
+              <span style={{fontSize:13,fontWeight:700,color:'#1e293b',marginLeft:6}}>Product catalog</span>
+              <span style={{fontSize:10,color:'#10b981',background:'#ecfdf5',padding:'2px 8px',borderRadius:100,fontWeight:600}}>✓ Saved</span>
             </div>
-            <button style={{ background: "#6366f1", color: "#fff", border: "none", padding: "8px 18px", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Update workflow</button>
+            <div style={{display:'flex',gap:8}}>
+              <button style={{background:'#f8fafc',color:'#475569',border:'1px solid #e2e8f0',padding:'5px 13px',borderRadius:7,fontSize:12,fontWeight:600,cursor:'pointer'}}>Preview</button>
+              <button style={{background:'#6366f1',color:'#fff',border:'none',padding:'6px 15px',borderRadius:7,fontSize:12,fontWeight:700,cursor:'pointer'}}>Publish</button>
+            </div>
           </div>
 
-          <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-            
-            {/* LEFT SIDEBAR */}
-            <div style={{ width: 240, borderRight: "1px solid #f1f5f9", padding: "24px", background: "#fff" }} className="builder-sidebar">
-              <p style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", marginBottom: 20, letterSpacing: 1 }}>DRAG TO CANVAS</p>
-              {palette.map(p => (
-                <div key={p.type} style={{ background: p.bg, border: `1px solid ${p.border}`, borderRadius: 12, padding: "12px", marginBottom: 10, display: "flex", alignItems: "center", gap: 12, cursor: "grab", transition: "transform 0.1s" }} onMouseEnter={e => e.currentTarget.style.transform = "scale(1.02)"} onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
-                  <span style={{fontSize: 16}}>{p.icon}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: p.color }}>{p.label}</span>
+          <div style={{display:'flex',flex:1,overflow:'hidden'}}>
+
+            {/* ── LEFT SIDEBAR ── */}
+            <div className="wf-sidebar" style={{
+              width:188, borderRight:'1px solid #f1f5f9',
+              padding:'14px 10px', background:'#fafafa',
+              flexShrink:0, overflowY:'auto',
+            }}>
+              <p style={{fontSize:9,fontWeight:800,color:'#94a3b8',marginBottom:12,letterSpacing:1.5,textTransform:'uppercase',paddingLeft:4}}>Nodes</p>
+              {PALETTE.map(p=>(
+                <div key={p.type}
+                  style={{
+                    background:p.bg, border:`1px solid ${p.border}`,
+                    borderRadius:8, padding:'7px 9px', marginBottom:6,
+                    display:'flex', alignItems:'center', gap:7,
+                    cursor:'grab',
+                  }}
+                  onMouseEnter={e=>{ e.currentTarget.style.transform='translateX(3px)'; e.currentTarget.style.boxShadow='0 3px 10px rgba(0,0,0,0.08)'; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}
+                >
+                  <span style={{fontSize:12,flexShrink:0}}>{p.icon}</span>
+                  <span style={{fontSize:10.5,fontWeight:700,color:p.color,lineHeight:1.2}}>{p.label}</span>
                 </div>
               ))}
             </div>
 
-            {/* MAIN CANVAS */}
-            <div style={{ flex: 1, position: "relative", overflow: "auto", background: "#f8fafc", backgroundImage: "radial-gradient(#cbd5e1 0.8px, transparent 0.8px)", backgroundSize: "30px 30px" }}>
-              <div style={{ width: 1200, height: 600, position: "relative" }}>
-                
-                {/* RE-LINKED SVG PATHS (Corrected Logic) */}
-                <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
-                  <defs>
-                    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#94a3b8" stopOpacity="0.2" />
-                      <stop offset="100%" stopColor="#6366f1" stopOpacity="1" />
-                    </linearGradient>
-                  </defs>
-                  {/* Trigger to List */}
-                  <path d="M430 85 C 430 150, 245 120, 245 150" stroke="#cbd5e1" strokeWidth="2" fill="none" strokeDasharray="5,5" />
-                  
-                  {/* List Item 1 to Text Message */}
-                  <path d="M250 215 C 350 215, 450 180, 520 180" stroke="#cbd5e1" strokeWidth="2" fill="none" strokeDasharray="5,5" />
-                  
-                  {/* List Item 2 to Button Message */}
-                  <path d="M250 255 C 350 255, 450 400, 540 400" stroke="#cbd5e1" strokeWidth="2" fill="none" strokeDasharray="5,5" />
+            {/* ── CANVAS ── */}
+            <div style={{
+              flex:1, position:'relative', overflow:'auto',
+              background:'#f8fafc',
+              backgroundImage:'radial-gradient(#dde1e9 0.9px, transparent 0.9px)',
+              backgroundSize:'24px 24px',
+            }}>
+              <div style={{width:1040, height:820, position:'relative'}}>
 
-                  {/* Text Message to Button Message */}
-                  <path d="M635 285 C 635 320, 635 340, 635 380" stroke="#6366f1" strokeWidth="2.5" fill="none" style={{animation: "wpl-edge-flow 20s linear infinite"}} strokeDasharray="6,6" />
+                {/* SVG connections */}
+                <svg style={{position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:1}}>
+                  <defs>
+                    {/* one arrowhead per edge color */}
+                    <marker id="arr-purple" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                      <polygon points="0 0,8 3,0 6" fill="#a78bfa"/>
+                    </marker>
+                    <marker id="arr-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                      <polygon points="0 0,8 3,0 6" fill="#34d399"/>
+                    </marker>
+                    <marker id="arr-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                      <polygon points="0 0,8 3,0 6" fill="#60a5fa"/>
+                    </marker>
+                  </defs>
+
+                  {/* Edge 1: Trigger → Welcome */}
+                  <path d="M 495 108 C 495 135 480 135 480 162"
+                    stroke="#a78bfa" strokeWidth="2" fill="none"
+                    strokeDasharray="6 4"
+                    markerEnd="url(#arr-purple)"
+                    style={{animation:'wf-flow 1.4s linear infinite'}}
+                  />
+                  {/* Edge 2: Welcome → Menu */}
+                  <path d="M 480 270 C 480 300 460 300 460 330"
+                    stroke="#34d399" strokeWidth="2" fill="none"
+                    strokeDasharray="6 4"
+                    markerEnd="url(#arr-green)"
+                    style={{animation:'wf-flow 1.6s linear infinite'}}
+                  />
+                  {/* Edge 3: Menu → Electronics */}
+                  <path d="M 460 528 C 460 555 152 555 152 582"
+                    stroke="#60a5fa" strokeWidth="2" fill="none"
+                    strokeDasharray="5 4"
+                    markerEnd="url(#arr-blue)"
+                    style={{animation:'wf-flow 1.8s linear infinite 0.3s'}}
+                  />
+                  {/* Edge 4: Menu → Fashion */}
+                  <path d="M 460 528 C 460 555 817 555 817 582"
+                    stroke="#60a5fa" strokeWidth="2" fill="none"
+                    strokeDasharray="5 4"
+                    markerEnd="url(#arr-blue)"
+                    style={{animation:'wf-flow 1.8s linear infinite 0.6s'}}
+                  />
                 </svg>
 
-                <NodeBox 
-                  x={320} y={30} 
-                  label="Keyword Trigger" 
-                  content={{ title: '"catalog"', body: "MatchType: Contains" }} 
-                  nodePalette={palette[0]} 
-                />
-
-                <NodeBox 
-                  x={20} y={150} 
-                  label="List Message" 
-                  content={{ title: "Our products", body: "Browse our full range. Tap any item to learn more." }} 
-                  nodePalette={palette[3]} 
-                  listItems={["Product A", "Product B", "Product C", "Product D"]}
-                />
-
-                <NodeBox 
-                  x={520} y={130} 
-                  label="Text Message" 
-                  content={{ title: "Product A Detail", body: "Product A — our best seller! Starts at $29. Includes full setup." }} 
-                  nodePalette={palette[1]} 
-                />
-
-                <NodeBox 
-                  x={540} y={380} 
-                  label="Button Message" 
-                  content={{ title: "Ready to order?", body: "Choose how you'd like to proceed." }} 
-                  nodePalette={palette[2]} 
-                  btns={["Place order 🛍️", "Talk to sales 📞", "See more"]}
-                  active={true}
-                />
+                {/* Nodes */}
+                {NODES.map(n => <FlowNode key={n.id} n={n} />)}
               </div>
 
-              {/* FLOATING CONTROLS */}
-              <div style={{ position: "absolute", bottom: 30, left: 30, display: "flex", background: "#fff", borderRadius: 12, border: "1px solid #e2e8f0", padding: 6, gap: 6, boxShadow: "0 10px 25px rgba(0,0,0,0.05)" }}>
-                {['+', '-', '□', '⚡'].map(c => <div key={c} style={{ width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: "#94a3b8", fontWeight: 700, cursor: "pointer" }}>{c}</div>)}
+              {/* Zoom controls */}
+              <div style={{
+                position:'sticky', bottom:16, left:16,
+                display:'inline-flex', background:'#fff', borderRadius:10,
+                border:'1px solid #e2e8f0', padding:3, gap:2,
+                boxShadow:'0 4px 14px rgba(0,0,0,0.07)',
+                float:'left', marginLeft:16, zIndex:20,
+              }}>
+                {['+','−','⊡'].map(c=>(
+                  <div key={c} style={{
+                    width:30, height:30,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    fontSize:15, color:'#64748b', fontWeight:700, cursor:'pointer',
+                    borderRadius:7,
+                  }}
+                  onMouseEnter={e=>e.currentTarget.style.background='#f1f5f9'}
+                  onMouseLeave={e=>e.currentTarget.style.background=''}
+                  >{c}</div>
+                ))}
               </div>
             </div>
 
-            {/* RIGHT TEST PREVIEW (WhatsApp Mockup) */}
-            <div style={{ width: 340, borderLeft: "1px solid #f1f5f9", background: "#fff", display: "flex", flexDirection: "column" }} className="builder-sidebar">
-              <div style={{ padding: "18px 24px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 12, fontWeight: 800, color: "#1e293b", letterSpacing: 0.5 }}>TEST WORKFLOW</span>
-                <span style={{ fontSize: 18, color: "#94a3b8", cursor: "pointer" }}>×</span>
+            {/* ── RIGHT PREVIEW ── */}
+            <div className="wf-sidebar" style={{
+              width:268, borderLeft:'1px solid #f1f5f9',
+              background:'#fff', display:'flex', flexDirection:'column', flexShrink:0,
+            }}>
+              <div style={{padding:'13px 16px',borderBottom:'1px solid #f1f5f9',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:10.5,fontWeight:800,color:'#1e293b',letterSpacing:0.6}}>PREVIEW</span>
+                <div style={{display:'flex',alignItems:'center',gap:5}}>
+                  <div style={{width:6,height:6,borderRadius:'50%',background:'#22c55e',boxShadow:'0 0 4px #22c55e'}}/>
+                  <span style={{fontSize:9,color:'#64748b',fontWeight:600}}>Live</span>
+                </div>
               </div>
-              
-              <div style={{ padding: "24px", background: "#f8fafc", flex: 1 }}>
-                <div style={{ background: "#fff", borderRadius: 20, height: "100%", overflow: "hidden", border: "1px solid #e2e8f0", boxShadow: "0 20px 40px rgba(0,0,0,0.05)", display: "flex", flexDirection: "column" }}>
-                   {/* WhatsApp Header */}
-                   <div style={{ background: "#075e54", padding: "14px 18px", color: "#fff", display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#128c7e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🤖</div>
-                      <div style={{ fontSize: 12, fontWeight: 700 }}>WPLeads Preview</div>
-                   </div>
-                   
-                   {/* WhatsApp Content */}
-                   <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: 12, background: "#e5ddd5", flex: 1, backgroundImage: `url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')`, backgroundSize: "contain" }}>
-                      
-                      {/* List Message Bubble */}
-                      <div style={{ alignSelf: "flex-start", background: "#fff", padding: "10px 12px", borderRadius: "0 12px 12px 12px", fontSize: 12, maxWidth: "85%", boxShadow: "0 1px 1px rgba(0,0,0,0.1)" }}>
-                        <div style={{fontWeight: 700, color: "#000"}}>Our products</div>
-                        <div style={{color: "#666", fontSize: 11, marginTop: 2}}>Browse our full range. Tap any item to learn more.</div>
-                        <div style={{ marginTop: 10, padding: "8px", borderTop: "1px solid #eee", color: "#00a884", textAlign: "center", fontWeight: 700, fontSize: 11 }}>View catalog</div>
-                      </div>
 
-                      {/* Button Message Bubble */}
-                      <div style={{ alignSelf: "flex-start", background: "#dcf8c6", padding: "10px 12px", borderRadius: "12px 0 12px 12px", fontSize: 12, maxWidth: "85%", boxShadow: "0 1px 1px rgba(0,0,0,0.1)", border: "1px solid #c7e9b0" }}>
-                        <div style={{fontWeight: 600}}>Ready to order? Choose how you'd like to proceed.</div>
-                        <div style={{display: "flex", flexDirection: "column", gap: 6, marginTop: 10}}>
-                           <div style={{background: "#fff", padding: "6px", borderRadius: 6, textAlign: "center", color: "#00a884", fontWeight: 700, fontSize: 11}}>Place order</div>
-                           <div style={{background: "#fff", padding: "6px", borderRadius: 6, textAlign: "center", color: "#00a884", fontWeight: 700, fontSize: 11}}>Talk to sales</div>
-                        </div>
+              <div style={{flex:1,padding:'12px',background:'#f8fafc',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+                <div style={{
+                  background:'#fff', borderRadius:14, overflow:'hidden',
+                  flex:1, border:'1px solid #e2e8f0',
+                  boxShadow:'0 6px 20px rgba(0,0,0,0.06)',
+                  display:'flex', flexDirection:'column',
+                }}>
+                  {/* WA Header */}
+                  <div style={{background:'#075e54',padding:'11px 13px',display:'flex',alignItems:'center',gap:9,flexShrink:0}}>
+                    <div style={{width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,#25d366,#16a34a)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,flexShrink:0}}>🤖</div>
+                    <div>
+                      <div style={{fontSize:11.5,fontWeight:700,color:'#fff'}}>WPLeads Bot</div>
+                      <div style={{fontSize:8.5,color:'rgba(255,255,255,0.65)'}}>online</div>
+                    </div>
+                  </div>
+
+                  {/* Messages */}
+                  <div style={{flex:1,padding:'10px 9px',background:'#e5ddd5',display:'flex',flexDirection:'column',gap:7,overflowY:'auto'}}>
+                    <div style={{textAlign:'center',fontSize:8.5,color:'#78909c',background:'rgba(255,255,255,0.7)',borderRadius:6,padding:'2px 10px',alignSelf:'center'}}>TODAY</div>
+
+                    {/* Bot welcome */}
+                    <div style={{alignSelf:'flex-start',background:'#fff',padding:'8px 10px',borderRadius:'3px 11px 11px 11px',maxWidth:'90%',boxShadow:'0 1px 2px rgba(0,0,0,0.08)'}}>
+                      <div style={{fontSize:7.5,fontWeight:700,color:'#075e54',marginBottom:3,textTransform:'uppercase',letterSpacing:0.5}}>WPLeads Bot</div>
+                      <div style={{fontSize:10.5,lineHeight:1.5,color:'#111'}}>Welcome! 👋 Welcome to WPLeads Store. How can I help you?</div>
+                      <div style={{fontSize:8,color:'#94a3b8',textAlign:'right',marginTop:3}}>10:32</div>
+                    </div>
+
+                    {/* Bot button message */}
+                    <div style={{alignSelf:'flex-start',background:'#fff',padding:'8px 10px',borderRadius:'3px 11px 11px 11px',maxWidth:'90%',boxShadow:'0 1px 2px rgba(0,0,0,0.08)'}}>
+                      <div style={{fontSize:7.5,fontWeight:700,color:'#075e54',marginBottom:3,textTransform:'uppercase',letterSpacing:0.5}}>WPLeads Bot</div>
+                      <div style={{fontSize:10.5,lineHeight:1.5,color:'#111',marginBottom:6}}>Browse our catalog. Choose a category:</div>
+                      {['📱 Electronics','👕 Fashion'].map(b=>(
+                        <div key={b} style={{textAlign:'center',fontSize:9.5,color:'#128C7E',fontWeight:700,border:'1px solid rgba(18,140,126,0.28)',borderRadius:7,padding:'4px 8px',background:'rgba(18,140,126,0.04)',marginBottom:4}}>{b}</div>
+                      ))}
+                      <div style={{fontSize:8,color:'#94a3b8',textAlign:'right',marginTop:2}}>10:32</div>
+                    </div>
+
+                    {/* User reply */}
+                    <div style={{alignSelf:'flex-end',background:'#d9fdd3',padding:'8px 10px',borderRadius:'11px 3px 11px 11px',maxWidth:'72%',boxShadow:'0 1px 2px rgba(0,0,0,0.08)'}}>
+                      <div style={{fontSize:10.5,color:'#111'}}>📱 Electronics</div>
+                      <div style={{fontSize:8,color:'#94a3b8',textAlign:'right',marginTop:3,display:'flex',alignItems:'center',justifyContent:'flex-end',gap:2}}>
+                        10:33
+                        <svg width="12" height="7" viewBox="0 0 16 11" fill="none"><path d="M1 5.5L5 9.5L10 2" stroke="#53bdeb" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 5.5L10 9.5L15 2" stroke="#53bdeb" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
                       </div>
-                   </div>
+                    </div>
+
+                    {/* Bot list */}
+                    <div style={{alignSelf:'flex-start',background:'#fff',padding:'8px 10px',borderRadius:'3px 11px 11px 11px',maxWidth:'90%',boxShadow:'0 1px 2px rgba(0,0,0,0.08)'}}>
+                      <div style={{fontSize:7.5,fontWeight:700,color:'#075e54',marginBottom:3,textTransform:'uppercase',letterSpacing:0.5}}>WPLeads Bot</div>
+                      <div style={{fontSize:10.5,lineHeight:1.5,color:'#111',marginBottom:5}}>Electronics. Tap a product:</div>
+                      {['iPhone 15 Pro','MacBook Air','AirPods Pro'].map((item,i)=>(
+                        <div key={i} style={{padding:'4px 8px',fontSize:10,color:'#128C7E',fontWeight:600,borderBottom:'1px solid #f1f5f9',display:'flex',justifyContent:'space-between'}}>
+                          {item}<span style={{color:'#cbd5e1'}}>›</span>
+                        </div>
+                      ))}
+                      <div style={{fontSize:8,color:'#94a3b8',textAlign:'right',marginTop:5}}>10:33</div>
+                    </div>
+                  </div>
+
+                  {/* Input */}
+                  <div style={{padding:'7px 9px',background:'#f0f2f5',display:'flex',gap:6,alignItems:'center',flexShrink:0}}>
+                    <div style={{flex:1,background:'#fff',borderRadius:18,padding:'5px 11px',fontSize:9.5,color:'#adb5bd'}}>Type a message…</div>
+                    <div style={{width:26,height:26,borderRadius:'50%',background:'#128C7E',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -211,13 +385,8 @@ export default function WorkflowBuilderPreview() {
       </div>
 
       <style>{`
-        @keyframes wpl-edge-flow { 
-          from { stroke-dashoffset: 120; } 
-          to { stroke-dashoffset: 0; } 
-        }
-        @media (max-width: 1024px) {
-          .builder-sidebar { display: none !important; }
-        }
+        @keyframes wf-flow { to { stroke-dashoffset: -20; } }
+        @media (max-width: 960px) { .wf-sidebar { display: none !important; } }
       `}</style>
     </section>
   );
