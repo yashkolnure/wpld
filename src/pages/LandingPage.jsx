@@ -109,12 +109,12 @@ const plans = [
     meta: [
       { icon: "🔁", label: "1 Active Workflow",     note: "Build 1 automation flow" },
       { icon: "💬", label: "1,000 msgs / month",    note: "Resets every month" },
-      { icon: "📈", label: "25% Markup Fee",         note: "on each message sent" },
+      { icon: "📈", label: "25% Markup Fee",         note: "on broadcast messages only" },
     ],
     features: [
       "1 Active Workflow",
       "1,000 Messages per month",
-      "25% Markup Fee on messages",
+      "25% Markup on Broadcast Messages",
       "Basic Message Types",
       "1 WhatsApp Number",
       "Community Support",
@@ -131,13 +131,13 @@ const plans = [
     meta: [
       { icon: "🔁", label: "2 Workflows included",  note: "+ ₹100 per extra workflow" },
       { icon: "💬", label: "Unlimited Messages",     note: "No monthly cap" },
-      { icon: "📈", label: "25% Markup Fee",         note: "on each message sent" },
+      { icon: "📈", label: "25% Markup Fee",         note: "on broadcast messages only" },
     ],
     features: [
       "2 Workflows included",
       "₹100 per extra workflow",
       "Unlimited Message Limit",
-      "25% Markup Fee on messages",
+      "25% Markup on Broadcast Messages",
       "Bulk Cold Outreach",
       "Broadcast Campaigns",
       "Template Management",
@@ -156,7 +156,7 @@ const plans = [
     meta: [
       { icon: "♾️", label: "Unlimited Workflows",   note: "No restrictions" },
       { icon: "💬", label: "Unlimited Messages",     note: "No cap on sends" },
-      { icon: "📈", label: "25% Markup Fee",         note: "Same across all plans" },
+      { icon: "📈", label: "25% Markup Fee",         note: "on broadcast msgs only" },
     ],
     features: [
       "Everything in Pro",
