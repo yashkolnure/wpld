@@ -5,7 +5,7 @@ import {
   Package, AlertCircle, Edit3, Search,
   ToggleLeft, ToggleRight, Image as ImageIcon,
   Loader2, Store, CheckCircle, XCircle, Clock,
-  RefreshCw, Tag, Sparkles,
+  RefreshCw, Tag,
 } from 'lucide-react';
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5005';
@@ -33,11 +33,7 @@ export default function ShopPage() {
   const [search,       setSearch]       = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  // Create catalog form
-  const [creating,     setCreating]     = useState(false);  // show create form
-  const [newCatName,   setNewCatName]   = useState('');
-  const [catCreating,  setCatCreating]  = useState(false);
-  const [catErr,       setCatErr]       = useState('');
+  // (catalog creation via API removed — use Commerce Manager + paste ID instead)
 
   // Manual fallback (paste existing ID)
   const [showManual,   setShowManual]   = useState(false);
@@ -83,21 +79,7 @@ export default function ShopPage() {
       .finally(() => setLoadingProd(false));
   };
 
-  /* ─── Create new catalog via Meta API ─── */
-  const createCatalog = async () => {
-    if (!newCatName.trim()) { setCatErr('Please enter a catalog name'); return; }
-    setCatCreating(true); setCatErr('');
-    try {
-      const r = await axios.post(`${API}/api/shop/catalog/create`, { name: newCatName.trim() }, { headers });
-      setCatalog(r.data.catalog);
-      setCreating(false); setNewCatName('');
-      loadProducts();
-    } catch (e) {
-      setCatErr(e.response?.data?.message || 'Failed to create catalog on Meta');
-    } finally { setCatCreating(false); }
-  };
-
-  /* ─── Manual save (fallback) ─── */
+  /* ─── Connect catalog by ID ─── */
   const saveManual = async () => {
     if (!manualId.trim()) return;
     setManualSaving(true);
@@ -238,92 +220,74 @@ export default function ShopPage() {
       {!catalog && (
         <div style={card}>
 
-          {/* ── Create new catalog ── */}
+          {/* ── Setup instructions ── */}
           {!showManual && (
             <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:20, padding:'32px 0' }}>
               <div style={{ width:68, height:68, borderRadius:22, background:'linear-gradient(135deg,#fffbeb,#fef3c7)', border:'2px dashed #fcd34d', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <Store size={30} color="#f59e0b" />
               </div>
 
-              <div style={{ textAlign:'center', maxWidth:400 }}>
-                <p style={{ fontWeight:800, fontSize:16, color:'#111827', margin:'0 0 6px' }}>Create your product catalog</p>
+              <div style={{ textAlign:'center', maxWidth:420 }}>
+                <p style={{ fontWeight:800, fontSize:16, color:'#111827', margin:'0 0 6px' }}>Connect your product catalog</p>
                 <p style={{ fontSize:13, color:'#6b7280', margin:0, lineHeight:1.6 }}>
-                  Give your catalog a name and we'll create it on Meta for you — linked to your WhatsApp Business Account automatically.
+                  Create a catalog in Meta Commerce Manager, then connect it here to start sending product messages on WhatsApp.
                 </p>
               </div>
 
-              {!creating ? (
-                <button onClick={() => { setCreating(true); setCatErr(''); }} style={{ ...btnPrimary, padding:'10px 28px', fontSize:13 }}>
-                  <Sparkles size={15} /> Create New Catalog
-                </button>
-              ) : (
-                <div style={{ width:'100%', maxWidth:400, display:'flex', flexDirection:'column', gap:10 }}>
-                  {catErr && (
-                    <p style={errBox}><AlertCircle size={13} /> {catErr}</p>
-                  )}
-                  <div>
-                    <label style={lbl}>Catalog Name <span style={{ color:'#ef4444' }}>*</span></label>
-                    <input
-                      style={inp}
-                      value={newCatName}
-                      onChange={e => setNewCatName(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && createCatalog()}
-                      placeholder="e.g. My Store Products"
-                      autoFocus
-                    />
-                    <p style={{ fontSize:10, color:'#9ca3af', margin:'4px 0 0' }}>
-                      This name will appear in Meta Commerce Manager
+              {/* Step-by-step guide */}
+              <div style={{ width:'100%', maxWidth:420, background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:12, padding:'18px 20px', display:'flex', flexDirection:'column', gap:12 }}>
+                <p style={{ margin:0, fontSize:12, fontWeight:700, color:'#374151', letterSpacing:0.5 }}>HOW TO GET YOUR CATALOG ID</p>
+                {[
+                  { n:1, text: 'Go to', link: 'business.facebook.com/commerce', url: 'https://business.facebook.com/commerce' },
+                  { n:2, text: 'Click "Add catalog" → choose E-commerce → Next', link: null },
+                  { n:3, text: 'Name your catalog and click "Create catalog"', link: null },
+                  { n:4, text: 'Open the catalog → Settings → copy the Catalog ID', link: null },
+                  { n:5, text: 'Paste it below and click Connect', link: null },
+                ].map(s => (
+                  <div key={s.n} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
+                    <div style={{ minWidth:22, height:22, borderRadius:'50%', background:'#f59e0b', color:'#fff', fontSize:11, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', marginTop:1 }}>{s.n}</div>
+                    <p style={{ margin:0, fontSize:12.5, color:'#374151', lineHeight:1.5 }}>
+                      {s.text}{' '}
+                      {s.link && (
+                        <a href={s.url} target="_blank" rel="noreferrer" style={{ color:'#3b82f6', textDecoration:'none', fontWeight:600 }}>{s.link}</a>
+                      )}
                     </p>
                   </div>
-                  <div style={{ display:'flex', gap:8 }}>
-                    <button onClick={createCatalog} disabled={catCreating} style={{ ...btnPrimary, flex:1, justifyContent:'center' }}>
-                      {catCreating
-                        ? <><Loader2 size={13} style={{ animation:'spin .7s linear infinite' }} /> Creating...</>
-                        : <><Check size={13} /> Create Catalog</>
-                      }
-                    </button>
-                    <button onClick={() => { setCreating(false); setCatErr(''); }} style={btnSecondary}>Cancel</button>
-                  </div>
-                </div>
-              )}
-
-              {/* Divider */}
-              <div style={{ display:'flex', alignItems:'center', gap:12, width:'100%', maxWidth:340 }}>
-                <div style={{ flex:1, height:1, background:'#f3f4f6' }} />
-                <span style={{ fontSize:11, color:'#d1d5db', fontWeight:600 }}>OR</span>
-                <div style={{ flex:1, height:1, background:'#f3f4f6' }} />
+                ))}
               </div>
 
               <button
-                onClick={() => { setShowManual(true); setCreating(false); setCatErr(''); }}
-                style={{ fontSize:12, color:'#9ca3af', background:'none', border:'none', cursor:'pointer' }}
+                onClick={() => { setShowManual(true); }}
+                style={{ ...btnPrimary, padding:'10px 28px', fontSize:13 }}
               >
-                Use an existing catalog ID
+                <Tag size={15} /> Connect Catalog ID
               </button>
             </div>
           )}
 
-          {/* ── Manual ID entry (fallback) ── */}
+          {/* ── Catalog ID entry ── */}
           {showManual && (
-            <div style={{ maxWidth:440, margin:'0 auto', padding:'24px 0', display:'flex', flexDirection:'column', gap:12 }}>
+            <div style={{ maxWidth:440, margin:'0 auto', padding:'28px 0', display:'flex', flexDirection:'column', gap:14 }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
-                <button onClick={() => setShowManual(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#6b7280', fontSize:18, padding:0, lineHeight:1 }}>←</button>
-                <p style={{ fontWeight:700, fontSize:14, color:'#111827', margin:0 }}>Use Existing Catalog ID</p>
+                <button onClick={() => setShowManual(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#6b7280', fontSize:18, padding:0, lineHeight:1, display:'flex', alignItems:'center' }}>←</button>
+                <p style={{ fontWeight:700, fontSize:15, color:'#111827', margin:0 }}>Connect Your Catalog</p>
               </div>
               <div>
                 <label style={lbl}>Catalog ID <span style={{ color:'#ef4444' }}>*</span></label>
                 <input style={inp} value={manualId} onChange={e => setManualId(e.target.value)} placeholder="e.g. 123456789012345" autoFocus />
-                <p style={{ fontSize:10, color:'#9ca3af', margin:'3px 0 0' }}>Find in Meta Commerce Manager → Catalog → Settings</p>
+                <p style={{ fontSize:11, color:'#9ca3af', margin:'4px 0 0' }}>
+                  Find it in <a href="https://business.facebook.com/commerce" target="_blank" rel="noreferrer" style={{ color:'#3b82f6', textDecoration:'none' }}>Commerce Manager</a> → open your catalog → Settings
+                </p>
               </div>
               <div>
-                <label style={lbl}>Catalog Name (optional)</label>
+                <label style={lbl}>Display Name <span style={{ fontSize:10, color:'#9ca3af', fontWeight:400 }}>(optional)</span></label>
                 <input style={inp} value={manualName} onChange={e => setManualName(e.target.value)} placeholder="My Store" />
               </div>
               <div style={{ display:'flex', gap:8 }}>
-                <button onClick={saveManual} disabled={manualSaving} style={btnPrimary}>
-                  {manualSaving ? <><Loader2 size={13} style={{ animation:'spin .7s linear infinite' }} /> Saving...</> : <><Check size={13} /> Save</>}
+                <button onClick={saveManual} disabled={manualSaving || !manualId.trim()} style={{ ...btnPrimary, flex:1, justifyContent:'center', opacity: !manualId.trim() ? 0.5 : 1 }}>
+                  {manualSaving ? <><Loader2 size={13} style={{ animation:'spin .7s linear infinite' }} /> Connecting...</> : <><Check size={13} /> Connect Catalog</>}
                 </button>
-                <button onClick={() => setShowManual(false)} style={btnSecondary}>Cancel</button>
+                <button onClick={() => setShowManual(false)} style={btnSecondary}>Back</button>
               </div>
             </div>
           )}
