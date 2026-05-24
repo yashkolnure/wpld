@@ -12,9 +12,10 @@ import {
   Phone, StickyNote, Download, MessageSquare, Send, RefreshCw, Layers, Lock,
   Megaphone, QrCode, Tag, CheckCircle2, XCircle, Loader2,
   Wallet, FileText, Upload, BarChart2, Trash, Image, Video, List, MousePointerClick, Paperclip, Info,
-  User, Image as ImageIcon,
+  User, Image as ImageIcon, ShoppingBag,
 } from "lucide-react";
 import MyLeads from "./MyLeads";
+import ShopPage from "./ShopPage";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
 const POLL_CHATS_MS     = 8000;   // refresh chat list every 8s
@@ -44,6 +45,7 @@ const NAV = [
   { key: "bulk",       label: "Cold Outreach",Icon: Upload },
   { key: "templates",  label: "Templates",  Icon: FileText },
   { key: "wallet",     label: "Wallet",     Icon: Wallet },
+  { key: "shop",       label: "Shop",       Icon: ShoppingBag },
   { key: "qrcode",     label: "QR & Links", Icon: QrCode },
   { key: "whatsapp",   label: "WhatsApp API",   Icon: MessageCircle },
 ];
@@ -1820,7 +1822,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
           ))}
 
           <div className="section-label" style={{ paddingTop: 14, paddingBottom: 6 }}>Marketing</div>
-          {NAV.slice(5, 9).map(({ key, label, Icon }) => (
+          {NAV.slice(5, 10).map(({ key, label, Icon }) => (
             <button key={key} onClick={() => navTo(key)} className={`dnav${activeTab === key ? " on" : ""}`}>
               <Icon size={17} strokeWidth={activeTab === key ? 2.5 : 1.8} style={{ flexShrink: 0 }} />
               <span style={{ flex: 1 }}>{label}</span>
@@ -1828,7 +1830,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
           ))}
 
           <div className="section-label" style={{ paddingTop: 14, paddingBottom: 6 }}>Setup</div>
-          {NAV.slice(9).map(({ key, label, Icon }) => (
+          {NAV.slice(10).map(({ key, label, Icon }) => (
             <button key={key} onClick={() => navTo(key)} className={`dnav${activeTab === key ? " on" : ""}`}>
               <Icon size={17} strokeWidth={activeTab === key ? 2.5 : 1.8} style={{ flexShrink: 0 }} />
               <span style={{ flex: 1 }}>{label}</span>
@@ -1860,7 +1862,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
             </button>
             <div>
               <h1 style={{ fontSize: 16, fontWeight: 700, color: S.textPrimary, letterSpacing: "-0.02em", textTransform: "capitalize", lineHeight: 1.2 }}>
-                {activeTab === "upgrade" ? "Upgrade Plan" : activeTab === "qrcode" ? "QR & Links" : activeTab === "myleads" ? "My Leads" : activeTab === "whatsapp" ? "WhatsApp API" : activeTab}
+                {activeTab === "upgrade" ? "Upgrade Plan" : activeTab === "qrcode" ? "QR & Links" : activeTab === "myleads" ? "My Leads" : activeTab === "whatsapp" ? "WhatsApp API" : activeTab === "shop" ? "Shop" : activeTab}
               </h1>
               <p style={{ fontSize: 11, color: S.textMuted, marginTop: 1 }}>
                 {activeTab === "overview" && "Dashboard overview"}
@@ -1871,6 +1873,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
                 {activeTab === "bulk" && "Upload & send in bulk"}
                 {activeTab === "templates" && "WhatsApp message templates"}
                 {activeTab === "wallet" && "Balance & transactions"}
+                {activeTab === "shop"   && "Product catalog & WhatsApp commerce"}
                 {activeTab === "qrcode" && "Generate WhatsApp links"}
                 {activeTab === "whatsapp" && "API & profile settings"}
               </p>
@@ -4306,6 +4309,13 @@ const activeCount = workflows.filter(w => w.isActive).length;
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* ─── SHOP ─── */}
+              {activeTab === "shop" && (
+                <div style={{ animation: "wpl-fadein 0.4s ease both" }}>
+                  <ShopPage />
                 </div>
               )}
 
