@@ -358,7 +358,37 @@ export default function ShopPage() {
             </select>
           </div>
 
-          {prodErr && <p style={{ ...errBox, marginBottom:12 }}><AlertCircle size={13} /> {prodErr}</p>}
+          {prodErr && (
+            <div style={{ marginBottom:16 }}>
+              <p style={{ ...errBox, marginBottom:10 }}><AlertCircle size={13} /> {prodErr}</p>
+              {/* Show sharing guide when it's a permission error */}
+              {(prodErr.includes('permission') || prodErr.includes('does not exist') || prodErr.includes('100')) && (
+                <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:10, padding:'14px 16px' }}>
+                  <p style={{ margin:'0 0 8px', fontSize:12, fontWeight:700, color:'#92400e' }}>
+                    Share your catalog with WPLeads to fix this
+                  </p>
+                  <p style={{ margin:'0 0 10px', fontSize:12, color:'#78350f', lineHeight:1.5 }}>
+                    Your catalog is in your Meta Business, but WPLeads needs access to read and manage products. Share it as a partner:
+                  </p>
+                  {[
+                    { n:1, text:'Go to ', link:'business.facebook.com/commerce', url:'https://business.facebook.com/commerce' },
+                    { n:2, text:'Open your catalog → click Settings (left sidebar)' },
+                    { n:3, text:'Find "Share catalog" or "Catalog permissions" → Add a partner' },
+                    { n:4, text:'Enter WPLeads Business ID: 706440965371488 → give Admin access' },
+                    { n:5, text:'Click Save, then refresh this page' },
+                  ].map(s => (
+                    <div key={s.n} style={{ display:'flex', gap:8, alignItems:'flex-start', marginBottom:6 }}>
+                      <div style={{ minWidth:18, height:18, borderRadius:'50%', background:'#f59e0b', color:'#fff', fontSize:10, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', marginTop:1 }}>{s.n}</div>
+                      <p style={{ margin:0, fontSize:11.5, color:'#78350f', lineHeight:1.5 }}>
+                        {s.text}
+                        {s.link && <a href={s.url} target="_blank" rel="noreferrer" style={{ color:'#3b82f6', fontWeight:600, textDecoration:'none' }}>{s.link}</a>}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Loading */}
           {loadingProd ? (
