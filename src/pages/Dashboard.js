@@ -980,7 +980,7 @@ const launchFacebookSignup = () => {
 };
 
 // Listen for Meta's sessionInfo message (wabaId + phoneNumberId)
-const handleFbMessage = React.useCallback(async (event) => {
+const handleFbMessage = useCallback(async (event) => {
   if (event.origin !== 'https://www.facebook.com' && event.origin !== 'https://web.facebook.com') return;
   try {
     const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
@@ -1006,7 +1006,7 @@ const handleFbMessage = React.useCallback(async (event) => {
   setFbEmbedLoading(false);
 }, [headers]);  // eslint-disable-line
 
-React.useEffect(() => {
+useEffect(() => {
   window.addEventListener('message', handleFbMessage);
   return () => window.removeEventListener('message', handleFbMessage);
 }, [handleFbMessage]);
