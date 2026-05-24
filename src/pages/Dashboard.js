@@ -252,8 +252,10 @@ export default function Dashboard() {
   const [contactTotal,   setContactTotal]   = useState(0);
   const [selectedContact,setSelectedContact]= useState(null);
   const [contactNotes,   setContactNotes]   = useState("");
-  const [waConnectMode,     setWaConnectMode]     = useState(null);  // null | 'platform' | 'own'
+  const [waConnectMode,     setWaConnectMode]     = useState(null);  // null | 'platform' | 'own' | 'facebook'
   const [platformModalOpen, setPlatformModalOpen] = useState(false);
+  const [fbEmbedLoading,    setFbEmbedLoading]    = useState(false);
+  const [fbEmbedMsg,        setFbEmbedMsg]        = useState(null);
   const [waPromoDismissed,  setWaPromoDismissed]  = useState(() => sessionStorage.getItem("wa_promo_dismissed") === "1");
 
 
@@ -939,6 +941,76 @@ const fetchWaStatus = useCallback(() => {
     setCopied(key);
     setTimeout(() => setCopied(""), 2000);
   };
+
+// ── Meta Embedded Signup ─────────────────────────────────────────────────────
+const launchFacebookSignup = () => {
+  setFbEmbedMsg(null);
+  setFbEmbedLoading(true);
+
+  // Load FB SDK if not already loaded
+  const initAndLaunch = () => {
+    window.FB.init({ appId: '1568257117773406', cookie: true, xfbml: true, version: 'v19.0' });
+
+    window.FB.login(response => {
+      if (!response.authResponse) {
+        setFbEmbedLoading(false);
+        setFbEmbedMsg({ type: 'error', text: 'Facebook login was cancelled or failed.' });
+        return;
+      }
+      // After embedded signup, Meta gives our system user access to the WABA.
+      // We read wabaId + phoneNumberId from the session info event listener below.
+    }, {
+      config_id: '1568257117773406', // Meta will use the app's embedded signup config
+      response_type: 'code',
+      override_default_response_type: true,
+      extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },
+    });
+  };
+
+  if (window.FB) {
+    initAndLaunch();
+  } else {
+    const script = document.createElement('script');
+    script.src = 'https://connect.facebook.net/en_US/sdk.js';
+    script.async = true;
+    script.defer = true;
+    script.onload = initAndLaunch;
+    document.body.appendChild(script);
+  }
+};
+
+// Listen for Meta's sessionInfo message (wabaId + phoneNumberId)
+const handleFbMessage = React.useCallback(async (event) => {
+  if (event.origin !== 'https://www.facebook.com' && event.origin !== 'https://web.facebook.com') return;
+  try {
+    const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+    if (data?.type !== 'WA_EMBEDDED_SIGNUP') return;
+
+    if (data.event === 'FINISH') {
+      const { waba_id: wabaId, phone_number_id: phoneNumberId } = data.data;
+      setFbEmbedMsg({ type: 'info', text: 'Connecting your WhatsApp account…' });
+      try {
+        const res = await axios.post(`${API}/api/whatsapp/embedded-connect`, { wabaId, phoneNumberId }, { headers });
+        setWaStatus({ connected: true, ...res.data });
+        setFbEmbedMsg({ type: 'success', text: '✅ WhatsApp connected via Facebook!' });
+        fetchWaStatus();
+      } catch (err) {
+        setFbEmbedMsg({ type: 'error', text: err?.response?.data?.message || 'Connection failed.' });
+      }
+    } else if (data.event === 'CANCEL') {
+      setFbEmbedMsg({ type: 'error', text: 'Setup was cancelled. Please try again.' });
+    } else if (data.event === 'ERROR') {
+      setFbEmbedMsg({ type: 'error', text: `Error: ${data.data?.error_message || 'Unknown error'}` });
+    }
+  } catch (_) {}
+  setFbEmbedLoading(false);
+}, [headers]);  // eslint-disable-line
+
+React.useEffect(() => {
+  window.addEventListener('message', handleFbMessage);
+  return () => window.removeEventListener('message', handleFbMessage);
+}, [handleFbMessage]);
+// ─────────────────────────────────────────────────────────────────────────────
 
 const handleWaConnect = async (e) => {
   e.preventDefault();
@@ -3034,7 +3106,24 @@ const activeCount = workflows.filter(w => w.isActive).length;
                 <ChevronRight size={16} color="rgba(255,255,255,0.5)" style={{ marginLeft: "auto", flexShrink: 0 }} />
               </button>
 
-              {/* Option B — Own Meta account */}
+              {/* Option B — Connect via Facebook (Embedded Signup) */}
+              <button type="button" onClick={() => setWaConnectMode("facebook")}
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 14,
+                  background: "rgba(24,119,242,0.18)", border: "1.5px solid rgba(24,119,242,0.45)",
+                  cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(24,119,242,0.28)"}
+                onMouseLeave={e => e.currentTarget.style.background = "rgba(24,119,242,0.18)"}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "#1877F2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, boxShadow: "0 4px 12px rgba(24,119,242,0.4)" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "#fff" }}>Connect via Facebook</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>Fastest — sign in with Facebook &amp; select your WhatsApp Business account</div>
+                </div>
+                <ChevronRight size={16} color="rgba(255,255,255,0.5)" style={{ marginLeft: "auto", flexShrink: 0 }} />
+              </button>
+
+              {/* Option C — Own Meta account (manual) */}
               <button type="button" onClick={() => setWaConnectMode("own")}
                 style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 14,
                   background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.15)",
@@ -3046,7 +3135,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
                 </div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 800, color: "#fff" }}>Connect Own Business</div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>Use your own Meta Business Account, WABA ID &amp; access token</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>Manually enter your WABA ID &amp; access token</div>
                 </div>
                 <ChevronRight size={16} color="rgba(255,255,255,0.5)" style={{ marginLeft: "auto", flexShrink: 0 }} />
               </button>
@@ -3054,6 +3143,51 @@ const activeCount = workflows.filter(w => w.isActive).length;
           )}
 
           {/* Platform modal is rendered via portal — nothing inline here */}
+
+          {/* ── Facebook Embedded Signup mode ── */}
+          {waConnectMode === "facebook" && (
+            <div>
+              <button type="button" onClick={() => { setWaConnectMode(null); setFbEmbedMsg(null); setFbEmbedLoading(false); }}
+                style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 600, cursor: "pointer", marginBottom: 18, padding: 0 }}>
+                <ChevronLeft size={13} /> Back
+              </button>
+
+              <div style={{ textAlign: "center", marginBottom: 20 }}>
+                <div style={{ width: 56, height: 56, borderRadius: 16, background: "#1877F2", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", boxShadow: "0 8px 24px rgba(24,119,242,0.4)" }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#fff", marginBottom: 4 }}>Connect via Facebook</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.5 }}>
+                  Click the button below. A Facebook popup will open — log in and select your WhatsApp Business account. We'll handle the rest automatically.
+                </div>
+              </div>
+
+              {fbEmbedMsg && (
+                <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 14, fontSize: 12, fontWeight: 600,
+                  background: fbEmbedMsg.type === 'success' ? "rgba(37,211,102,0.15)" : fbEmbedMsg.type === 'error' ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.1)",
+                  color: fbEmbedMsg.type === 'success' ? "#25d366" : fbEmbedMsg.type === 'error' ? "#f87171" : "rgba(255,255,255,0.8)",
+                  border: `1px solid ${fbEmbedMsg.type === 'success' ? "rgba(37,211,102,0.3)" : fbEmbedMsg.type === 'error' ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.2)"}` }}>
+                  {fbEmbedMsg.text}
+                </div>
+              )}
+
+              <button type="button" onClick={launchFacebookSignup} disabled={fbEmbedLoading}
+                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                  padding: "13px 0", borderRadius: 14, background: "#1877F2", border: "none", color: "#fff",
+                  fontSize: 14, fontWeight: 700, cursor: fbEmbedLoading ? "not-allowed" : "pointer",
+                  fontFamily: S.font, boxShadow: "0 8px 24px rgba(24,119,242,0.35)", opacity: fbEmbedLoading ? 0.7 : 1,
+                  transition: "all 0.15s" }}>
+                {fbEmbedLoading
+                  ? <><Activity size={14} style={{ animation: "wpl-spin 0.8s linear infinite" }} /> Connecting…</>
+                  : <><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg> Continue with Facebook</>
+                }
+              </button>
+
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", textAlign: "center", marginTop: 12, lineHeight: 1.5 }}>
+                A popup will open. Allow popups for this site if blocked.
+              </p>
+            </div>
+          )}
 
           {/* ── Own account mode — credentials form ── */}
           {waConnectMode === "own" && (
