@@ -132,6 +132,23 @@ const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, 
             mediaUrl: msgData.mediaUrl,
           };
         }
+        else if (msgData.type === 'product') {
+          messageRecord.text = msgData.body || 'Product Message';
+          messageRecord.metadata = {
+            type: 'product',
+            catalogId: msgData.catalogId,
+            productRetailerId: msgData.productRetailerId,
+          };
+        }
+        else if (msgData.type === 'product_list') {
+          messageRecord.text = msgData.body || 'Product List Message';
+          messageRecord.metadata = {
+            type: 'product_list',
+            catalogId: msgData.catalogId,
+            header: msgData.header,
+            sections: msgData.sections,
+          };
+        }
 
         // 4. Save to Message DB
        try {

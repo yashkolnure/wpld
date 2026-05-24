@@ -103,6 +103,45 @@ export const buildMetaPayload = (to, message) => {
           : { link: message.mediaUrl, caption: message.mediaCaption || '' },
       };
 
+    // ── SINGLE PRODUCT — one product card with Buy button ─────────────────────
+    case 'product':
+      return {
+        messaging_product: 'whatsapp',
+        to,
+        type: 'interactive',
+        interactive: {
+          type: 'product',
+          body: { text: message.body || '' },
+          action: {
+            catalog_id: message.catalogId,
+            product_retailer_id: message.productRetailerId,
+          },
+        },
+      };
+
+    // ── MULTI-PRODUCT — up to 30 products in sections ──────────────────────────
+    case 'product_list':
+      return {
+        messaging_product: 'whatsapp',
+        to,
+        type: 'interactive',
+        interactive: {
+          type: 'product_list',
+          header: { type: 'text', text: message.header || 'Our Products' },
+          body: { text: message.body || '' },
+          ...(message.footer ? { footer: { text: message.footer } } : {}),
+          action: {
+            catalog_id: message.catalogId,
+            sections: (message.sections || []).map(sec => ({
+              title: sec.title,
+              product_items: (sec.products || []).map(p => ({
+                product_retailer_id: p.retailerId,
+              })),
+            })),
+          },
+        },
+      };
+
     default:
       throw new Error(`Unknown message type: ${message.type}`);
   }
