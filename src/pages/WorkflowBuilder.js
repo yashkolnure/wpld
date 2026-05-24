@@ -16,6 +16,7 @@ import ButtonConfig    from '../components/config/ButtonConfig';
 import ListConfig      from '../components/config/ListConfig';
 import MediaConfig     from '../components/config/MediaConfig';
 import DelayConfig     from '../components/config/DelayConfig';
+import ProductConfig   from '../components/config/ProductConfig';
 import TemplatePicker  from '../components/TemplatePicker';
 import TestPanel       from '../components/test/TestPanel';
 
@@ -29,6 +30,7 @@ const PALETTE = [
   { type: 'list',    label: 'List Message',    emoji: '📋', desc: 'Message with a list menu',   color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
   { type: 'media',   label: 'Media Message',   emoji: '🖼️', desc: 'Image, video or document',   color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
   { type: 'delay',   label: 'Delay',           emoji: '⏱️', desc: 'Wait before the next step',  color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+  { type: 'product', label: 'Product Message', emoji: '🛍️', desc: 'Send product from catalog',   color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
 ];
 
 const defaultData = (type) => {
@@ -38,6 +40,7 @@ const defaultData = (type) => {
   if (type === 'list')    return { message: { type: 'list', listBody: '', listButtonText: 'View options', sections: [{ title: 'Section 1', rows: [{ id: uuid(), title: '', description: '' }] }] } };
   if (type === 'media')   return { message: { type: 'media', mediaType: 'image', mediaUrl: '', mediaCaption: '' } };
   if (type === 'delay')   return { delayMinutes: 5 };
+  if (type === 'product') return { message: { type: 'product', catalogId: '', productRetailerId: '', body: '' } };
   return {};
 };
 
@@ -45,9 +48,11 @@ const schemaTypeToRfType = (node) => {
   if (node.type === 'trigger') return 'trigger';
   if (node.type === 'delay')   return 'delay';
   const msgType = node.data?.message?.type;
-  if (msgType === 'button') return 'button';
-  if (msgType === 'list')   return 'list';
-  if (msgType === 'media')  return 'media';
+  if (msgType === 'button')       return 'button';
+  if (msgType === 'list')         return 'list';
+  if (msgType === 'media')        return 'media';
+  if (msgType === 'product')      return 'product';
+  if (msgType === 'product_list') return 'product';
   return 'text';
 };
 
@@ -58,6 +63,7 @@ const configMap = {
   list:    ListConfig,
   media:   MediaConfig,
   delay:   DelayConfig,
+  product: ProductConfig,
 };
 
 export default function WorkflowBuilder() {
@@ -171,7 +177,7 @@ export default function WorkflowBuilder() {
         position: n.position,
         data: n.type === 'trigger' ? { keyword: n.data.keyword, matchType: n.data.matchType }
             : n.type === 'delay'   ? { delayMinutes: n.data.delayMinutes }
-            : { message: n.data.message },
+            : { message: n.data.message },  // product node saved as message type with message.type='product'/'product_list'
       }));
       const schemaEdges = edges.map(e => ({
         id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle || null,
