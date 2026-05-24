@@ -254,8 +254,8 @@ export default function Dashboard() {
   const [contactNotes,   setContactNotes]   = useState("");
   const [waConnectMode,     setWaConnectMode]     = useState(null);  // null | 'platform' | 'own' | 'facebook'
   const [platformModalOpen, setPlatformModalOpen] = useState(false);
-  const [fbEmbedLoading,    setFbEmbedLoading]    = useState(false);
-  const [fbEmbedMsg,        setFbEmbedMsg]        = useState(null);
+  const [embeddedLoading,   setEmbeddedLoading]   = useState(false);
+  const [embeddedErr,       setEmbeddedErr]       = useState('');
   const [waPromoDismissed,  setWaPromoDismissed]  = useState(() => sessionStorage.getItem("wa_promo_dismissed") === "1");
 
 
@@ -338,6 +338,7 @@ export default function Dashboard() {
   const chatPollRef       = useRef(null);
   const msgPollRef        = useRef(null);
   const waPollRef         = useRef(null);
+  const fbSessionRef      = useRef({});        // stores { waba_id, phone_number_id } from Meta postMessage
 
   const navigate = useNavigate();
   const token    = localStorage.getItem("token");
@@ -942,74 +943,75 @@ const fetchWaStatus = useCallback(() => {
     setTimeout(() => setCopied(""), 2000);
   };
 
-// ── Meta Embedded Signup ─────────────────────────────────────────────────────
-const launchFacebookSignup = () => {
-  setFbEmbedMsg(null);
-  setFbEmbedLoading(true);
-
-  // Load FB SDK if not already loaded
-  const initAndLaunch = () => {
-    window.FB.init({ appId: '1568257117773406', cookie: true, xfbml: true, version: 'v19.0' });
-
-    window.FB.login(response => {
-      if (!response.authResponse) {
-        setFbEmbedLoading(false);
-        setFbEmbedMsg({ type: 'error', text: 'Facebook login was cancelled or failed.' });
-        return;
-      }
-      // After embedded signup, Meta gives our system user access to the WABA.
-      // We read wabaId + phoneNumberId from the session info event listener below.
-    }, {
-      config_id: '1568257117773406', // Meta will use the app's embedded signup config
-      response_type: 'code',
-      override_default_response_type: true,
-      extras: { setup: {}, featureType: '', sessionInfoVersion: '3' },
-    });
+// ── Facebook JS SDK (Embedded Signup) ────────────────────────────────────────
+useEffect(() => {
+  window.fbAsyncInit = function () {
+    window.FB.init({ appId: '1568257117773406', autoLogAppEvents: true, xfbml: true, version: 'v25.0' });
   };
+  if (!document.getElementById('facebook-jssdk')) {
+    const s = document.createElement('script');
+    s.id = 'facebook-jssdk'; s.async = true; s.defer = true; s.crossOrigin = 'anonymous';
+    s.src = 'https://connect.facebook.net/en_US/sdk.js';
+    document.head.appendChild(s);
+  }
+}, []);
 
-  if (window.FB) {
-    initAndLaunch();
-  } else {
-    const script = document.createElement('script');
-    script.src = 'https://connect.facebook.net/en_US/sdk.js';
-    script.async = true;
-    script.defer = true;
-    script.onload = initAndLaunch;
-    document.body.appendChild(script);
+// Listen for Embedded Signup session info (WABA ID + phone number ID)
+useEffect(() => {
+  const handler = (event) => {
+    if (event.origin !== 'https://www.facebook.com') return;
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'WA_EMBEDDED_SIGNUP') {
+        if (data.event === 'FINISH') {
+          fbSessionRef.current = { waba_id: data.data?.waba_id, phone_number_id: data.data?.phone_number_id };
+        } else if (data.event === 'CANCEL' || data.event === 'ERROR') {
+          setEmbeddedErr('Facebook signup was cancelled or failed. Try again.');
+          setEmbeddedLoading(false);
+        }
+      }
+    } catch (_) {}
+  };
+  window.addEventListener('message', handler);
+  return () => window.removeEventListener('message', handler);
+}, []);
+
+const doEmbeddedConnect = async (code) => {
+  try {
+    const r = await axios.post(`${API}/api/whatsapp/embedded-connect`, {
+      code,
+      wabaId:        fbSessionRef.current.waba_id,
+      phoneNumberId: fbSessionRef.current.phone_number_id,
+    }, { headers });
+    setWaMsg({ text: 'WhatsApp connected successfully!', type: 'success' });
+    setWaStatus({ connected: true, ...r.data });
+    setWaConnectMode(null);
+    setEmbeddedErr('');
+  } catch (e) {
+    setEmbeddedErr(e.response?.data?.message || 'Connection failed. Please try again.');
+  } finally {
+    setEmbeddedLoading(false);
   }
 };
 
-// Listen for Meta's sessionInfo message (wabaId + phoneNumberId)
-const handleFbMessage = useCallback(async (event) => {
-  if (event.origin !== 'https://www.facebook.com' && event.origin !== 'https://web.facebook.com') return;
-  try {
-    const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-    if (data?.type !== 'WA_EMBEDDED_SIGNUP') return;
-
-    if (data.event === 'FINISH') {
-      const { waba_id: wabaId, phone_number_id: phoneNumberId } = data.data;
-      setFbEmbedMsg({ type: 'info', text: 'Connecting your WhatsApp account…' });
-      try {
-        const res = await axios.post(`${API}/api/whatsapp/embedded-connect`, { wabaId, phoneNumberId }, { headers });
-        setWaStatus({ connected: true, ...res.data });
-        setFbEmbedMsg({ type: 'success', text: '✅ WhatsApp connected via Facebook!' });
-        fetchWaStatus();
-      } catch (err) {
-        setFbEmbedMsg({ type: 'error', text: err?.response?.data?.message || 'Connection failed.' });
+const handleEmbeddedSignup = () => {
+  if (!window.FB) { setEmbeddedErr('Facebook SDK not ready yet. Please wait a moment and try again.'); return; }
+  setEmbeddedLoading(true);
+  setEmbeddedErr('');
+  fbSessionRef.current = {};
+  // FB.login callback must be synchronous — async work is done in doEmbeddedConnect
+  window.FB.login(
+    (response) => {
+      if (!response.authResponse?.code) {
+        setEmbeddedErr('Facebook login was cancelled.');
+        setEmbeddedLoading(false);
+        return;
       }
-    } else if (data.event === 'CANCEL') {
-      setFbEmbedMsg({ type: 'error', text: 'Setup was cancelled. Please try again.' });
-    } else if (data.event === 'ERROR') {
-      setFbEmbedMsg({ type: 'error', text: `Error: ${data.data?.error_message || 'Unknown error'}` });
-    }
-  } catch (_) {}
-  setFbEmbedLoading(false);
-}, [headers]);  // eslint-disable-line
-
-useEffect(() => {
-  window.addEventListener('message', handleFbMessage);
-  return () => window.removeEventListener('message', handleFbMessage);
-}, [handleFbMessage]);
+      doEmbeddedConnect(response.authResponse.code);
+    },
+    { config_id: '1566294694619714', response_type: 'code', override_default_response_type: true, extras: { version: 'v4', sessionInfoVersion: '3' } }
+  );
+};
 // ─────────────────────────────────────────────────────────────────────────────
 
 const handleWaConnect = async (e) => {
@@ -3147,7 +3149,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
           {/* ── Facebook Embedded Signup mode ── */}
           {waConnectMode === "facebook" && (
             <div>
-              <button type="button" onClick={() => { setWaConnectMode(null); setFbEmbedMsg(null); setFbEmbedLoading(false); }}
+              <button type="button" onClick={() => { setWaConnectMode(null); setEmbeddedErr(''); setEmbeddedLoading(false); }}
                 style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", color: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 600, cursor: "pointer", marginBottom: 18, padding: 0 }}>
                 <ChevronLeft size={13} /> Back
               </button>
@@ -3162,22 +3164,20 @@ const activeCount = workflows.filter(w => w.isActive).length;
                 </div>
               </div>
 
-              {fbEmbedMsg && (
+              {embeddedErr && (
                 <div style={{ padding: "10px 14px", borderRadius: 10, marginBottom: 14, fontSize: 12, fontWeight: 600,
-                  background: fbEmbedMsg.type === 'success' ? "rgba(37,211,102,0.15)" : fbEmbedMsg.type === 'error' ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.1)",
-                  color: fbEmbedMsg.type === 'success' ? "#25d366" : fbEmbedMsg.type === 'error' ? "#f87171" : "rgba(255,255,255,0.8)",
-                  border: `1px solid ${fbEmbedMsg.type === 'success' ? "rgba(37,211,102,0.3)" : fbEmbedMsg.type === 'error' ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.2)"}` }}>
-                  {fbEmbedMsg.text}
+                  background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" }}>
+                  {embeddedErr}
                 </div>
               )}
 
-              <button type="button" onClick={launchFacebookSignup} disabled={fbEmbedLoading}
+              <button type="button" onClick={handleEmbeddedSignup} disabled={embeddedLoading}
                 style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                   padding: "13px 0", borderRadius: 14, background: "#1877F2", border: "none", color: "#fff",
-                  fontSize: 14, fontWeight: 700, cursor: fbEmbedLoading ? "not-allowed" : "pointer",
-                  fontFamily: S.font, boxShadow: "0 8px 24px rgba(24,119,242,0.35)", opacity: fbEmbedLoading ? 0.7 : 1,
+                  fontSize: 14, fontWeight: 700, cursor: embeddedLoading ? "not-allowed" : "pointer",
+                  fontFamily: S.font, boxShadow: "0 8px 24px rgba(24,119,242,0.35)", opacity: embeddedLoading ? 0.7 : 1,
                   transition: "all 0.15s" }}>
-                {fbEmbedLoading
+                {embeddedLoading
                   ? <><Activity size={14} style={{ animation: "wpl-spin 0.8s linear infinite" }} /> Connecting…</>
                   : <><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg> Continue with Facebook</>
                 }
