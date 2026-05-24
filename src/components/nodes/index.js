@@ -4,7 +4,6 @@ import ButtonNode   from './ButtonNode';
 import ListNode     from './ListNode';
 import MediaNode    from './MediaNode';
 import DelayNode    from './DelayNode';
-import ProductNode  from './ProductNode';
 
 export const nodeTypes = {
   trigger: TriggerNode,
@@ -13,5 +12,4 @@ export const nodeTypes = {
   list:    ListNode,
   media:   MediaNode,
   delay:   DelayNode,
-  product: ProductNode,
 };

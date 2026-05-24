@@ -11,7 +11,6 @@ import PublicForm from "./pages/PublicForm";
 import WhatsAppManager from "./pages/WhatsAppManager";
 import ThankYou from "./pages/thankyou";
 import AdminDashboard from "./pages/yashkolnure";
-import ShopPage from "./pages/ShopPage";
 
 // Updated Helper: 
 // We hide the Layout if it's a Workspace (/dashboard, /workflow) 
@@ -61,7 +60,6 @@ function App() {
           <Route path="/workflow/:id" element={<WorkflowBuilder />} />
           <Route path="/yashkolnure" element={<AdminDashboard />} />
           <Route path="/whatsapp-manager" element={<WhatsAppManager />} />
-          <Route path="/shop" element={<ShopPage />} />
           
           {/* Dynamic Catch-all Slug */}
           <Route path="/:slug" element={<PublicForm />} />
