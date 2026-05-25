@@ -54,33 +54,33 @@ export default function ProductConfig({ data, onChange }) {
         header: msg.header || 'Our Products',
         body: msg.body || '',
         footer: msg.footer || '',
-        sections: msg.sections || [{ id: uuid(), title: 'Section 1', products: [] }],
+        sections: msg.productSections || [{ id: uuid(), title: 'Section 1', products: [] }],
       });
     }
   };
 
   const addSection = () => {
-    update({ sections: [...(msg.sections || []), { id: uuid(), title: '', products: [] }] });
+    update({ sections: [...(msg.productSections || []), { id: uuid(), title: '', products: [] }] });
   };
 
   const updateSection = (sIdx, patch) => {
-    const sections = (msg.sections || []).map((s, i) => i === sIdx ? { ...s, ...patch } : s);
+    const sections = (msg.productSections || []).map((s, i) => i === sIdx ? { ...s, ...patch } : s);
     update({ sections });
   };
 
   const removeSection = (sIdx) => {
-    update({ sections: (msg.sections || []).filter((_, i) => i !== sIdx) });
+    update({ sections: (msg.productSections || []).filter((_, i) => i !== sIdx) });
   };
 
   const addProductToSection = (sIdx) => {
-    const sections = (msg.sections || []).map((s, i) =>
+    const sections = (msg.productSections || []).map((s, i) =>
       i === sIdx ? { ...s, products: [...(s.products || []), { id: uuid(), retailerId: '' }] } : s
     );
     update({ sections });
   };
 
   const updateProductInSection = (sIdx, pIdx, retailerId) => {
-    const sections = (msg.sections || []).map((s, i) => {
+    const sections = (msg.productSections || []).map((s, i) => {
       if (i !== sIdx) return s;
       const prods = (s.products || []).map((p, j) => j === pIdx ? { ...p, retailerId } : p);
       return { ...s, products: prods };
@@ -89,7 +89,7 @@ export default function ProductConfig({ data, onChange }) {
   };
 
   const removeProductFromSection = (sIdx, pIdx) => {
-    const sections = (msg.sections || []).map((s, i) => {
+    const sections = (msg.productSections || []).map((s, i) => {
       if (i !== sIdx) return s;
       return { ...s, products: (s.products || []).filter((_, j) => j !== pIdx) };
     });
@@ -218,7 +218,7 @@ export default function ProductConfig({ data, onChange }) {
               </button>
             </div>
 
-            {(msg.sections || []).map((sec, sIdx) => (
+            {(msg.productSections || []).map((sec, sIdx) => (
               <div key={sec.id || sIdx} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', marginBottom: 8, background: '#fafafa' }}>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6 }}>
                   <input
@@ -227,7 +227,7 @@ export default function ProductConfig({ data, onChange }) {
                     onChange={e => updateSection(sIdx, { title: e.target.value })}
                     placeholder={`Section ${sIdx + 1} title`}
                   />
-                  {(msg.sections || []).length > 1 && (
+                  {(msg.productSections || []).length > 1 && (
                     <button onClick={() => removeSection(sIdx)} style={dangerIconBtnStyle}>
                       <Trash2 size={12} />
                     </button>
