@@ -330,6 +330,16 @@ export default function Dashboard() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const attachInputRef = useRef(null);
 
+  // catalog picker (send catalog in chat)
+  const [catPickerOpen,    setCatPickerOpen]    = useState(false);
+  const [catPickerProds,   setCatPickerProds]   = useState([]);
+  const [catPickerLoading, setCatPickerLoading] = useState(false);
+  const [catPickerErr,     setCatPickerErr]     = useState('');
+  const [catPickerSel,     setCatPickerSel]     = useState([]); // selected retailer_ids
+  const [catPickerBody,    setCatPickerBody]    = useState('Check out our products!');
+  const [catPickerSending, setCatPickerSending] = useState(false);
+  const [catInfo,          setCatInfo]          = useState(null); // { catalogId, name }
+
   // message pagination
   const [hasMoreMessages,    setHasMoreMessages]    = useState(false);
   const [loadingOlderMsgs,   setLoadingOlderMsgs]   = useState(false);
@@ -1212,6 +1222,65 @@ const handleUpgrade = async () => {
     }
   };
 
+  // ─── CATALOG PICKER ──────────────────────────────────────────────────────────
+  const openCatalogPicker = async () => {
+    setCatPickerOpen(true);
+    setCatPickerSel([]);
+    setCatPickerErr('');
+    setCatPickerBody('Check out our products!');
+    setCatPickerLoading(true);
+    try {
+      const [catRes, prodRes] = await Promise.all([
+        axios.get(`${API}/api/shop/catalog`,   { headers }),
+        axios.get(`${API}/api/shop/products`,  { headers }),
+      ]);
+      setCatInfo(catRes.data);
+      setCatPickerProds(prodRes.data || []);
+    } catch (err) {
+      setCatPickerErr(err.response?.data?.message || 'Failed to load catalog. Make sure a catalog is connected in Shop.');
+    } finally {
+      setCatPickerLoading(false);
+    }
+  };
+
+  const toggleCatProduct = (retailerId) => {
+    setCatPickerSel(prev =>
+      prev.includes(retailerId) ? prev.filter(id => id !== retailerId) : [...prev, retailerId]
+    );
+  };
+
+  const handleSendCatalog = async () => {
+    if (!catInfo?.catalogId) return;
+    if (catPickerSel.length === 0) { setCatPickerErr('Select at least one product.'); return; }
+    if (!catPickerBody.trim())     { setCatPickerErr('Message body cannot be empty.'); return; }
+    if (!selectedChat || catPickerSending) return;
+
+    setCatPickerSending(true);
+    setCatPickerErr('');
+    try {
+      await axios.post(
+        `${API}/api/chats/${selectedChat._id}/messages`,
+        {
+          type:      'product_list',
+          catalogId: catInfo.catalogId,
+          header:    'Our Products',
+          body:      catPickerBody.trim(),
+          sections: [{
+            title:    'Products',
+            products: catPickerSel.map(id => ({ retailerId: id })),
+          }],
+        },
+        { headers }
+      );
+      setCatPickerOpen(false);
+      fetchMessages(true);
+    } catch (err) {
+      setCatPickerErr(err.response?.data?.message || 'Failed to send catalog.');
+    } finally {
+      setCatPickerSending(false);
+    }
+  };
+
   // ─── CHAT TAGS ───────────────────────────────────────────────────────────────
   const PRESET_TAGS = [
     { label: "Lead",      color: "#2563eb", bg: "#dbeafe" },
@@ -1744,6 +1813,116 @@ const activeCount = workflows.filter(w => w.isActive).length;
         onClose={() => setPlatformModalOpen(false)}
         onSuccess={() => { fetchWaStatus(); setPlatformModalOpen(false); }}
       />
+
+      {/* ── Catalog Picker Modal ── */}
+      {catPickerOpen && (
+        <div style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(0,0,0,0.45)', display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}
+          onClick={e => { if (e.target === e.currentTarget) setCatPickerOpen(false); }}>
+          <div style={{ background:'#fff', borderRadius:18, width:'100%', maxWidth:520, maxHeight:'80vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 60px rgba(0,0,0,0.25)', overflow:'hidden' }}>
+
+            {/* Header */}
+            <div style={{ padding:'18px 20px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <div style={{ width:36, height:36, borderRadius:10, background:'#fff7ed', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <ShoppingBag size={18} color="#ea580c" />
+                </div>
+                <div>
+                  <p style={{ fontWeight:800, fontSize:15, color:'#111827', margin:0 }}>Send Catalog</p>
+                  <p style={{ fontSize:11, color:'#6b7280', margin:0 }}>{catInfo?.name || 'Select products to share'}</p>
+                </div>
+              </div>
+              <button onClick={() => setCatPickerOpen(false)} style={{ background:'#f3f4f6', border:'none', borderRadius:8, width:30, height:30, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+                <X size={14} color="#6b7280" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ flex:1, overflowY:'auto', padding:'16px 20px' }}>
+              {catPickerLoading && (
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:40, gap:10, color:'#6b7280', fontSize:13 }}>
+                  <Activity size={16} style={{ animation:'wpl-spin 0.8s linear infinite' }} /> Loading products…
+                </div>
+              )}
+
+              {catPickerErr && !catPickerLoading && (
+                <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#dc2626', marginBottom:14 }}>
+                  {catPickerErr}
+                </div>
+              )}
+
+              {!catPickerLoading && catPickerProds.length > 0 && (
+                <>
+                  {/* Message body */}
+                  <div style={{ marginBottom:14 }}>
+                    <label style={{ fontSize:11, fontWeight:700, color:'#4b5563', textTransform:'uppercase', letterSpacing:'0.05em', display:'block', marginBottom:5 }}>Message to customer</label>
+                    <textarea
+                      rows={2}
+                      value={catPickerBody}
+                      onChange={e => setCatPickerBody(e.target.value)}
+                      style={{ width:'100%', padding:'10px 12px', borderRadius:10, border:'1px solid #e5e7eb', fontSize:13, fontFamily:'inherit', resize:'none', boxSizing:'border-box', outline:'none' }}
+                      placeholder="e.g. Check out our latest products!"
+                    />
+                  </div>
+
+                  {/* Product list */}
+                  <label style={{ fontSize:11, fontWeight:700, color:'#4b5563', textTransform:'uppercase', letterSpacing:'0.05em', display:'block', marginBottom:8 }}>
+                    Select products ({catPickerSel.length} selected, max 30)
+                  </label>
+                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    {catPickerProds.map(p => {
+                      const selected = catPickerSel.includes(p.retailer_id);
+                      return (
+                        <div key={p.id}
+                          onClick={() => toggleCatProduct(p.retailer_id)}
+                          style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 12px', borderRadius:12, border:`2px solid ${selected ? '#f97316' : '#e5e7eb'}`, background: selected ? '#fff7ed' : '#fff', cursor:'pointer', transition:'all 0.15s' }}>
+                          {/* Checkbox */}
+                          <div style={{ width:20, height:20, borderRadius:6, border:`2px solid ${selected ? '#f97316' : '#d1d5db'}`, background: selected ? '#f97316' : '#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition:'all 0.15s' }}>
+                            {selected && <Check size={11} color="#fff" strokeWidth={3} />}
+                          </div>
+                          {/* Thumbnail */}
+                          {p.image_url
+                            ? <img src={p.image_url} alt={p.name} style={{ width:40, height:40, objectFit:'cover', borderRadius:8, flexShrink:0 }} />
+                            : <div style={{ width:40, height:40, borderRadius:8, background:'#f3f4f6', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><ShoppingBag size={16} color="#d1d5db" /></div>
+                          }
+                          {/* Info */}
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <p style={{ fontWeight:700, fontSize:13, color:'#111827', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</p>
+                            <p style={{ fontSize:11, color:'#6b7280', margin:0 }}>{p.retailer_id}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {!catPickerLoading && catPickerProds.length === 0 && !catPickerErr && (
+                <div style={{ textAlign:'center', padding:30, color:'#9ca3af', fontSize:13 }}>
+                  No products found in your catalog.
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding:'14px 20px', borderTop:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0, gap:10 }}>
+              <span style={{ fontSize:12, color:'#9ca3af' }}>{catPickerSel.length} product{catPickerSel.length !== 1 ? 's' : ''} selected</span>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={() => setCatPickerOpen(false)} style={{ padding:'8px 16px', borderRadius:9, border:'1px solid #e5e7eb', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#374151' }}>
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendCatalog}
+                  disabled={catPickerSel.length === 0 || catPickerSending || catPickerLoading}
+                  style={{ padding:'8px 20px', borderRadius:9, border:'none', background: catPickerSel.length > 0 ? 'linear-gradient(135deg,#f97316,#ea580c)' : '#e5e7eb', color: catPickerSel.length > 0 ? '#fff' : '#9ca3af', fontSize:13, fontWeight:700, cursor: catPickerSel.length > 0 ? 'pointer' : 'default', display:'flex', alignItems:'center', gap:6 }}>
+                  {catPickerSending
+                    ? <><Activity size={13} style={{ animation:'wpl-spin 0.8s linear infinite' }} /> Sending…</>
+                    : <><Send size={13} /> Send Catalog</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -2339,6 +2518,15 @@ const activeCount = workflows.filter(w => w.isActive).length;
                           title="Attach file"
                           style={{ width: 40, height: 40, borderRadius: 12, background: attachment ? S.greenBg : "#f1f5f9", border: `1px solid ${attachment ? S.greenBorder : S.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, color: attachment ? S.greenDark : S.textMuted, transition: "all 0.15s" }}>
                           <Paperclip size={15} />
+                        </button>
+
+                        {/* Send Catalog button */}
+                        <button
+                          onClick={openCatalogPicker}
+                          disabled={sendingReply}
+                          title="Send catalog products"
+                          style={{ width: 40, height: 40, borderRadius: 12, background: "#fff7ed", border: "1px solid #fed7aa", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, color: "#ea580c", transition: "all 0.15s" }}>
+                          <ShoppingBag size={15} />
                         </button>
 
                         <textarea
