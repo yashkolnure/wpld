@@ -20,6 +20,12 @@ import FAQ from "./pages/FAQ";
 import HelpCenter from "./pages/HelpCenter";
 import Contact from "./pages/Contact";
 import ApiDocs from "./pages/ApiDocs";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+import BlogAdmin from "./pages/BlogAdmin";
+import BlogEditor from "./pages/BlogEditor";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -31,18 +37,20 @@ function ScrollToTop() {
 // We hide the Layout if it's a Workspace (/dashboard, /workflow) 
 // OR if it's a dynamic slug (any path NOT in our marketing list)
 const shouldHideLayout = (pathname) => {
-  const workspacePaths = ["/dashboard", "/workflow"];
+  const workspacePaths = ["/dashboard", "/workflow", "/blog-admin"];
   const marketingPaths = [
-    "/", "/login", "/register", "/login-success",
+    "/", "/login", "/register", "/login-success", "/forgot-password",
     "/about", "/privacy", "/terms", "/faq",
-    "/help-center", "/contact", "/api-docs",
+    "/help-center", "/contact", "/api-docs", "/blog",
   ];
 
-  // 1. Hide if it starts with dashboard or workflow
+  // 1. Hide if it starts with a workspace path
   if (workspacePaths.some(path => pathname.startsWith(path))) return true;
 
-  // 2. Hide if it is NOT one of our main marketing/auth pages
-  // This effectively catches the "/:slug" routes
+  // 2. Blog posts and reset-password keep header/footer
+  if (pathname.startsWith("/blog/") || pathname.startsWith("/reset-password/")) return false;
+
+  // 3. Hide if it is NOT one of our main marketing/auth pages
   if (!marketingPaths.includes(pathname)) return true;
 
   return false;
@@ -74,6 +82,13 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/login-success" element={<LoginSuccess />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
+          <Route path="/blog-admin" element={<BlogAdmin />} />
+          <Route path="/blog-admin/new" element={<BlogEditor />} />
+          <Route path="/blog-admin/edit/:id" element={<BlogEditor />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/workflow/new" element={<WorkflowBuilder />} />
           <Route path="/thankyou" element={<ThankYou />} />

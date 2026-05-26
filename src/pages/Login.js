@@ -88,7 +88,7 @@ export default function Login() {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Security Key</label>
-                <Link to="/forgot" className="text-xs font-bold text-[#25d366] hover:underline">Forgot?</Link>
+                <Link to="/forgot-password" className="text-xs font-bold text-[#25d366] hover:underline">Forgot?</Link>
               </div>
               <input
                 type="password"
