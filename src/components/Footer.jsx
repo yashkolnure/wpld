@@ -7,6 +7,11 @@ export default function Footer() {
   const navigate  = useNavigate();
   const location  = useLocation();
 
+  const handleDashboard = (e) => {
+    e.preventDefault();
+    navigate(localStorage.getItem("token") ? "/dashboard" : "/login");
+  };
+
   const handleNav = (e, sectionId) => {
     e.preventDefault();
     if (location.pathname === "/") {
@@ -34,6 +39,7 @@ export default function Footer() {
         { label: "How it Works", sectionId: "howitworks" },
         { label: "Pricing",      sectionId: "pricing"    },
         { label: "Use Cases",    sectionId: "usecases"   },
+        { label: "Dashboard",    dashboard: true          },
       ],
     },
     {
@@ -96,7 +102,17 @@ export default function Footer() {
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
                   {sec.links.map(link => (
                     <li key={link.label}>
-                      {link.sectionId ? (
+                      {link.dashboard ? (
+                        <a
+                          href="#"
+                          onClick={handleDashboard}
+                          style={{ color: "#64748b", textDecoration: "none", fontSize: "13px", fontWeight: 500, transition: "color 0.2s" }}
+                          onMouseOver={e => e.target.style.color = "#0f172a"}
+                          onMouseOut={e => e.target.style.color = "#64748b"}
+                        >
+                          {link.label}
+                        </a>
+                      ) : link.sectionId ? (
                         <a
                           href="#"
                           onClick={(e) => handleNav(e, link.sectionId)}
