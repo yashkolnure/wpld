@@ -33,41 +33,38 @@ function ScrollToTop() {
   return null;
 }
 
-// Paths that hide BOTH header and footer (full-screen workspace tools)
-const headerHiddenPaths   = ["/dashboard", "/workflow", "/blog-admin"];
-// Paths that hide ONLY the footer (workflow builder & blog admin are full-screen)
-const footerHiddenPaths   = ["/workflow", "/blog-admin"];
-const marketingPaths = [
-  "/", "/login", "/register", "/login-success", "/forgot-password",
-  "/about", "/privacy", "/terms", "/faq",
-  "/help-center", "/contact", "/api-docs", "/blog",
-];
+// Updated Helper:
+// We hide the Layout if it's a Workspace (/dashboard, /workflow) 
+// OR if it's a dynamic slug (any path NOT in our marketing list)
+const shouldHideLayout = (pathname) => {
+  const workspacePaths = ["/dashboard", "/workflow", "/blog-admin"];
+  const marketingPaths = [
+    "/", "/login", "/register", "/login-success", "/forgot-password",
+    "/about", "/privacy", "/terms", "/faq",
+    "/help-center", "/contact", "/api-docs", "/blog",
+  ];
 
-const shouldHideHeader = (pathname) => {
-  if (headerHiddenPaths.some(p => pathname.startsWith(p))) return true;
+  // 1. Hide if it starts with a workspace path
+  if (workspacePaths.some(path => pathname.startsWith(path))) return true;
+
+  // 2. Blog posts and reset-password keep header/footer
   if (pathname.startsWith("/blog/") || pathname.startsWith("/reset-password/")) return false;
-  if (!marketingPaths.includes(pathname)) return true;
-  return false;
-};
 
-const shouldHideFooter = (pathname) => {
-  // Footer is hidden on workflow builder, blog-admin, and unknown slugs
-  // but IS shown on /dashboard
-  if (footerHiddenPaths.some(p => pathname.startsWith(p))) return true;
-  if (pathname.startsWith("/blog/") || pathname.startsWith("/reset-password/") || pathname.startsWith("/dashboard")) return false;
+  // 3. Hide if it is NOT one of our main marketing/auth pages
   if (!marketingPaths.includes(pathname)) return true;
+
   return false;
 };
 
 function HeaderWrapper() {
   const location = useLocation();
-  if (shouldHideHeader(location.pathname)) return null;
+  if (shouldHideLayout(location.pathname)) return null;
   return <Header />;
 }
 
 function FooterWrapper() {
   const location = useLocation();
-  if (shouldHideFooter(location.pathname)) return null;
+  if (shouldHideLayout(location.pathname)) return null;
   return <Footer />;
 }
 
