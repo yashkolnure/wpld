@@ -40,6 +40,7 @@ export default function Footer() {
       title: "COMPANY",
       links: [
         { label: "About Us", href: "/about"   },
+        { label: "Blog",     href: "/blog"    },
         { label: "Privacy",  href: "/privacy" },
         { label: "Terms",    href: "/terms"   },
         { label: "FAQ",      href: "/faq"     },
