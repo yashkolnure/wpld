@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useCallback } from "react";
 import { WaIcon } from "./Icons";
 
 export default function Footer() {
   const [time, setTime] = useState(new Date().toLocaleTimeString());
   const navigate  = useNavigate();
   const location  = useLocation();
+
+  const handleDashboard = useCallback((e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    navigate(token ? "/dashboard" : "/login");
+  }, [navigate]);
 
   const handleNav = (e, sectionId) => {
     e.preventDefault();
@@ -34,6 +41,7 @@ export default function Footer() {
         { label: "How it Works", sectionId: "howitworks" },
         { label: "Pricing",      sectionId: "pricing"    },
         { label: "Use Cases",    sectionId: "usecases"   },
+        { label: "Dashboard",    dashboard: true          },
       ],
     },
     {
@@ -96,7 +104,17 @@ export default function Footer() {
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
                   {sec.links.map(link => (
                     <li key={link.label}>
-                      {link.sectionId ? (
+                      {link.dashboard ? (
+                        <a
+                          href="#"
+                          onClick={handleDashboard}
+                          style={{ color: "#64748b", textDecoration: "none", fontSize: "13px", fontWeight: 500, transition: "color 0.2s" }}
+                          onMouseOver={e => e.target.style.color = "#0f172a"}
+                          onMouseOut={e => e.target.style.color = "#64748b"}
+                        >
+                          {link.label}
+                        </a>
+                      ) : link.sectionId ? (
                         <a
                           href="#"
                           onClick={(e) => handleNav(e, link.sectionId)}
