@@ -1,22 +1,24 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import axios from "axios";
+
+const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
 
 export default function LoginSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 1. Extract the token from the URL (?token=xxxx)
     const token = searchParams.get("token");
 
     if (token) {
-      // 2. Store it just like your manual login does
       localStorage.setItem("token", token);
-      
-      // 3. Send them to the dashboard
-      navigate("/dashboard");
+      // Fetch user email so superadmin check works after Google OAuth
+      axios.get(`${API}/api/user/me`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => localStorage.setItem("userEmail", r.data.email || ""))
+        .catch(() => {})
+        .finally(() => navigate("/dashboard"));
     } else {
-      // If something went wrong, send them back to login
       navigate("/login");
     }
   }, [searchParams, navigate]);

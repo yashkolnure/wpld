@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import axios from "axios";
 
+const SUPERADMIN = "yash@gmail.com";
+
 const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
 
 function BlogCard({ blog }) {
@@ -106,6 +108,7 @@ export default function Blog() {
   const [page, setPage]             = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading]       = useState(true);
+  const isAdmin = localStorage.getItem("userEmail") === SUPERADMIN;
 
   useEffect(() => {
     axios.get(`${API}/api/blogs/categories`).then(r => setCategories(r.data)).catch(() => {});
@@ -178,6 +181,17 @@ export default function Blog() {
                 Search
               </button>
             </form>
+            {/* Admin button — only visible to superadmin */}
+            {isAdmin && (
+              <div className="mt-4">
+                <Link
+                  to="/blog-admin"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white text-sm font-bold hover:bg-white/20 transition-colors"
+                >
+                  ⚙️ Manage Blog
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 

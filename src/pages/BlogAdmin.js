@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { Lock } from "lucide-react";
 
-const ADMIN_PASSWORD = "yash1234";
+const SUPERADMIN = "yash@gmail.com";
 const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
 
 function StatCard({ label, value, color }) {
@@ -16,12 +15,12 @@ function StatCard({ label, value, color }) {
 }
 
 export default function BlogAdmin() {
-  const [inputPass, setInputPass] = useState("");
-  const [isUnlocked, setIsUnlocked]  = useState(false);
-  const [blogs, setBlogs]   = useState([]);
+  const [blogs, setBlogs]     = useState([]);
   const [loading, setLoading] = useState(false);
   const [actionId, setActionId] = useState(null);
-  const token = localStorage.getItem("token");
+  const token     = localStorage.getItem("token");
+  const userEmail = localStorage.getItem("userEmail");
+  const isAdmin   = userEmail === SUPERADMIN;
 
   const fetchBlogs = async () => {
     setLoading(true);
@@ -31,21 +30,16 @@ export default function BlogAdmin() {
       });
       setBlogs(res.data);
     } catch {
-      alert("Failed to load blogs. Make sure you are logged in as superadmin.");
+      alert("Failed to load blogs.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUnlock = (e) => {
-    e.preventDefault();
-    if (inputPass === ADMIN_PASSWORD) {
-      setIsUnlocked(true);
-      fetchBlogs();
-    } else {
-      alert("Wrong password.");
-    }
-  };
+  useEffect(() => {
+    if (isAdmin) fetchBlogs();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
 
   const handleDelete = async (id, title) => {
     if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
@@ -90,27 +84,17 @@ export default function BlogAdmin() {
     }
   };
 
-  // ── Password gate ──────────────────────────────────────────────────────────
-  if (!isUnlocked) {
+  // ── Access guard ───────────────────────────────────────────────────────────
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center px-4">
-        <form onSubmit={handleUnlock} className="bg-white rounded-2xl p-10 w-full max-w-sm shadow-2xl text-center">
-          <div className="w-12 h-12 bg-[#0f172a] rounded-xl flex items-center justify-center mx-auto mb-6">
-            <Lock size={20} color="#fff" />
+        <div className="bg-white rounded-2xl p-10 w-full max-w-sm shadow-2xl text-center">
+          <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center mx-auto mb-6">
+            <span className="text-2xl">🚫</span>
           </div>
-          <h2 className="text-xl font-black text-[#0f172a] mb-1">Blog Admin</h2>
-          <p className="text-slate-400 text-sm mb-6">Enter password to continue</p>
-          <input
-            type="password"
-            placeholder="Password"
-            value={inputPass}
-            onChange={e => setInputPass(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl bg-slate-50 border mb-4 outline-none focus:border-[#25d366]"
-          />
-          <button type="submit" className="w-full py-3 rounded-xl bg-[#0f172a] text-white font-bold hover:bg-slate-800 transition-colors">
-            Unlock
-          </button>
-        </form>
+          <h2 className="text-xl font-black text-[#0f172a] mb-1">Access Denied</h2>
+          <p className="text-slate-400 text-sm">You don't have permission to access this page.</p>
+        </div>
       </div>
     );
   }
