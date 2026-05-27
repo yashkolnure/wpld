@@ -4,7 +4,7 @@ import axios from "axios";
 import { Lock } from "lucide-react";
 
 const ADMIN_PASSWORD = "yash1234";
-const API = process.env.REACT_APP_API_URL || "http://localhost:5002";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
 
 function StatCard({ label, value, color }) {
   return (

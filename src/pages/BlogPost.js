@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import axios from "axios";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5002";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
 
 export default function BlogPost() {
   const { slug }         = useParams();

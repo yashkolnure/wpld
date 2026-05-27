@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5002";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
 
 const toSlug = (text) =>
   text.toLowerCase().trim()
