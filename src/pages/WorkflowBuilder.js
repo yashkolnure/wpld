@@ -20,7 +20,7 @@ import ProductConfig   from '../components/config/ProductConfig';
 import TemplatePicker  from '../components/TemplatePicker';
 import TestPanel       from '../components/test/TestPanel';
 
-const API       = process.env.REACT_APP_API_URL || 'http://localhost:5005';
+const API       = 'http://localhost:5002';
 const edgeTypes = { deletable: DeletableEdge };
 
 const PALETTE = [

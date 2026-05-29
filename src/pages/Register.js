@@ -20,7 +20,7 @@ const handleSubmit = async (e) => {
 
   try {
     // Just send the digits; let the backend handle the final normalization
-    await axios.post(`${process.env.REACT_APP_API_URL || "http://localhost:5005"}/api/auth/register`, form);
+    await axios.post(`${process.env.REACT_APP_API_URL || "http://localhost:5002"}/api/auth/register`, form);
 
     alert("Success! Please sign in.");
     navigate("/login");

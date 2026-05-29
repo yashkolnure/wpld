@@ -309,7 +309,8 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
   const [error, setError]             = useState('');
   const chatEndRef                    = useRef(null);
 
-  const triggerKw = nodes.find(n => n.type === 'trigger')?.data?.keyword || '';
+  const triggerKw   = nodes.find(n => n.type === 'trigger')?.data?.keyword || '';
+  const triggerKws  = triggerKw.split(',').map(k => k.trim()).filter(Boolean);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -338,12 +339,15 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
       return;
     }
 
-    const text = inputText.toLowerCase().trim();
-    const kw   = keyword.toLowerCase().trim();
-    const matched = matchType === 'exact' ? text === kw : text.includes(kw);
+    const text     = inputText.toLowerCase().trim();
+    const keywords = keyword.split(',').map(k => k.toLowerCase().trim()).filter(Boolean);
+    const matched  = keywords.some(kw =>
+      matchType === 'exact' ? text === kw : text.includes(kw)
+    );
 
     if (!matched) {
-      setError(`"${inputText}" doesn't match the trigger keyword "${keyword}" (${matchType}).`);
+      const kwDisplay = keywords.length > 1 ? keywords.join(', ') : keywords[0];
+      setError(`"${inputText}" doesn't match any trigger keyword (${matchType}): ${kwDisplay}`);
       return;
     }
 
@@ -378,7 +382,9 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', margin: 0 }}>WPLeads Bot</p>
           <p style={{ fontSize: 11, color: '#b2dfdb', margin: 0 }}>
-            {triggerKw ? `Trigger: "${triggerKw}"` : 'WhatsApp Business'}
+            {triggerKws.length > 0
+              ? `Triggers: ${triggerKws.slice(0, 3).map(k => `"${k}"`).join(', ')}${triggerKws.length > 3 ? ` +${triggerKws.length - 3} more` : ''}`
+              : 'WhatsApp Business'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -399,8 +405,8 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
           <div style={{ textAlign: 'center', padding: '50px 24px 20px' }}>
             <div style={{ fontSize: 38, marginBottom: 12 }}>💬</div>
             <p style={{ fontSize: 12, color: '#777', margin: 0, lineHeight: 1.7 }}>
-              {triggerKw
-                ? <>Type <strong>"{triggerKw}"</strong> below to start</>
+              {triggerKws.length > 0
+                ? <>Type any keyword — e.g. <strong>"{triggerKws[0]}"</strong> — to start</>
                 : 'Add a Keyword Trigger node to begin'}
             </p>
           </div>
@@ -463,7 +469,7 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
               value={inputText}
               onChange={e => setInputText(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !started && startConversation()}
-              placeholder={started ? 'Tap a reply button above...' : `Type "${triggerKw || 'keyword'}" to start...`}
+              placeholder={started ? 'Tap a reply button above...' : `Type "${triggerKws[0] || 'keyword'}" to start...`}
               disabled={started}
               style={{ flex: 1, border: 'none', borderRadius: 22, padding: '9px 15px', fontSize: 13, outline: 'none', background: '#fff', opacity: started ? 0.5 : 1, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
             />

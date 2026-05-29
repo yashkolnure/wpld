@@ -3,7 +3,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import WhatsAppManager from "./WhatsAppManager";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   LayoutDashboard, Zap, Users, MessageCircle, LogOut,
   Wifi, WifiOff, Plus, Copy, Check, ChevronLeft, ChevronRight,
@@ -17,7 +17,7 @@ import {
 import MyLeads from "./MyLeads";
 import ShopPage from "./ShopPage";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
+const API ="http://localhost:5002";
 const POLL_CHATS_MS     = 8000;   // refresh chat list every 8s
 const POLL_MESSAGES_MS  = 5000;   // refresh active messages every 5s
 const POLL_WA_MS        = 30000;  // refresh WA status every 30s
@@ -45,7 +45,7 @@ const NAV = [
   { key: "bulk",       label: "Cold Outreach",Icon: Upload },
   { key: "templates",  label: "Templates",  Icon: FileText },
   { key: "wallet",     label: "Wallet",     Icon: Wallet },
-  { key: "shop",       label: "Shop",       Icon: ShoppingBag },
+  // { key: "shop",       label: "Shop",       Icon: ShoppingBag },  // hidden — under development
   { key: "qrcode",     label: "QR & Links", Icon: QrCode },
   { key: "whatsapp",   label: "WhatsApp API",   Icon: MessageCircle },
 ];
@@ -300,7 +300,7 @@ export default function Dashboard() {
   const [templates,        setTemplates]        = useState([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [showCreateTpl,    setShowCreateTpl]    = useState(false);
-  const [tplForm,          setTplForm]          = useState({ name: '', category: 'MARKETING', language: 'en', header: '', body: '', footer: '', buttons: [] });
+  const [tplForm,          setTplForm]          = useState({ name: '', category: 'MARKETING', language: 'en', headerType: 'none', header: '', headerImageFile: null, body: '', footer: '', buttons: [] });
   const [tplSaving,        setTplSaving]        = useState(false);
   const [tplMsg,           setTplMsg]           = useState({ text: '', type: '' });
 
@@ -828,11 +828,24 @@ const fetchWaStatus = useCallback(() => {
 
   const handleCreateTemplate = async () => {
     if (!tplForm.name.trim() || !tplForm.body.trim()) { setTplMsg({ text: 'Name and body are required', type: 'error' }); return; }
+    if (tplForm.headerType === 'image' && !tplForm.headerImageFile) { setTplMsg({ text: 'Please select an image file for the image header', type: 'error' }); return; }
     setTplSaving(true); setTplMsg({ text: '', type: '' });
     try {
-      await axios.post(`${API}/api/templates`, tplForm, { headers });
+      const fd = new FormData();
+      fd.append('name',       tplForm.name);
+      fd.append('category',   tplForm.category);
+      fd.append('language',   tplForm.language);
+      fd.append('headerType', tplForm.headerType);
+      fd.append('header',     tplForm.header);
+      fd.append('body',       tplForm.body);
+      fd.append('footer',     tplForm.footer);
+      fd.append('buttons',    JSON.stringify(tplForm.buttons));
+      if (tplForm.headerType === 'image' && tplForm.headerImageFile) {
+        fd.append('headerImage', tplForm.headerImageFile);
+      }
+      await axios.post(`${API}/api/templates`, fd, { headers: { ...headers, 'Content-Type': 'multipart/form-data' } });
       setTplMsg({ text: 'Template submitted to Meta for review!', type: 'success' });
-      setTplForm({ name: '', category: 'MARKETING', language: 'en', header: '', body: '', footer: '', buttons: [] });
+      setTplForm({ name: '', category: 'MARKETING', language: 'en', headerType: 'none', header: '', headerImageFile: null, body: '', footer: '', buttons: [] });
       setShowCreateTpl(false);
       axios.get(`${API}/api/templates`, { headers }).then(r => setTemplates(r.data)).catch(() => {});
     } catch (err) {
@@ -1770,7 +1783,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
           display: "flex", alignItems: "center", justifyContent: "space-between",
           flexShrink: 0,
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+          <Link to="/" style={{ display: "flex", alignItems: "center", gap: 11, textDecoration: "none" }}>
             <div style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.25)" }}>
               <MessageCircle size={18} color="#fff" strokeWidth={2.5} />
             </div>
@@ -1778,7 +1791,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
               <div style={{ fontSize: 16, fontWeight: 800, color: "#fff", letterSpacing: "-0.02em", lineHeight: 1.1 }}>WPLeads</div>
               <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em", fontFamily: S.monoFont }}>BUSINESS SUITE</div>
             </div>
-          </div>
+          </Link>
           <button onClick={() => setSidebarOpen(false)} className="wpl-hamburger"
             style={{ background: "rgba(255,255,255,0.15)", border: "none", cursor: "pointer", color: "#fff", padding: 7, borderRadius: 8, display: "flex", alignItems: "center" }}>
             <X size={15} />
@@ -4175,7 +4188,28 @@ const activeCount = workflows.filter(w => w.isActive).length;
                           </div>
                         </div>
                         <div style={{ display: "grid", gap: 10 }}>
-                          <input style={{ width: "100%", padding: "9px 12px", fontSize: 12, background: "#fff", border: `1px solid ${S.greenBorder}`, borderRadius: 10, color: S.textPrimary, fontFamily: S.font, outline: "none" }} placeholder="Header (optional text)" value={tplForm.header} onChange={e=>setTplForm(f=>({...f,header:e.target.value}))}/>
+                          <div>
+                            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: S.textMuted, marginBottom: 6, textTransform: "uppercase" }}>Header</label>
+                            <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                              {[{ val: "none", label: "— None" }, { val: "text", label: "T  Text" }, { val: "image", label: "🖼  Image" }].map(opt => (
+                                <button key={opt.val} onClick={() => setTplForm(f => ({ ...f, headerType: opt.val, header: '', headerImageUrl: '' }))} style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font, border: tplForm.headerType === opt.val ? "none" : `1px solid ${S.greenBorder}`, background: tplForm.headerType === opt.val ? S.greenGrad : "#fff", color: tplForm.headerType === opt.val ? "#fff" : S.textMuted, transition: "all 0.15s" }}>
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+                            {tplForm.headerType === "text" && (
+                              <input style={{ width: "100%", padding: "9px 12px", fontSize: 12, background: "#fff", border: `1px solid ${S.greenBorder}`, borderRadius: 10, color: S.textPrimary, fontFamily: S.font, outline: "none" }} placeholder="Header text" value={tplForm.header} onChange={e => setTplForm(f => ({ ...f, header: e.target.value }))} />
+                            )}
+                            {tplForm.headerType === "image" && (
+                              <div>
+                                <input type="file" accept="image/jpeg,image/png" id="tpl-header-img" style={{ display: "none" }} onChange={e => setTplForm(f => ({ ...f, headerImageFile: e.target.files[0] || null }))} />
+                                <label htmlFor="tpl-header-img" style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 14px", borderRadius: 10, border: `1.5px dashed ${S.greenBorder}`, background: "#fff", cursor: "pointer", fontSize: 12, color: S.textMuted, fontFamily: S.font }}>
+                                  <span style={{ fontSize: 16 }}>🖼</span>
+                                  {tplForm.headerImageFile ? tplForm.headerImageFile.name : "Click to select image (.jpg / .png, max 5 MB)"}
+                                </label>
+                              </div>
+                            )}
+                          </div>
                           <div style={{ position: "relative" }}>
                             <textarea rows={4} style={{ width: "100%", padding: "9px 12px", fontSize: 12, background: "#fff", border: `1px solid ${S.greenBorder}`, borderRadius: 10, color: S.textPrimary, fontFamily: S.font, resize: "vertical", outline: "none" }} placeholder="Body * — use {{1}} {{2}} for variables" value={tplForm.body} onChange={e=>setTplForm(f=>({...f,body:e.target.value}))}/>
                             <span style={{ position: "absolute", top: 8, right: 8 }}><InfoTip title="Template Variables" text="Use {{1}}, {{2}}, etc. as placeholders. When sending, these get replaced with actual values per contact. Example: 'Hi {{1}}, your order {{2}} is ready!'" width={260} position="left" /></span>

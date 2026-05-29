@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import axios from "axios";
 
 const SUPERADMIN = "yash@gmail.com";
-const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5002";
 
 function StatCard({ label, value, color }) {
   return (

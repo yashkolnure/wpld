@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5002";
 
 const toSlug = (text) =>
   text.toLowerCase().trim()
@@ -19,6 +19,7 @@ const calcReadingTime = (html) => {
 const TOOLBAR_ITEMS = [
   { label: "B",      tag: "strong",     title: "Bold"       },
   { label: "I",      tag: "em",         title: "Italic"     },
+  { label: "H1",     tag: "h1",         title: "Heading 1"  },
   { label: "H2",     tag: "h2",         title: "Heading 2"  },
   { label: "H3",     tag: "h3",         title: "Heading 3"  },
   { label: "P",      tag: "p",          title: "Paragraph"  },
@@ -82,7 +83,17 @@ export default function BlogEditor() {
     })
       .then(r => {
         const b = r.data;
-        setForm({ ...b, tags: (b.tags || []).join(", ") });
+        setForm({
+          ...EMPTY,
+          ...b,
+          tags:            (b.tags || []).join(", "),
+          metaTitle:       b.metaTitle       || "",
+          metaDescription: b.metaDescription || "",
+          metaKeywords:    b.metaKeywords    || "",
+          excerpt:         b.excerpt         || "",
+          thumbnail:       b.thumbnail       || "",
+          category:        b.category        || "",
+        });
         setSlugManual(true);
       })
       .catch(() => alert("Failed to load blog."))

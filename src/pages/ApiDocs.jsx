@@ -1,4 +1,4 @@
-const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5005";
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5002";
 
 const METHOD_COLORS = {
   GET:    { bg:"#eff6ff", color:"#2563eb" },

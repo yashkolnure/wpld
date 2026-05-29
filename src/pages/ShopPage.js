@@ -8,7 +8,7 @@ import {
   RefreshCw, Tag,
 } from 'lucide-react';
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:5005';
+const API = process.env.REACT_APP_API_URL || 'http://localhost:5002';
 
 const EMPTY_FORM = {
   retailer_id: '', name: '', description: '',

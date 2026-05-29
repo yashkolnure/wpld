@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Plus, Trash2, RefreshCw } from 'lucide-react';
 import { v4 as uuid } from 'uuid';
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:5005';
+const API = process.env.REACT_APP_API_URL || 'http://localhost:5002';
 
 export default function ProductConfig({ data, onChange }) {
   const [products,    setProducts]    = useState([]);

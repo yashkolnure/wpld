@@ -11,7 +11,7 @@ import {
   Calendar, Download, Eye, BarChart3, MessageCircle
 } from "lucide-react";
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:5005';
+const API = process.env.REACT_APP_API_URL || 'http://localhost:5002';
 
 // WhatsApp-inspired color scheme for wpleads.in
 const COLORS = {

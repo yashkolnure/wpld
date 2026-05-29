@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { WaIcon } from "../components/Icons";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5002";
 
 const EMPTY = { name: "", email: "", phone: "", message: "" };
 

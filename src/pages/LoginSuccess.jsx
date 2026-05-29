@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5005";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5002";
 
 export default function LoginSuccess() {
   const [searchParams] = useSearchParams();

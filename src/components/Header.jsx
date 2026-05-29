@@ -7,10 +7,19 @@ export default function Header() {
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const [pillStyle, setPillStyle] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
   const navRef = useRef(null);
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  const handleSignOut = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
+    setIsLoggedIn(false);
+    setMobileMenuOpen(false);
+    navigate("/");
+  };
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -30,6 +39,7 @@ export default function Header() {
     { name: "Pricing",    id: "pricing"   },
     { name: "Compare",    id: "compare"   },
     { name: "Reviews",    id: "reviews"   },
+    { name: "Blog",       href: "/blog"   },
   ];
 
   const handleNav = (e, id) => {
@@ -80,24 +90,27 @@ export default function Header() {
             className="hidden lg:flex items-center gap-1 p-1 bg-black/5 rounded-full relative"
             ref={navRef}
           >
-            {navLinks.map((link, idx) => (
-              <a
-                key={link.name}
-                href={`#${link.id}`}
-                onClick={(e) => handleNav(e, link.id)}
-                onMouseEnter={(e) => {
+            {navLinks.map((link, idx) => {
+              const sharedProps = {
+                key: link.name,
+                onMouseEnter: (e) => {
                   setHoveredIdx(idx);
                   const el = e.currentTarget;
                   setPillStyle({ left: el.offsetLeft, width: el.offsetWidth });
-                }}
-                onMouseLeave={() => { setHoveredIdx(null); setPillStyle(null); }}
-                className={`relative z-10 text-[13px] font-bold px-4 py-2 transition-colors duration-300 ${
+                },
+                onMouseLeave: () => { setHoveredIdx(null); setPillStyle(null); },
+                className: `relative z-10 text-[13px] font-bold px-4 py-2 transition-colors duration-300 ${
                   hoveredIdx === idx ? "text-slate-900" : "text-slate-500"
-                }`}
-              >
-                {link.name}
-              </a>
-            ))}
+                }`,
+              };
+              return link.href ? (
+                <Link to={link.href} {...sharedProps}>{link.name}</Link>
+              ) : (
+                <a href={`#${link.id}`} onClick={(e) => handleNav(e, link.id)} {...sharedProps}>
+                  {link.name}
+                </a>
+              );
+            })}
             {/* Sliding pill — tracks actual element size */}
             <div
               style={{
@@ -111,21 +124,43 @@ export default function Header() {
 
           {/* RIGHT ACTIONS */}
           <div className="flex items-center gap-3">
-            {/* Sign in — hidden on small mobile, visible md+ */}
-            <Link
-              to="/login"
-              className="hidden md:block text-[13px] font-bold text-slate-500 hover:text-slate-900 transition-colors"
-            >
-              Sign in
-            </Link>
+            {isLoggedIn ? (
+              <>
+                {/* Sign out — hidden on small mobile, visible md+ */}
+                <button
+                  onClick={handleSignOut}
+                  className="hidden md:block text-[13px] font-bold text-slate-500 hover:text-slate-900 transition-colors bg-transparent border-none cursor-pointer"
+                >
+                  Sign out
+                </button>
 
-            {/* Get Started — always visible */}
-            <Link
-              to="/register"
-              className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-[13px] font-bold shadow-lg shadow-slate-900/20 hover:scale-105 active:scale-95 transition-all duration-200"
-            >
-              Get Started
-            </Link>
+                {/* Dashboard — always visible */}
+                <Link
+                  to="/dashboard"
+                  className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-[13px] font-bold shadow-lg shadow-slate-900/20 hover:scale-105 active:scale-95 transition-all duration-200"
+                >
+                  Dashboard
+                </Link>
+              </>
+            ) : (
+              <>
+                {/* Sign in — hidden on small mobile, visible md+ */}
+                <Link
+                  to="/login"
+                  className="hidden md:block text-[13px] font-bold text-slate-500 hover:text-slate-900 transition-colors"
+                >
+                  Sign in
+                </Link>
+
+                {/* Get Started — always visible */}
+                <Link
+                  to="/register"
+                  className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-[13px] font-bold shadow-lg shadow-slate-900/20 hover:scale-105 active:scale-95 transition-all duration-200"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
 
             {/* Hamburger — lg hidden */}
             <button
@@ -163,34 +198,56 @@ export default function Header() {
 
           {/* Nav links */}
           <div className="flex-1 flex flex-col px-7 pt-8 gap-2 overflow-y-auto">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={`#${link.id}`}
-                onClick={(e) => handleNav(e, link.id)}
-                className="text-3xl font-black text-slate-900 tracking-tighter py-3 border-b border-slate-50 hover:text-[#25d366] transition-colors"
-              >
-                {link.name}
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              const cls = "text-3xl font-black text-slate-900 tracking-tighter py-3 border-b border-slate-50 hover:text-[#25d366] transition-colors";
+              return link.href ? (
+                <Link key={link.name} to={link.href} onClick={() => setMobileMenuOpen(false)} className={cls}>
+                  {link.name}
+                </Link>
+              ) : (
+                <a key={link.name} href={`#${link.id}`} onClick={(e) => handleNav(e, link.id)} className={cls}>
+                  {link.name}
+                </a>
+              );
+            })}
           </div>
 
           {/* Bottom auth buttons */}
           <div className="px-7 pb-10 pt-6 border-t border-slate-100 flex flex-col gap-3">
-            <Link
-              to="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full py-4 rounded-2xl border-2 border-slate-200 text-center text-[15px] font-bold text-slate-700 hover:border-slate-400 transition-colors"
-            >
-              Sign in
-            </Link>
-            <Link
-              to="/register"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full py-4 rounded-2xl bg-[#25d366] text-center text-[15px] font-bold text-white shadow-lg shadow-emerald-500/25 hover:bg-[#1db954] transition-colors"
-            >
-              Get Started — It's Free 🚀
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-4 rounded-2xl bg-[#25d366] text-center text-[15px] font-bold text-white shadow-lg shadow-emerald-500/25 hover:bg-[#1db954] transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full py-4 rounded-2xl border-2 border-slate-200 text-center text-[15px] font-bold text-slate-700 hover:border-slate-400 transition-colors bg-transparent cursor-pointer"
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-4 rounded-2xl border-2 border-slate-200 text-center text-[15px] font-bold text-slate-700 hover:border-slate-400 transition-colors"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-4 rounded-2xl bg-[#25d366] text-center text-[15px] font-bold text-white shadow-lg shadow-emerald-500/25 hover:bg-[#1db954] transition-colors"
+                >
+                  Get Started — It's Free 🚀
+                </Link>
+              </>
+            )}
           </div>
 
         </div>
