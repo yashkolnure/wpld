@@ -75,11 +75,29 @@ export default function Footer() {
             
             {/* 1. BRAND SECTION */}
             <div style={{ flex: "1.2", minWidth: "240px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "20px" }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: "#0f172a", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <WaIcon size={16} color="#25d366" />
-                </div>
-                <span style={{ fontWeight: 900, fontSize: 20, color: "#0f172a", letterSpacing: "-0.5px" }}>WPLeads</span>
+              <Link to="/" className="flex items-center gap-3 no-underline group mb-4">
+                          <div className="">
+                          <img
+                            src="/wpleads-logo.png"
+                            alt="WhatsApp"
+                            className="h-10 object-contain"
+                          />
+                        </div>
+                          <div className="flex flex-col">
+                            <span className="font-black text-xl text-slate-900 leading-none">
+                              WP<span className="text-[#008B00]">Leads</span>
+                            </span>
+                           
+                          </div>
+                        </Link>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: "12px" }}>
+                           <div style={{ width: "auto", alignItems: "center", gap: 8, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "6px 22px" }}>
+                <img
+                  src="/images/metatechprovider.png"
+                  alt="Meta Tech Provider"
+                  style={{ height: 60,  objectFit: "contain" }}
+                />
+              </div>
               </div>
               <p style={{ color: "#64748b", fontSize: "14px", lineHeight: "1.6", marginBottom: "24px" }}>
                 The smartest AI engine for lead capture. Turn every conversation into real growth.

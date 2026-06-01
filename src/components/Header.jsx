@@ -71,17 +71,18 @@ export default function Header() {
         >
           {/* LOGO */}
           <Link to="/" className="flex items-center gap-3 no-underline group">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#25d366] to-[#128c7e] flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
-              <WaIcon size={16} color="#fff" />
-            </div>
+            <div className="">
+            <img
+              src="/wpleads-logo.png"
+              alt="WhatsApp"
+              className="h-10 object-contain"
+            />
+          </div>
             <div className="flex flex-col">
-              <span className="font-black text-lg text-slate-900 leading-none">
-                WP<span className="text-[#25d366]">Leads</span>
+              <span className="font-black text-xl text-slate-900 leading-none">
+                WP<span className="text-[#008B00]">Leads</span>
               </span>
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="w-1 h-1 rounded-full bg-[#25d366] animate-ping" />
-                <span className="text-[8px] font-extrabold uppercase tracking-widest text-slate-500">System Live</span>
-              </div>
+             
             </div>
           </Link>
 
@@ -155,7 +156,7 @@ export default function Header() {
                 {/* Get Started — always visible */}
                 <Link
                   to="/register"
-                  className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-[13px] font-bold shadow-lg shadow-slate-900/20 hover:scale-105 active:scale-95 transition-all duration-200"
+                  className="hidden md:block bg-slate-900 text-white px-5 py-2.5 rounded-full text-[13px] font-bold shadow-lg shadow-slate-900/20 hover:scale-105 active:scale-95 transition-all duration-200"
                 >
                   Get Started
                 </Link>

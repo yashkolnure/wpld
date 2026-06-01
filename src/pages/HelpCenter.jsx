@@ -48,7 +48,7 @@ const categories = [
     icon: "💰", title: "Wallet & Billing", color: "#d97706", bg: "#fffbeb",
     items: [
       { q: "How do I add credits to my wallet?", a: "Go to Wallet in your dashboard and click 'Recharge'. Enter the amount and complete the payment via Razorpay, which supports UPI, credit/debit cards, and net banking. Credits are added to your wallet instantly after a successful payment." },
-      { q: "How are message credits deducted?", a: "Broadcast and bulk outreach messages are charged at a 25% markup on Meta's standard per-message rate. The exact cost depends on the recipient's country and message category as defined by Meta's pricing." },
+      { q: "How are message credits deducted?", a: "You are charged only for messages Meta confirms as delivered — never for sent-but-undelivered or failed messages. The charge depends on how your WhatsApp is connected: if you use the WPLeads platform number, Meta bills us, so your wallet pays the Meta per-message cost plus a 25% platform fee. If you connected your own number via Facebook, Meta bills your own account directly and we charge only the 25% platform fee. The Meta base cost itself depends on the recipient's country and message category as defined by Meta's pricing." },
       { q: "My wallet was not credited after payment. What should I do?", a: "Note your Razorpay transaction reference ID and email admin@avenirya.com. Our team will verify the payment and manually credit your wallet if the transaction is confirmed." },
       { q: "Where can I see my transaction history?", a: "Your full wallet transaction history — including all top-ups, message deductions, and timestamps — is available in the Wallet section of your dashboard." },
     ],

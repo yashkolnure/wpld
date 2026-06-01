@@ -23,7 +23,7 @@ const faqs = [
   },
   {
     q: "How do broadcast campaigns work?",
-    a: "Broadcast lets you send a pre-approved WhatsApp message template to all your contacts, or a filtered segment, at once. You choose your template, select your audience, and send. Broadcast messages are charged at a 25% markup on Meta's standard per-message rate, deducted from your WPLeads wallet.",
+    a: "Broadcast lets you send a pre-approved WhatsApp message template to all your contacts, or a filtered segment, at once. You choose your template, select your audience, and send. You are charged only for messages Meta confirms as delivered. If you use the WPLeads platform number, Meta bills us and your wallet is charged the Meta cost plus a 25% platform fee. If you connected your own WhatsApp number via Facebook, Meta bills your own account directly and we charge only the 25% platform fee.",
   },
   {
     q: "What is bulk cold outreach?",

@@ -99,6 +99,15 @@ function TemplateSelector({ value, onChange, headers, S }) {
     return t;
   };
 
+  // Meta returns the header image either as header_url or an https header_handle
+  const headerImageUrl = (comp) => {
+    if (!comp) return null;
+    if (comp.example?.header_url) return comp.example.header_url;
+    const h = comp.example?.header_handle;
+    if (Array.isArray(h) && /^https?:\/\//.test(h[0]||'')) return h[0];
+    return null;
+  };
+
   const filtered = templates.filter(t => t.name.toLowerCase().includes(search.toLowerCase()));
 
   if (loading) return (
@@ -133,17 +142,29 @@ function TemplateSelector({ value, onChange, headers, S }) {
         </div>
       ) : (
         <div style={{maxHeight:260,overflowY:'auto',display:'flex',flexDirection:'column',gap:6}}>
-          {filtered.map(tpl=>(
-            <div key={tpl.id} onClick={()=>handleSelect(tpl)}
-              style={{padding:'12px 14px',borderRadius:10,border:`1px solid ${S.border}`,cursor:'pointer',background:'#fff'}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5}}>
-                <span style={{fontSize:12,fontWeight:700,color:S.textPrimary,fontFamily:S.monoFont}}>{tpl.name}</span>
-                <span style={{fontSize:10,fontWeight:700,color:'#16a34a',background:'#dcfce7',padding:'2px 8px',borderRadius:5}}>{tpl.category}</span>
+          {filtered.map(tpl=>{
+            const hdr=tpl.components?.find(c=>c.type==='HEADER');
+            const fmt=(hdr?.format||'').toUpperCase();
+            const url=headerImageUrl(hdr);
+            return (
+            <div key={tpl.id||tpl._id||tpl.name} onClick={()=>handleSelect(tpl)}
+              style={{padding:'12px 14px',borderRadius:10,border:`1px solid ${S.border}`,cursor:'pointer',background:'#fff',display:'flex',gap:10,alignItems:'flex-start'}}>
+              {hdr&&fmt!=='TEXT'&&(
+                <div style={{width:44,height:44,borderRadius:8,flexShrink:0,overflow:'hidden',background:'#e8f5e9',display:'flex',alignItems:'center',justifyContent:'center',color:S.greenDark}}>
+                  {fmt==='IMAGE'&&url?<img src={url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:fmt==='VIDEO'?<Video size={18}/>:fmt==='DOCUMENT'?<FileText size={18}/>:<ImageIcon size={18}/>}
+                </div>
+              )}
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:5,gap:6}}>
+                  <span style={{fontSize:12,fontWeight:700,color:S.textPrimary,fontFamily:S.monoFont,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tpl.name}</span>
+                  <span style={{fontSize:10,fontWeight:700,color:'#16a34a',background:'#dcfce7',padding:'2px 8px',borderRadius:5,flexShrink:0}}>{tpl.category}</span>
+                </div>
+                <p style={{fontSize:11.5,color:S.textMuted,margin:'0 0 3px',lineHeight:1.4}}>{tpl.components?.find(c=>c.type==='BODY')?.text?.slice(0,100)||'No body'}</p>
+                <p style={{fontSize:10,color:S.textFaint,margin:0}}>{tpl.language}{hdr&&fmt!=='TEXT'?` · ${fmt} header`:''}</p>
               </div>
-              <p style={{fontSize:11.5,color:S.textMuted,margin:'0 0 3px',lineHeight:1.4}}>{tpl.components?.find(c=>c.type==='BODY')?.text?.slice(0,100)||'No body'}</p>
-              <p style={{fontSize:10,color:S.textFaint,margin:0}}>{tpl.language}</p>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -166,6 +187,20 @@ function TemplateSelector({ value, onChange, headers, S }) {
         <p style={{fontSize:10,fontWeight:700,color:S.textMuted,textTransform:'uppercase',letterSpacing:'0.08em',margin:'0 0 8px'}}>Message Preview</p>
         {selected.components?.map((comp,i)=>{
           if(comp.type==='HEADER'&&comp.format==='TEXT') return <p key={i} style={{fontSize:12,fontWeight:700,color:S.textPrimary,margin:'0 0 6px'}}>{comp.text}</p>;
+          if(comp.type==='HEADER'&&comp.format!=='TEXT'){
+            const fmt=(comp.format||'').toUpperCase();
+            const url=headerImageUrl(comp);
+            return (
+              <div key={i} style={{marginBottom:8,borderRadius:8,overflow:'hidden',border:`1px solid ${S.border}`,background:'#e8f5e9'}}>
+                {fmt==='IMAGE'&&url
+                  ? <img src={url} alt="header" style={{display:'block',width:'100%',maxHeight:160,objectFit:'cover'}}/>
+                  : <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5,height:90,color:S.greenDark}}>
+                      {fmt==='VIDEO'?<Video size={24}/>:fmt==='DOCUMENT'?<FileText size={24}/>:<ImageIcon size={24}/>}
+                      <span style={{fontSize:10,fontWeight:700}}>{fmt} HEADER</span>
+                    </div>}
+              </div>
+            );
+          }
           if(comp.type==='BODY') return <p key={i} style={{fontSize:12,color:S.textPrimary,margin:'0 0 6px',lineHeight:1.5,whiteSpace:'pre-wrap'}}>{preview(selected.components,value?.variables)}</p>;
           if(comp.type==='FOOTER') return <p key={i} style={{fontSize:11,color:S.textFaint,margin:0}}>{comp.text}</p>;
           if(comp.type==='BUTTONS') return <div key={i} style={{display:'flex',flexWrap:'wrap',gap:5,marginTop:8}}>{comp.buttons?.map((btn,j)=><span key={j} style={{padding:'4px 10px',borderRadius:6,background:'#e0f2fe',color:'#0369a1',fontSize:11,fontWeight:600}}>{btn.text}</span>)}</div>;
@@ -232,6 +267,62 @@ function InfoTip({ title, text, width = 240, position = "top" }) {
   );
 }
 
+// Explains the per-message charging model on the Broadcast / Cold Outreach /
+// Wallet screens. Adapts to the user's WhatsApp connection type:
+//   • platform → wallet is charged Meta cost + markup per delivered message
+//   • own      → Meta bills the user directly; wallet is charged markup only
+//   • null     → not connected yet; show both cases
+function BillingNote({ connectionType, pricing, markupPct = 25, S, categories = ["marketing", "service"], style }) {
+  const isOwn      = connectionType === "own";
+  const isPlatform = connectionType === "platform";
+  const accent = isOwn ? "#7c3aed" : "#b45309";
+  const bg     = isOwn ? "rgba(124,58,237,0.06)" : "#fff8f0";
+  const border = isOwn ? "rgba(124,58,237,0.18)" : "#fed7aa";
+
+  const headline = isPlatform
+    ? "You're on the WPLeads WhatsApp number"
+    : isOwn
+      ? "You connected your own WhatsApp (via Facebook)"
+      : "How per-message billing works";
+
+  const explain = isPlatform
+    ? `Meta bills WPLeads for every message. We charge your wallet the full Meta cost + ${markupPct}% platform fee — and only for messages that are actually delivered.`
+    : isOwn
+      ? `Meta bills your own WhatsApp Business account directly for the message cost. We charge your wallet only our ${markupPct}% platform fee — and only for messages that are actually delivered.`
+      : `Charges apply only to delivered messages. If you use the WPLeads number, your wallet pays the Meta cost + ${markupPct}% fee. If you connect your own number via Facebook, Meta bills you directly and we charge only the ${markupPct}% platform fee.`;
+
+  const labelFor = (c) => (c === "service" ? "Service (24h window)" : c.charAt(0).toUpperCase() + c.slice(1));
+
+  return (
+    <div style={{ padding: "13px 15px", borderRadius: 12, background: bg, border: `1px solid ${border}`, ...style }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+        <Info size={13} color={accent} />
+        <p style={{ fontSize: 12, fontWeight: 800, color: accent, margin: 0 }}>{headline}</p>
+      </div>
+      <p style={{ fontSize: 11.5, color: S.textMuted, margin: "0 0 9px", lineHeight: 1.55 }}>{explain}</p>
+
+      {pricing && categories.map((c) => {
+        const p = pricing[c];
+        if (!p) return null;
+        return (
+          <div key={c} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 0", borderTop: `1px solid rgba(0,0,0,0.05)` }}>
+            <span style={{ fontSize: 11.5, color: S.textMuted, fontWeight: 600 }}>{labelFor(c)}</span>
+            <div style={{ textAlign: "right" }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: S.textPrimary }}>₹{p.youPay}</span>
+              <span style={{ fontSize: 10, color: S.textMuted }}> / delivered msg</span>
+              <span style={{ fontSize: 9.5, color: S.textFaint, display: "block", marginTop: 1 }}>
+                {isOwn
+                  ? `platform fee only · Meta charges you ₹${p.metaBase} separately`
+                  : `Meta ₹${p.metaBase} + ${markupPct}% fee ₹${p.markup}`}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [user,          setUser]          = useState(null);
   const [waStatus,      setWaStatus]      = useState(null);
@@ -277,6 +368,7 @@ export default function Dashboard() {
   const [messagesLoading,setMessagesLoading]= useState(false);
   const [replyText,      setReplyText]      = useState("");
   const [sendingReply,   setSendingReply]   = useState(false);
+  const [showScrollBtn,  setShowScrollBtn]  = useState(false);
   const [overviewStats,  setOverviewStats]  = useState(null);
   const [overviewCampaigns, setOverviewCampaigns] = useState([]);
 
@@ -303,6 +395,10 @@ export default function Dashboard() {
   const [tplForm,          setTplForm]          = useState({ name: '', category: 'MARKETING', language: 'en', headerType: 'none', header: '', headerImageFile: null, body: '', footer: '', buttons: [] });
   const [tplSaving,        setTplSaving]        = useState(false);
   const [tplMsg,           setTplMsg]           = useState({ text: '', type: '' });
+  const [tplBtnMode,       setTplBtnMode]       = useState('none'); // 'none' | 'quick_reply' | 'cta'
+  const [tplQrBtns,        setTplQrBtns]        = useState(['']);   // quick-reply texts
+  const [tplUrlBtns,       setTplUrlBtns]       = useState([]);     // [{text,url}]
+  const [tplPhoneBtn,      setTplPhoneBtn]      = useState(null);   // {text,phone} | null
 
   // bulk upload
   const [bulkCampaigns,    setBulkCampaigns]    = useState([]);
@@ -649,9 +745,28 @@ const fetchWaStatus = useCallback(() => {
 
 
   
+  // ─── Robust scroll-to-bottom ────────────────────────────────────────────────
+  // Sets scrollTop directly on the container (more reliable than scrollIntoView
+  // inside a flex column) and retries across a few frames so it still lands at the
+  // bottom after images / template media finish loading.
+  const scrollToBottom = useCallback((smooth = false) => {
+    const go = () => {
+      const c = messagesContainer.current;
+      if (!c) return;
+      if (smooth) c.scrollTo({ top: c.scrollHeight, behavior: 'smooth' });
+      else c.scrollTop = c.scrollHeight;
+    };
+    requestAnimationFrame(go);
+    // retries to catch late layout shifts (media loading, fonts, etc.)
+    setTimeout(go, 60);
+    setTimeout(go, 200);
+    setTimeout(go, 450);
+    setShowScrollBtn(false);
+  }, []);
+
   // ─── MESSAGES (paginated + polling) ─────────────────────────────────────────
   // Fetch latest page; scrollToBottom=true on initial load
-  const fetchMessages = useCallback((scrollToBottom = false) => {
+  const fetchMessages = useCallback((scrollDown = false) => {
     if (!selectedChat) return;
     axios.get(`${API}/api/chats/${selectedChat._id}/messages?limit=30`, { headers })
       .then(r => {
@@ -663,13 +778,10 @@ const fetchWaStatus = useCallback(() => {
           return [...messages, ...optimistics.filter(o => !existingIds.has(o._id))];
         });
         setHasMoreMessages(hasMore);
-        if (scrollToBottom) {
-          // use setTimeout so DOM has painted before scrolling
-          setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'instant' }), 0);
-        }
+        if (scrollDown) scrollToBottom();
       })
       .catch(() => {});
-  }, [selectedChat]);
+  }, [selectedChat, scrollToBottom]);
 
   // Load older messages (prepend, preserve scroll position)
   const loadOlderMessages = useCallback(() => {
@@ -698,13 +810,15 @@ const fetchWaStatus = useCallback(() => {
     if (!selectedChat) { setActiveMessages([]); setHasMoreMessages(false); return; }
 
     setMessagesLoading(true);
+    setShowScrollBtn(false);
     axios.get(`${API}/api/chats/${selectedChat._id}/messages?limit=30`, { headers })
       .then(r => {
         const { messages, hasMore } = r.data;
         setActiveMessages(messages);
         setHasMoreMessages(hasMore);
-        // scroll to bottom instantly on first open
-        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'instant' }), 0);
+        prevMessageCount.current = messages.filter(m => !m._id.startsWith('opt-')).length;
+        // jump to the latest message on open (retries across frames for late media)
+        scrollToBottom(false);
       })
       .catch(err => console.error("Failed to load messages", err))
       .finally(() => setMessagesLoading(false));
@@ -713,6 +827,15 @@ const fetchWaStatus = useCallback(() => {
     return () => clearInterval(msgPollRef.current);
   }, [selectedChat]);
 
+  // Ensure template definitions are available so template/broadcast messages
+  // render with real content (header/body/footer/buttons) in the chat view.
+  useEffect(() => {
+    if (activeTab !== 'chats' || templates.length > 0) return;
+    axios.get(`${API}/api/templates`, { headers })
+      .then(r => setTemplates(r.data || []))
+      .catch(() => {});
+  }, [activeTab]); // eslint-disable-line
+
   // ─── AUTO-SCROLL to bottom when user sends a new message ─────────────────────
   const prevMessageCount = useRef(0);
   useEffect(() => {
@@ -720,12 +843,13 @@ const fetchWaStatus = useCallback(() => {
     if (count > prevMessageCount.current) {
       const container = messagesContainer.current;
       if (container) {
-        const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
-        if (nearBottom) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+        if (nearBottom) scrollToBottom(true);
+        else setShowScrollBtn(true); // new message arrived while scrolled up
       }
     }
     prevMessageCount.current = count;
-  }, [activeMessages]);
+  }, [activeMessages, scrollToBottom]);
 
 
   // ─── CONTACTS ────────────────────────────────────────────────────────────────
@@ -762,7 +886,7 @@ const fetchWaStatus = useCallback(() => {
     setBroadcastMsg({ text: '', type: '' });
     try {
       const res = await axios.post(`${API}/api/broadcasts`, campaignForm, { headers });
-      setBroadcastMsg({ text: `Launched! Sending to ${res.data.totalContacts} contacts. Est. cost: ${res.data.estimatedCost}`, type: 'success' });
+      setBroadcastMsg({ text: `Launched to ${res.data.totalContacts} contacts. ${res.data.billingNote || ''} Max if all delivered: ${res.data.estimatedCost}.`, type: 'success' });
       setCampaignForm({ name: '', message: { type: 'template', templateName: '' }, targetTags: [], filterLast24hrs: false });
       setCampaigns(prev => [res.data.campaign, ...prev]);
       axios.get(`${API}/api/wallet`, { headers }).then(r => setWalletData(r.data)).catch(() => {});
@@ -785,7 +909,7 @@ const fetchWaStatus = useCallback(() => {
 
   const handleRecharge = async () => {
     const amt = parseFloat(rechargeAmount);
-    if (!amt || amt < 10) { setWalletMsg({ text: 'Minimum recharge is ₹10', type: 'error' }); return; }
+    if (!amt || amt < 100) { setWalletMsg({ text: 'Minimum recharge is ₹100', type: 'error' }); return; }
     setRecharging(true);
     setWalletMsg({ text: '', type: '' });
     try {
@@ -839,13 +963,21 @@ const fetchWaStatus = useCallback(() => {
       fd.append('header',     tplForm.header);
       fd.append('body',       tplForm.body);
       fd.append('footer',     tplForm.footer);
-      fd.append('buttons',    JSON.stringify(tplForm.buttons));
+      let finalBtns = [];
+      if (tplBtnMode === 'quick_reply') {
+        finalBtns = tplQrBtns.filter(t => t.trim()).map(t => ({ type: 'QUICK_REPLY', text: t.trim() }));
+      } else if (tplBtnMode === 'cta') {
+        tplUrlBtns.forEach(b => { if (b.text.trim() && b.url.trim()) finalBtns.push({ type: 'URL', text: b.text.trim(), url: b.url.trim() }); });
+        if (tplPhoneBtn?.text.trim() && tplPhoneBtn?.phone.trim()) finalBtns.push({ type: 'PHONE_NUMBER', text: tplPhoneBtn.text.trim(), phone: tplPhoneBtn.phone.trim() });
+      }
+      fd.append('buttons', JSON.stringify(finalBtns));
       if (tplForm.headerType === 'image' && tplForm.headerImageFile) {
         fd.append('headerImage', tplForm.headerImageFile);
       }
-      await axios.post(`${API}/api/templates`, fd, { headers: { ...headers, 'Content-Type': 'multipart/form-data' } });
+      await axios.post(`${API}/api/templates`, fd, { headers });
       setTplMsg({ text: 'Template submitted to Meta for review!', type: 'success' });
       setTplForm({ name: '', category: 'MARKETING', language: 'en', headerType: 'none', header: '', headerImageFile: null, body: '', footer: '', buttons: [] });
+      setTplBtnMode('none'); setTplQrBtns(['']); setTplUrlBtns([]); setTplPhoneBtn(null);
       setShowCreateTpl(false);
       axios.get(`${API}/api/templates`, { headers }).then(r => setTemplates(r.data)).catch(() => {});
     } catch (err) {
@@ -926,7 +1058,7 @@ const fetchWaStatus = useCallback(() => {
     setBulkSending(true); setBulkMsg({ text: '', type: '' });
     try {
       const res = await axios.post(`${API}/api/bulk`, bulkForm, { headers });
-      setBulkMsg({ text: `Campaign launched to ${res.data.totalNumbers} numbers. Est. cost: ${res.data.estimatedCost}`, type: 'success' });
+      setBulkMsg({ text: `Launched to ${res.data.totalNumbers} numbers. ${res.data.billingNote || ''} Max if all delivered: ${res.data.estimatedCost}.`, type: 'success' });
       setBulkForm({ name: '', message: { type: 'template', templateName: '' }, phoneNumbers: [] });
       setBulkNumbers([]);
       setBulkCampaigns(prev => [res.data.campaign, ...prev]);
@@ -1377,6 +1509,26 @@ const activeCount = workflows.filter(w => w.isActive).length;
     card:        { background:"#FFFFFF", border:"1px solid #E8E9EC", borderRadius:14, boxShadow:"0 1px 4px rgba(11,20,26,0.07)" },
     cardHover:   { boxShadow:"0 6px 20px rgba(11,20,26,0.11)" },
   };
+
+  // ─── BILLING (per-message charging model) ─────────────────────────────────
+  // What THIS user pays per DELIVERED message depends on how their WhatsApp is
+  // connected (see Connect WhatsApp screen):
+  //   • platform → number on WPLeads' WABA, Meta bills us → wallet pays Meta cost + markup
+  //   • own      → number on user's own WABA (Facebook), Meta bills them → wallet pays markup only
+  // Rates come from the wallet API (driven by .env); the constants below are
+  // only fallbacks for first paint before walletData loads.
+  const connType = waStatus?.connectionType || walletData?.pricing?.connectionType || null;
+  const markupPct = walletData?.pricing?.markupPct ?? 25;
+  const ratePerMsg = (cat, fb) => {
+    const p = walletData?.pricing?.[cat];
+    return p?.youPay != null ? parseFloat(p.youPay) : fb;
+  };
+  const metaRate = (cat, fb) => {
+    const p = walletData?.pricing?.[cat];
+    return p?.metaBase != null ? parseFloat(p.metaBase) : fb;
+  };
+  const mktRate = ratePerMsg('marketing', 0.90); // what user pays / delivered marketing msg
+  const svcRate = ratePerMsg('service', 0.20);   // what user pays / delivered service msg
 
   // ─── RENDER ──────────────────────────────────────────────────────────────────
   return (
@@ -1989,9 +2141,12 @@ const activeCount = workflows.filter(w => w.isActive).length;
                           <button onClick={() => setActiveChatTagFilter([])} style={{ marginTop: 10, fontSize: 11, color: S.greenDark, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 20, padding: "5px 14px", cursor: "pointer", fontFamily: S.font }}>Clear filter</button>
                         )}
                       </div>
-                    ) : filtered.map(chat => (
+                    ) : filtered.map(chat => {
+                      const isSelected = selectedChat?._id === chat._id;
+                      const isUnread = (chat.unreadCount || 0) > 0 && !isSelected;
+                      return (
                     <div key={chat._id}
-                      onClick={() => { setSelectedChat(chat); setTagPanelOpen(false); setTagInput(''); }}
+                      onClick={() => { setSelectedChat(chat); setTagPanelOpen(false); setTagInput(''); setChats(prev => prev.map(c => c._id === chat._id ? { ...c, unreadCount: 0 } : c)); }}
                       className="chat-item"
                       style={{
                         padding: "14px 18px",
@@ -2000,8 +2155,8 @@ const activeCount = workflows.filter(w => w.isActive).length;
                         display: "flex",
                         gap: 11,
                         alignItems: "center",
-                        background: selectedChat?._id === chat._id ? S.greenBg : "transparent",
-                        borderLeft: selectedChat?._id === chat._id ? `3px solid ${S.green}` : "3px solid transparent",
+                        background: isSelected ? S.greenBg : "transparent",
+                        borderLeft: isSelected ? `3px solid ${S.green}` : "3px solid transparent",
                         transition: "all 0.15s",
                       }}>
                       <div style={{ width: 40, height: 40, borderRadius: 13, background: S.greenGrad, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 800, fontSize: 14, flexShrink: 0, boxShadow: "0 3px 8px rgba(37,211,102,0.2)" }}>
@@ -2009,14 +2164,21 @@ const activeCount = workflows.filter(w => w.isActive).length;
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
-                          <p style={{ fontSize: 13, fontWeight: 700, color: S.textPrimary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <p style={{ fontSize: 13, fontWeight: isUnread ? 800 : 700, color: S.textPrimary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {chat.name || chat.phone}
                           </p>
-                          <span style={{ fontSize: 10, color: S.textFaint, flexShrink: 0 }}>{formatRelativeTime(chat.lastActive)}</span>
+                          <span style={{ fontSize: 10, color: isUnread ? S.greenDark : S.textFaint, fontWeight: isUnread ? 700 : 400, flexShrink: 0 }}>{formatRelativeTime(chat.lastActive)}</span>
                         </div>
-                        <p style={{ fontSize: 11, color: S.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>
-                          {chat.lastMessage || "Media message"}
-                        </p>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginTop: 2 }}>
+                          <p style={{ fontSize: 11, color: isUnread ? S.textPrimary : S.textMuted, fontWeight: isUnread ? 700 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>
+                            {chat.lastMessage || "Media message"}
+                          </p>
+                          {isUnread && (
+                            <span style={{ flexShrink: 0, minWidth: 18, height: 18, padding: "0 5px", borderRadius: 9, background: S.green, color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(37,211,102,0.4)" }}>
+                              {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
+                            </span>
+                          )}
+                        </div>
                         {chat.tags?.length > 0 && (
                           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 5 }}>
                             {chat.tags.slice(0, 3).map(tag => {
@@ -2034,7 +2196,8 @@ const activeCount = workflows.filter(w => w.isActive).length;
                         )}
                       </div>
                     </div>
-                  ))
+                    );
+                  })
                   })()}
                   {isFree && chats.length > 10 && (
                     <div
@@ -2156,9 +2319,15 @@ const activeCount = workflows.filter(w => w.isActive).length;
                     </div>
 
 {/* Messages area — this is the only scrollable part */}
+<div style={{ flex: 1, position: "relative", display: "flex", flexDirection: "column", minHeight: 0 }}>
 <div
   ref={messagesContainer}
-  onScroll={e => { if (e.currentTarget.scrollTop === 0 && hasMoreMessages && !loadingOlderMsgs) loadOlderMessages(); }}
+  onScroll={e => {
+    const el = e.currentTarget;
+    if (el.scrollTop === 0 && hasMoreMessages && !loadingOlderMsgs) loadOlderMessages();
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    setShowScrollBtn(!atBottom);
+  }}
   style={{ flex: 1, overflowY: "auto", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 10 }}>
 
   {/* Load older messages trigger */}
@@ -2186,6 +2355,18 @@ const activeCount = workflows.filter(w => w.isActive).length;
     const isMe         = m.from === "bot" || m.from === "admin";
     const isButtonMsg  = m.type === "interactive" || m.metadata?.buttons;
     const isOptimistic = m._id?.startsWith("opt-");
+    const isTemplateMsg = m.type === "template";
+
+    // Resolve the template definition so broadcast/template messages render with
+    // real content instead of just a status dot. m.text holds the template name.
+    const tplDef = isTemplateMsg ? templates.find(t => t.name === m.text) : null;
+    const tplHeader = tplDef?.components?.find(c => c.type === "HEADER");
+    const tplBody   = tplDef?.components?.find(c => c.type === "BODY")?.text || "";
+    const tplFooter = tplDef?.components?.find(c => c.type === "FOOTER")?.text || "";
+    const tplButtons = tplDef?.components?.find(c => c.type === "BUTTONS")?.buttons || [];
+    const tplHdrFmt = (tplHeader?.format || "").toUpperCase();
+    const tplHdrImg = tplHeader?.example?.header_url ||
+      (Array.isArray(tplHeader?.example?.header_handle) && /^https?:\/\//.test(tplHeader.example.header_handle[0] || "") ? tplHeader.example.header_handle[0] : null);
 
     // --- Dynamic Status Icon Helper ---
     const renderStatusIcon = () => {
@@ -2227,7 +2408,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
         transition: "opacity 0.3s",
       }}>
         <div style={{
-          padding: isButtonMsg ? "0" : (m.type === "image" ? "6px" : "10px 14px"),
+          padding: (isButtonMsg || (isTemplateMsg && tplDef)) ? "0" : (m.type === "image" ? "6px" : "10px 14px"),
           borderRadius: isMe ? "16px 16px 2px 16px" : "16px 16px 16px 2px",
           background: isMe ? S.greenGrad : "#fff",
           color: isMe ? "#fff" : S.textPrimary,
@@ -2279,13 +2460,65 @@ const activeCount = workflows.filter(w => w.isActive).length;
 
           
 
+          {/* Template / Broadcast message — render full WhatsApp-style preview */}
+          {isTemplateMsg && (
+            tplDef ? (
+              <div style={{ display: "flex", flexDirection: "column", width: 260 }}>
+                {/* Header media / text */}
+                {tplHeader && tplHdrFmt !== "TEXT" && (
+                  tplHdrFmt === "IMAGE" && tplHdrImg ? (
+                    <img src={tplHdrImg} alt="header" style={{ width: "100%", maxHeight: 160, objectFit: "cover", display: "block" }} />
+                  ) : (
+                    <div style={{ height: 90, background: isMe ? "rgba(255,255,255,0.15)" : "#e8f5e9", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, color: isMe ? "#fff" : S.greenDark }}>
+                      {tplHdrFmt === "VIDEO" ? <Video size={22} /> : tplHdrFmt === "DOCUMENT" ? <FileText size={22} /> : <Image size={22} />}
+                      <span style={{ fontSize: 10, fontWeight: 700 }}>{tplHdrFmt} HEADER</span>
+                    </div>
+                  )
+                )}
+                <div style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 5 }}>
+                  {tplHeader && tplHdrFmt === "TEXT" && tplHeader.text && (
+                    <p style={{ margin: 0, fontWeight: 800, fontSize: 13, lineHeight: 1.4 }}>{tplHeader.text}</p>
+                  )}
+                  {tplBody && <p style={{ margin: 0, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{tplBody}</p>}
+                  {tplFooter && <p style={{ margin: 0, fontSize: 11, opacity: 0.6 }}>{tplFooter}</p>}
+                </div>
+                {tplButtons.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", borderTop: isMe ? "1px solid rgba(255,255,255,0.15)" : "1px solid #f1f5f9" }}>
+                    {tplButtons.map((btn, idx) => (
+                      <div key={idx} style={{ padding: "9px", textAlign: "center", fontSize: 12, fontWeight: 700, color: isMe ? "#fff" : "#2563eb", borderTop: idx > 0 ? (isMe ? "1px solid rgba(255,255,255,0.12)" : "1px solid #f1f5f9") : "none" }}>
+                        {btn.text}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ padding: "2px 12px 8px", display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 4, fontSize: 9, opacity: 0.7 }}>
+                  {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {renderStatusIcon()}
+                </div>
+              </div>
+            ) : (
+              // Template definition not loaded — graceful fallback
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <FileText size={13} style={{ opacity: 0.8 }} />
+                  <span style={{ fontWeight: 700 }}>Template:</span>
+                  <span style={{ fontFamily: S.monoFont }}>{m.text}</span>
+                </div>
+                <div style={{ fontSize: 9, textAlign: "right", opacity: 0.7, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 3 }}>
+                  {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {renderStatusIcon()}
+                </div>
+              </div>
+            )
+          )}
+
           {/* Standard Text */}
           {m.type === "text" && !isButtonMsg && (
             <p style={{ margin: 0, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{resolveIdToLabel(m.text)}</p>
           )}
 
-          {/* Timestamp & Status Ticks (for non-interactive messages) */}
-          {!isButtonMsg && (
+          {/* Timestamp & Status Ticks (for non-interactive, non-template messages) */}
+          {!isButtonMsg && !isTemplateMsg && (
             <div style={{ fontSize: 9, textAlign: "right", marginTop: 4, opacity: 0.7, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 3 }}>
               {new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               {renderStatusIcon()}
@@ -2298,6 +2531,17 @@ const activeCount = workflows.filter(w => w.isActive).length;
 
   {/* Scroll anchor */}
   <div ref={chatEndRef} />
+</div>
+
+{/* Scroll-to-bottom button (like WhatsApp / standard chat apps) */}
+{showScrollBtn && (
+  <button
+    onClick={() => scrollToBottom(true)}
+    title="Scroll to latest"
+    style={{ position: "absolute", bottom: 16, right: 18, width: 40, height: 40, borderRadius: "50%", background: "#fff", border: `1px solid ${S.border}`, boxShadow: "0 4px 14px rgba(0,0,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 5, color: S.greenDark }}>
+    <ChevronRight size={20} style={{ transform: "rotate(90deg)" }} />
+  </button>
+)}
 </div>
 
                     {/* Reply bar */}
@@ -2563,7 +2807,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                           <span style={{ fontSize: 10.5, fontWeight: 700, color: S.textMuted, textTransform: "uppercase", letterSpacing: "0.07em" }}>Wallet Balance</span>
-                          <InfoTip title="Wallet Balance" text="Pre-paid balance used to send messages. Marketing messages (broadcasts): ₹0.XX each. Service messages (24h window): cheaper rate. Recharge anytime." />
+                          <InfoTip title="Wallet Balance" text={`Pre-paid balance, charged only when a message is delivered. Marketing (broadcasts): ₹${mktRate.toFixed(2)} per delivered msg. Service (24h window): ₹${svcRate.toFixed(2)}. ${connType === 'own' ? 'You use your own WhatsApp number, so you pay only our platform fee — Meta bills your own account directly. ' : ''}Recharge anytime.`} />
                         </div>
                         <div style={{ width: 36, height: 36, borderRadius: 10, background: "#fef3c7", display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <Wallet size={16} color="#f59e0b" />
@@ -2786,7 +3030,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
                     </div>
                     <div>
                       <p style={{ fontSize: 13, fontWeight: 800, color: S.greenDark }}>Pro Plan — Free Forever</p>
-                      <p style={{ fontSize: 11.5, color: S.textMuted, marginTop: 2 }}>All features unlocked. Pay only per message: ₹0.20 (service) or ₹0.90 (marketing).</p>
+                      <p style={{ fontSize: 11.5, color: S.textMuted, marginTop: 2 }}>All features unlocked. Pay only for delivered messages: ₹{svcRate.toFixed(2)} (service) or ₹{mktRate.toFixed(2)} (marketing){connType === 'own' ? ` — platform fee only` : ``}.</p>
                     </div>
                   </div>
 
@@ -3027,16 +3271,17 @@ const activeCount = workflows.filter(w => w.isActive).length;
     {/* ── Message pricing info ── */}
     <div style={{ ...S.card, padding: "24px", marginBottom: 20 }}>
       <h3 style={{ fontSize: 14, fontWeight: 800, color: S.textPrimary, marginBottom: 4 }}>Pay-per-message pricing</h3>
-      <p style={{ fontSize: 12, color: S.textMuted, marginBottom: 16 }}>No monthly subscription. Recharge your wallet and only pay for messages you send.</p>
+      <p style={{ fontSize: 12, color: S.textMuted, marginBottom: 16 }}>No monthly subscription. Recharge your wallet and only pay for messages that are <strong>delivered</strong>{connType === 'own' ? ` — and since you use your own WhatsApp number, only our ${markupPct}% platform fee.` : `.`}</p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 12 }}>
         {[
-          { label: "Marketing / Cold Outreach", price: "₹0.90", sub: "per message", color: "#d97706", bg: "#fef3c7", border: "#fde68a" },
-          { label: "Service (24h window)", price: "₹0.20", sub: "per message", color: S.greenDark, bg: S.greenBg, border: S.greenBorder },
+          { label: "Marketing / Cold Outreach", price: `₹${mktRate.toFixed(2)}`, meta: metaRate('marketing', 0.72), color: "#d97706", bg: "#fef3c7", border: "#fde68a" },
+          { label: "Service (24h window)", price: `₹${svcRate.toFixed(2)}`, meta: metaRate('service', 0.16), color: S.greenDark, bg: S.greenBg, border: S.greenBorder },
         ].map(r => (
           <div key={r.label} style={{ padding: "16px 18px", borderRadius: 12, background: r.bg, border: `1px solid ${r.border}` }}>
             <p style={{ fontSize: 11, fontWeight: 700, color: r.color, marginBottom: 6 }}>{r.label}</p>
             <p style={{ fontSize: 28, fontWeight: 900, color: S.textPrimary, letterSpacing: "-0.04em", lineHeight: 1 }}>{r.price}</p>
-            <p style={{ fontSize: 11, color: S.textMuted, marginTop: 4 }}>{r.sub}</p>
+            <p style={{ fontSize: 11, color: S.textMuted, marginTop: 4 }}>per delivered message</p>
+            <p style={{ fontSize: 10, color: S.textFaint, marginTop: 2 }}>{connType === 'own' ? `platform fee only · Meta bills you ₹${r.meta.toFixed(2)}` : `Meta ₹${r.meta.toFixed(2)} + ${markupPct}% fee`}</p>
           </div>
         ))}
       </div>
@@ -3069,8 +3314,8 @@ const activeCount = workflows.filter(w => w.isActive).length;
               { feature: "Interactive Messages",   val: "All types" },
               { feature: "Analytics Dashboard",    val: "✓ Included" },
               { feature: "WhatsApp API setup",     val: "Self-setup (free)" },
-              { feature: "Marketing messages",     val: "₹0.90 / msg" },
-              { feature: "Service messages",       val: "₹0.20 / msg" },
+              { feature: "Marketing messages",     val: `₹${mktRate.toFixed(2)} / delivered msg` },
+              { feature: "Service messages",       val: `₹${svcRate.toFixed(2)} / delivered msg` },
             ].map(({ feature, val }) => (
               <tr key={feature} className="drow" style={{ borderBottom: `1px solid rgba(37,211,102,0.05)` }}>
                 <td style={{ padding: "13px 24px", fontSize: 13, fontWeight: 600, color: S.textPrimary }}>{feature}</td>
@@ -3788,13 +4033,16 @@ const activeCount = workflows.filter(w => w.isActive).length;
                         </div>}
                       </div>
 
+                      {/* How charging works */}
+                      <BillingNote connectionType={connType} pricing={walletData?.pricing} markupPct={markupPct} S={S} style={{ marginBottom: 16 }} />
+
                       {/* 24hr Filter Toggle */}
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: S.textMuted, textTransform: "uppercase", letterSpacing: "0.08em" }}>Audience</span>
-                        <InfoTip title="Audience Selection" text={`All Contacts: sends a marketing message (₹0.90/msg) to everyone.\n\nActive last 24hrs: contact messaged you recently — qualifies for the cheaper service rate (₹0.20/msg) within WhatsApp's 24-hour customer service window.`} width={280} />
+                        <InfoTip title="Audience Selection" text={`All Contacts: sends a marketing message (₹${mktRate.toFixed(2)}/delivered msg) to everyone.\n\nActive last 24hrs: contact messaged you recently — qualifies for the cheaper service rate (₹${svcRate.toFixed(2)}/delivered msg) within WhatsApp's 24-hour customer service window.\n\n${connType === 'own' ? `You pay only our ${markupPct}% platform fee — Meta bills your own account for the message cost.` : `Price includes Meta cost + ${markupPct}% platform fee. Only delivered messages are charged.`}`} width={290} />
                       </div>
                       <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-                        {[{val:false,label:"All Contacts",count:contactPreview,rate:"₹0.90/msg"},{val:true,label:"Active last 24hrs",count:active24Count,rate:"₹0.20/msg"}].map(opt=>(
+                        {[{val:false,label:"All Contacts",count:contactPreview,rate:`₹${mktRate.toFixed(2)}/msg`},{val:true,label:"Active last 24hrs",count:active24Count,rate:`₹${svcRate.toFixed(2)}/msg`}].map(opt=>(
                           <button key={String(opt.val)} onClick={()=>setCampaignForm(f=>({...f,filterLast24hrs:opt.val}))}
                             style={{flex:1,padding:"12px 16px",borderRadius:14,border:`2px solid ${campaignForm.filterLast24hrs===opt.val?S.greenDark:S.greenBorder}`,background:campaignForm.filterLast24hrs===opt.val?S.greenBg:"#fff",cursor:"pointer",fontFamily:S.font,textAlign:"left"}}>
                             <div style={{fontSize:13,fontWeight:700,color:campaignForm.filterLast24hrs===opt.val?S.greenDark:S.textPrimary}}>{opt.label}</div>
@@ -3841,7 +4089,10 @@ const activeCount = workflows.filter(w => w.isActive).length;
                           <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
                             <thead><tr style={{borderBottom:`1px solid ${S.border}`}}>{["Campaign","Filter","Status","Sent","Failed","Cost","Date"].map(h=><th key={h} style={{padding:"8px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:S.textFaint,textTransform:"uppercase",letterSpacing:"0.1em",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
                             <tbody>{campaigns.map(c=><tr key={c._id} style={{borderBottom:`1px solid ${S.border}`}}>
-                              <td style={{padding:"12px",fontWeight:600,color:S.textPrimary,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</td>
+                              <td style={{padding:"12px",fontWeight:600,color:S.textPrimary,maxWidth:200}}>
+                                <div style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
+                                {c.failureReason && <div title={c.failureReason} style={{fontSize:10,color:"#dc2626",fontWeight:500,marginTop:3,whiteSpace:"normal",lineHeight:1.35}}>⚠ {c.failureReason}</div>}
+                              </td>
                               <td style={{padding:"12px"}}><span style={{fontSize:11,color:S.textMuted}}>{c.filterLast24hrs?"24hr only":"All"}</span></td>
                               <td style={{padding:"12px"}}>{statusBadge(c)}</td>
                               <td style={{padding:"12px",color:S.greenDark,fontWeight:700}}>{c.sentCount}</td>
@@ -3862,7 +4113,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
                 const validNums   = bulkNumbers.filter(e => e.valid);
                 const invalidNums = bulkNumbers.filter(e => !e.valid);
                 const warnNums    = bulkNumbers.filter(e => e.valid && e.warn);
-                const estCost     = validNums.length * 0.90;
+                const estCost     = validNums.length * mktRate; // cold outreach is always marketing rate
                 const estSecs     = Math.ceil(validNums.length * 0.25);
                 const estTimeStr  = estSecs < 60 ? `~${estSecs}s` : `~${Math.ceil(estSecs/60)}m`;
                 const balance     = walletData ? parseFloat(walletData.balanceRupees) : null;
@@ -3880,7 +4131,7 @@ const activeCount = workflows.filter(w => w.isActive).length;
                           <div style={{ width: 42, height: 42, borderRadius: 13, background: "linear-gradient(135deg,#dc2626,#ef4444)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Upload size={18} color="#fff"/></div>
                           <div style={{ flex: 1 }}>
                             <h2 style={{ fontSize: 18, fontWeight: 800, color: S.textPrimary, margin: 0 }}>Cold Outreach</h2>
-                            <p style={{ fontSize: 12, color: S.textMuted, margin: "2px 0 0" }}>Send WhatsApp messages to any phone number list · ₹0.90 per message</p>
+                            <p style={{ fontSize: 12, color: S.textMuted, margin: "2px 0 0" }}>Send WhatsApp messages to any phone number list · ₹{mktRate.toFixed(2)} per delivered message{connType === 'own' ? ` (platform fee only)` : ``}</p>
                           </div>
                           {walletData && (
                             <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -4003,8 +4254,9 @@ const activeCount = workflows.filter(w => w.isActive).length;
                               {[
                                 { label: "Recipients",     value: `${validNums.length} valid numbers`, ok: true },
                                 { label: "Skipped",        value: invalidNums.length > 0 ? `${invalidNums.length} invalid (will not be sent)` : "None", ok: true },
-                                { label: "Rate",           value: "₹0.90 per message (marketing)", ok: true },
-                                { label: "Estimated Cost", value: `₹${estCost.toFixed(2)}`, ok: canAfford, warn: !canAfford ? "Insufficient wallet balance" : null },
+                                { label: "Rate",           value: `₹${mktRate.toFixed(2)} per delivered msg${connType === 'own' ? ' (platform fee only)' : ` (Meta + ${markupPct}%)`}`, ok: true },
+                                { label: "Billing",        value: "Charged only on delivery", ok: true },
+                                { label: "Max Cost",       value: `₹${estCost.toFixed(2)} (if all delivered)`, ok: canAfford, warn: !canAfford ? "Insufficient wallet balance" : null },
                                 { label: "Your Balance",   value: balance !== null ? `₹${balance.toFixed(2)}` : "Loading…", ok: canAfford },
                                 { label: "Est. Duration",  value: `${estTimeStr} (${validNums.length} msgs × 250ms delay)`, ok: true },
                               ].map(({ label, value, ok, warn }) => (
@@ -4071,9 +4323,12 @@ const activeCount = workflows.filter(w => w.isActive).length;
                           ))}
                           <div style={{ marginTop: 14, padding: "10px 13px", borderRadius: 10, background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)" }}>
                             <p style={{ fontSize: 11, color: "#7c3aed", fontWeight: 700, margin: "0 0 3px" }}>WhatsApp Policy</p>
-                            <p style={{ fontSize: 10.5, color: "#6d28d9", margin: 0, lineHeight: 1.5 }}>Cold outreach is charged at the marketing rate (₹0.90/msg). Numbers must have opted into receiving business messages to ensure compliance and avoid account restrictions.</p>
+                            <p style={{ fontSize: 10.5, color: "#6d28d9", margin: 0, lineHeight: 1.5 }}>Cold outreach is charged at the marketing rate (₹{mktRate.toFixed(2)}/delivered msg). Numbers must have opted into receiving business messages to ensure compliance and avoid account restrictions.</p>
                           </div>
                         </div>
+
+                        {/* How charging works */}
+                        <BillingNote connectionType={connType} pricing={walletData?.pricing} markupPct={markupPct} S={S} categories={["marketing"]} />
 
                         {/* Campaign history */}
                         <div style={{ ...S.card, padding: 22 }}>
@@ -4093,6 +4348,8 @@ const activeCount = workflows.filter(w => w.isActive).length;
                                   <p style={{ fontSize: 13, fontWeight: 700, color: S.textPrimary, margin: 0, flex: 1, lineHeight: 1.3 }}>{c.name}</p>
                                   <span style={{ fontSize: 10, fontWeight: 700, color: statusColor, background: statusBg, padding: "2px 8px", borderRadius: 6, whiteSpace: "nowrap" }}>{c.status}</span>
                                 </div>
+
+                                {c.failureReason && <div style={{ fontSize: 10.5, color: "#dc2626", fontWeight: 500, margin: "-4px 0 10px", lineHeight: 1.4 }}>⚠ {c.failureReason}</div>}
 
                                 {/* Stats row */}
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, marginBottom: 10 }}>
@@ -4215,6 +4472,103 @@ const activeCount = workflows.filter(w => w.isActive).length;
                             <span style={{ position: "absolute", top: 8, right: 8 }}><InfoTip title="Template Variables" text="Use {{1}}, {{2}}, etc. as placeholders. When sending, these get replaced with actual values per contact. Example: 'Hi {{1}}, your order {{2}} is ready!'" width={260} position="left" /></span>
                           </div>
                           <input style={{ width: "100%", padding: "9px 12px", fontSize: 12, background: "#fff", border: `1px solid ${S.greenBorder}`, borderRadius: 10, color: S.textPrimary, fontFamily: S.font, outline: "none" }} placeholder="Footer (optional)" value={tplForm.footer} onChange={e=>setTplForm(f=>({...f,footer:e.target.value}))}/>
+
+                          {/* ── Buttons ── */}
+                          <div>
+                            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, fontWeight: 700, color: S.textMuted, marginBottom: 8, textTransform: "uppercase" }}>
+                              Buttons (optional)
+                              <InfoTip title="Template Buttons" text={"Meta allows two button types — pick one:\n\n↩ Quick Reply: text-only reply buttons (max 3).\n\n🔗 Call to Action: URL (Visit Website) and/or Phone (Call) buttons — max 2 CTA buttons total.\n\nYou cannot mix Quick Reply and CTA in the same template."} width={290} position="right" />
+                            </label>
+
+                            {/* Mode selector */}
+                            <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                              {[{ val: "none", label: "— None" }, { val: "quick_reply", label: "↩ Quick Reply" }, { val: "cta", label: "🔗 Call to Action" }].map(opt => (
+                                <button key={opt.val} onClick={() => { setTplBtnMode(opt.val); setTplQrBtns(['']); setTplUrlBtns([]); setTplPhoneBtn(null); }}
+                                  style={{ padding: "6px 14px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font, border: tplBtnMode === opt.val ? "none" : `1px solid ${S.greenBorder}`, background: tplBtnMode === opt.val ? S.greenGrad : "#fff", color: tplBtnMode === opt.val ? "#fff" : S.textMuted, transition: "all 0.15s" }}>
+                                  {opt.label}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Quick Reply */}
+                            {tplBtnMode === "quick_reply" && (
+                              <div style={{ padding: "12px 14px", borderRadius: 10, background: "#fff", border: `1px solid ${S.greenBorder}` }}>
+                                <p style={{ fontSize: 11, color: S.textMuted, fontWeight: 700, marginBottom: 8 }}>↩ Quick Reply Buttons — max 3, 25 chars each</p>
+                                {tplQrBtns.map((btn, i) => (
+                                  <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                                    <input maxLength={25} style={{ flex: 1, padding: "8px 11px", fontSize: 12, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 8, color: S.textPrimary, fontFamily: S.font, outline: "none" }}
+                                      placeholder={`Button ${i + 1} text`} value={btn}
+                                      onChange={e => setTplQrBtns(prev => prev.map((b, idx) => idx === i ? e.target.value : b))} />
+                                    {tplQrBtns.length > 1 && (
+                                      <button onClick={() => setTplQrBtns(prev => prev.filter((_, idx) => idx !== i))}
+                                        style={{ width: 30, borderRadius: 8, background: "rgba(220,38,38,0.07)", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 14, fontWeight: 700 }}>×</button>
+                                    )}
+                                  </div>
+                                ))}
+                                {tplQrBtns.length < 3 && (
+                                  <button onClick={() => setTplQrBtns(prev => [...prev, ''])}
+                                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, background: S.greenBg, border: `1px solid ${S.greenBorder}`, color: S.greenDark, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font, marginTop: 4 }}>
+                                    <Plus size={11} /> Add button
+                                  </button>
+                                )}
+                              </div>
+                            )}
+
+                            {/* CTA */}
+                            {tplBtnMode === "cta" && (
+                              <div style={{ padding: "12px 14px", borderRadius: 10, background: "#fff", border: `1px solid ${S.greenBorder}`, display: "flex", flexDirection: "column", gap: 12 }}>
+
+                                {/* URL buttons */}
+                                <div>
+                                  <p style={{ fontSize: 11, color: S.textMuted, fontWeight: 700, marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+                                    <ExternalLink size={11} /> Visit Website (URL) — max 2
+                                  </p>
+                                  {tplUrlBtns.map((b, i) => (
+                                    <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 6, marginBottom: 6, padding: "10px 12px", borderRadius: 8, background: "#dbeafe22", border: "1px solid #bfdbfe" }}>
+                                      <input maxLength={25} placeholder="Button label" value={b.text} onChange={e => setTplUrlBtns(prev => prev.map((x, idx) => idx === i ? { ...x, text: e.target.value } : x))}
+                                        style={{ padding: "7px 10px", fontSize: 12, background: "#fff", border: "1px solid #bfdbfe", borderRadius: 7, color: S.textPrimary, fontFamily: S.font, outline: "none" }} />
+                                      <input placeholder="https://example.com" value={b.url} onChange={e => setTplUrlBtns(prev => prev.map((x, idx) => idx === i ? { ...x, url: e.target.value } : x))}
+                                        style={{ padding: "7px 10px", fontSize: 12, background: "#fff", border: "1px solid #bfdbfe", borderRadius: 7, color: S.textPrimary, fontFamily: S.font, outline: "none" }} />
+                                      <button onClick={() => setTplUrlBtns(prev => prev.filter((_, idx) => idx !== i))}
+                                        style={{ width: 28, borderRadius: 7, background: "rgba(220,38,38,0.07)", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 14, fontWeight: 700 }}>×</button>
+                                    </div>
+                                  ))}
+                                  {tplUrlBtns.length < 2 && (
+                                    <button onClick={() => setTplUrlBtns(prev => [...prev, { text: '', url: '' }])}
+                                      style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, background: "#dbeafe", border: "1px solid #bfdbfe", color: "#2563eb", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font }}>
+                                      <Plus size={11} /> Add URL button
+                                    </button>
+                                  )}
+                                </div>
+
+                                <div style={{ borderTop: `1px solid ${S.border}`, paddingTop: 12 }}>
+                                  <p style={{ fontSize: 11, color: S.textMuted, fontWeight: 700, marginBottom: 8, display: "flex", alignItems: "center", gap: 5 }}>
+                                    <Phone size={11} /> Call Phone Number — max 1
+                                  </p>
+                                  {tplPhoneBtn ? (
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: 6, padding: "10px 12px", borderRadius: 8, background: "#dcfce722", border: "1px solid #bbf7d0" }}>
+                                      <input maxLength={25} placeholder="Button label" value={tplPhoneBtn.text} onChange={e => setTplPhoneBtn(p => ({ ...p, text: e.target.value }))}
+                                        style={{ padding: "7px 10px", fontSize: 12, background: "#fff", border: "1px solid #bbf7d0", borderRadius: 7, color: S.textPrimary, fontFamily: S.font, outline: "none" }} />
+                                      <input placeholder="+91XXXXXXXXXX" value={tplPhoneBtn.phone} onChange={e => setTplPhoneBtn(p => ({ ...p, phone: e.target.value }))}
+                                        style={{ padding: "7px 10px", fontSize: 12, background: "#fff", border: "1px solid #bbf7d0", borderRadius: 7, color: S.textPrimary, fontFamily: S.font, outline: "none" }} />
+                                      <button onClick={() => setTplPhoneBtn(null)}
+                                        style={{ width: 28, borderRadius: 7, background: "rgba(220,38,38,0.07)", border: "none", color: "#dc2626", cursor: "pointer", fontSize: 14, fontWeight: 700 }}>×</button>
+                                    </div>
+                                  ) : (
+                                    <button onClick={() => setTplPhoneBtn({ text: '', phone: '' })}
+                                      style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, background: "#dcfce7", border: "1px solid #bbf7d0", color: "#16a34a", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: S.font }}>
+                                      <Plus size={11} /> Add phone button
+                                    </button>
+                                  )}
+                                </div>
+
+                                <div style={{ display: "flex", alignItems: "flex-start", gap: 7, padding: "8px 10px", borderRadius: 8, background: "#dbeafe", border: "1px solid #bfdbfe" }}>
+                                  <Info size={11} color="#2563eb" style={{ flexShrink: 0, marginTop: 1 }} />
+                                  <p style={{ fontSize: 11, color: "#2563eb", margin: 0, lineHeight: 1.5 }}>Per Meta policy, CTA and Quick Reply buttons cannot be mixed in the same template.</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         {tplMsg.text && <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:10,marginTop:10,background:tplMsg.type==="success"?"rgba(37,211,102,0.08)":"rgba(239,68,68,0.08)",color:tplMsg.type==="success"?S.greenDark:"#dc2626",fontSize:12,fontWeight:600}}>{tplMsg.type==="success"?<CheckCircle2 size={12}/>:<XCircle size={12}/>}{tplMsg.text}</div>}
                         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
@@ -4229,23 +4583,64 @@ const activeCount = workflows.filter(w => w.isActive).length;
                     {templatesLoading ? <div style={{ textAlign: "center", padding: "32px 0" }}><Loader2 size={20} style={{ animation: "wpl-spin 0.8s linear infinite", color: S.greenDark }} /></div> : templates.length === 0 ? (
                       <p style={{ textAlign: "center", padding: "24px 0", color: S.textFaint, fontSize: 13 }}>No templates found. Create one above.</p>
                     ) : (
-                      <div style={{ display: "grid", gap: 12 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16, alignItems: "start" }}>
                         {templates.map(t => {
                           const statusColor = t.status==="APPROVED"?S.greenDark:t.status==="PENDING"?"#b45309":"#dc2626";
                           const statusBg = t.status==="APPROVED"?"rgba(37,211,102,0.1)":t.status==="PENDING"?"rgba(234,179,8,0.1)":"rgba(239,68,68,0.1)";
-                          const body = t.components?.find(c=>c.type==="BODY")?.text || "";
+                          const header  = t.components?.find(c=>c.type==="HEADER");
+                          const body    = t.components?.find(c=>c.type==="BODY")?.text || "";
+                          const footer  = t.components?.find(c=>c.type==="FOOTER")?.text || "";
+                          const buttons = t.components?.find(c=>c.type==="BUTTONS")?.buttons || [];
+                          const hdrFormat = (header?.format || "").toUpperCase();
+                          const hdrImageUrl = header?.example?.header_url || (Array.isArray(header?.example?.header_handle) && /^https?:\/\//.test(header.example.header_handle[0]) ? header.example.header_handle[0] : null);
                           return (
-                            <div key={t.id||t.name} style={{ padding: "16px 20px", borderRadius: 14, border: `1px solid ${S.border}`, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                                  <p style={{ fontSize: 13, fontWeight: 700, color: S.textPrimary, fontFamily: S.monoFont }}>{t.name}</p>
+                            <div key={t.id||t.name} style={{ borderRadius: 14, border: `1px solid ${S.border}`, overflow: "hidden", display: "flex", flexDirection: "column", background: "#fff" }}>
+                              {/* Header media / text preview */}
+                              {header && hdrFormat !== "TEXT" && (
+                                <div style={{ position: "relative", height: 140, background: "#e8f5e9", display: "flex", alignItems: "center", justifyContent: "center", borderBottom: `1px solid ${S.border}` }}>
+                                  {hdrFormat === "IMAGE" && hdrImageUrl ? (
+                                    <img src={hdrImageUrl} alt="header" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                  ) : (
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, color: S.greenDark }}>
+                                      {hdrFormat === "VIDEO" ? <Video size={28}/> : hdrFormat === "DOCUMENT" ? <FileText size={28}/> : <ImageIcon size={28}/>}
+                                      <span style={{ fontSize: 11, fontWeight: 700 }}>{hdrFormat} HEADER</span>
+                                    </div>
+                                  )}
+                                  <span style={{ position: "absolute", top: 8, left: 8, display: "flex", alignItems: "center", gap: 4, padding: "3px 8px", borderRadius: 20, fontSize: 9, fontWeight: 700, background: "rgba(0,0,0,0.55)", color: "#fff" }}>
+                                    {hdrFormat === "VIDEO" ? <Video size={10}/> : hdrFormat === "DOCUMENT" ? <FileText size={10}/> : <ImageIcon size={10}/>}{hdrFormat}
+                                  </span>
+                                </div>
+                              )}
+
+                              <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", flex: 1, gap: 8 }}>
+                                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                                  <p style={{ fontSize: 13, fontWeight: 700, color: S.textPrimary, fontFamily: S.monoFont, wordBreak: "break-all" }}>{t.name}</p>
+                                  <button onClick={()=>handleDeleteTemplate(t.name)} style={{ width: 26, height: 26, borderRadius: 8, background: "rgba(239,68,68,0.07)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}><Trash size={12} color="#dc2626"/></button>
+                                </div>
+
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                                   <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 700, background: statusBg, color: statusColor }}>{t.status}</span>
                                   <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 600, background: "rgba(0,0,0,0.04)", color: S.textFaint }}>{t.category}</span>
                                   <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10, background: "rgba(0,0,0,0.04)", color: S.textFaint }}>{t.language}</span>
+                                  {header && hdrFormat === "TEXT" && <span style={{ padding: "2px 8px", borderRadius: 20, fontSize: 10, fontWeight: 600, background: "rgba(37,211,102,0.1)", color: S.greenDark }}>TEXT HEADER</span>}
                                 </div>
-                                {body && <p style={{ fontSize: 12, color: S.textMuted, lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 400 }}>{body}</p>}
+
+                                {header && hdrFormat === "TEXT" && header.text && (
+                                  <p style={{ fontSize: 12, fontWeight: 700, color: S.textPrimary, lineHeight: 1.4 }}>{header.text}</p>
+                                )}
+                                {body && <p style={{ fontSize: 12, color: S.textMuted, lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{body}</p>}
+                                {footer && <p style={{ fontSize: 11, color: S.textFaint, lineHeight: 1.4 }}>{footer}</p>}
+
+                                {buttons.length > 0 && (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 2, borderTop: `1px solid ${S.border}`, paddingTop: 8 }}>
+                                    {buttons.map((b,i) => (
+                                      <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "6px 0", borderRadius: 8, background: "rgba(37,211,102,0.07)", color: S.greenDark, fontSize: 11, fontWeight: 700 }}>
+                                        {b.type === "URL" ? <ExternalLink size={11}/> : b.type === "PHONE_NUMBER" ? <Phone size={11}/> : <MessageSquare size={11}/>}{b.text}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                              <button onClick={()=>handleDeleteTemplate(t.name)} style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(239,68,68,0.07)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}><Trash size={12} color="#dc2626"/></button>
                             </div>
                           );
                         })}
@@ -4278,26 +4673,14 @@ const activeCount = workflows.filter(w => w.isActive).length;
                           <p style={{ fontSize: 40, fontWeight: 900, color: S.greenDark, letterSpacing: "-0.04em" }}>₹{walletData.balanceRupees}</p>
                         </div>
 
-                        {/* Pricing Table */}
-                        <div style={{ marginBottom: 20, padding: "14px 16px", borderRadius: 14, background: "#fff8f0", border: "1px solid #fed7aa" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                            <p style={{ fontSize: 11, fontWeight: 700, color: "#92400e", textTransform: "uppercase", letterSpacing: "0.08em" }}>Pricing (incl. 25% markup over Meta)</p>
-                            <InfoTip title="Pricing" text="Marketing rate applies to broadcasts sent outside the 24-hour window. Service rate applies when a contact messaged you in the last 24 hours — Meta allows cheaper service-category messages in that window." width={280} position="bottom" />
-                          </div>
-                          {[
-                            { label: "Broadcast / Bulk (marketing)", rate: walletData.pricing.marketing.rupees, meta: walletData.pricing.metaBase.marketing },
-                            { label: "24hr Active contacts (service)", rate: walletData.pricing.service.rupees, meta: walletData.pricing.metaBase.service },
-                          ].map(({ label, rate, meta }) => (
-                            <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-                              <span style={{ fontSize: 12, color: "#78350f" }}>{label}</span>
-                              <div style={{ textAlign: "right" }}>
-                                <span style={{ fontSize: 13, fontWeight: 800, color: "#92400e" }}>₹{rate}</span>
-                                <span style={{ fontSize: 10, color: "#b45309", marginLeft: 4 }}>/ msg</span>
-                                <span style={{ fontSize: 9, color: "#d97706", display: "block" }}>Meta: ₹{meta}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                        {/* How charging works + per-message pricing */}
+                        <BillingNote
+                          connectionType={walletData.pricing.connectionType}
+                          pricing={walletData.pricing}
+                          markupPct={walletData.pricing.markupPct}
+                          S={S}
+                          style={{ marginBottom: 20 }}
+                        />
 
                         {/* Recharge */}
                         <div style={{ marginBottom: 14 }}>
@@ -4310,8 +4693,8 @@ const activeCount = workflows.filter(w => w.isActive).length;
                               </button>
                             ))}
                           </div>
-                          <input type="number" min="10" style={{ width: "100%", padding: "10px 14px", fontSize: 13, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 12, color: S.textPrimary, fontFamily: S.font, outline: "none" }} placeholder="Or enter custom amount (₹)" value={rechargeAmount} onChange={e => setRechargeAmount(e.target.value)}/>
-                          {rechargeAmount && <p style={{ fontSize: 11, color: S.textMuted, marginTop: 4 }}>≈ {Math.floor(parseFloat(rechargeAmount) / 0.90)} marketing messages or {Math.floor(parseFloat(rechargeAmount) / 0.20)} service messages</p>}
+                          <input type="number" min="100" style={{ width: "100%", padding: "10px 14px", fontSize: 13, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 12, color: S.textPrimary, fontFamily: S.font, outline: "none" }} placeholder="Or enter custom amount (₹100 min)" value={rechargeAmount} onChange={e => setRechargeAmount(e.target.value)}/>
+                          {rechargeAmount && <p style={{ fontSize: 11, color: S.textMuted, marginTop: 4 }}>≈ {mktRate > 0 ? Math.floor(parseFloat(rechargeAmount) / mktRate).toLocaleString() : "∞"} marketing or {svcRate > 0 ? Math.floor(parseFloat(rechargeAmount) / svcRate).toLocaleString() : "∞"} service delivered messages{connType === 'own' ? " (platform fee only)" : ""}</p>}
                         </div>
 
                         {walletMsg.text && <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 10, marginBottom: 12, background: walletMsg.type==="success"?"rgba(37,211,102,0.08)":"rgba(239,68,68,0.08)", color: walletMsg.type==="success"?S.greenDark:"#dc2626", fontSize: 12, fontWeight: 600 }}>{walletMsg.type==="success"?<CheckCircle2 size={12}/>:<XCircle size={12}/>}{walletMsg.text}</div>}

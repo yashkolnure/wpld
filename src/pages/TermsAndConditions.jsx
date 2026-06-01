@@ -46,7 +46,7 @@ const sections = [
     n: "07", title: "Wallet, Payments & Billing",
     list: [
       { heading: "Wallet Top-Ups", text: "Wallet credits are added via Razorpay using UPI, credit/debit cards, or net banking. Credits are denominated in Indian Rupees (INR) unless otherwise specified." },
-      { heading: "Pay-Per-Message Model", text: "Broadcast and bulk outreach messages are charged at a 25% markup on Meta's standard per-message rate, deducted from your wallet balance." },
+      { heading: "Pay-Per-Message Model", text: "Charges apply only to messages confirmed as delivered by Meta. Where messages are sent through the WPLeads platform WhatsApp number, your wallet is charged Meta's per-message cost plus a 25% platform fee. Where you connect your own WhatsApp Business number (e.g. via Facebook), Meta bills your own payment method directly for the message cost and WPLeads charges only the 25% platform fee. Meta's base per-message rate varies by recipient country and message category and may change at Meta's discretion." },
       { heading: "Non-Refundable Credits", text: "Wallet credits are non-refundable once consumed for message delivery. Unused credits may be considered for refund at our discretion — contact admin@avenirya.com for queries." },
       { heading: "Pricing Changes", text: "WPLeads reserves the right to adjust platform pricing or markup rates with reasonable prior notice to registered users." },
       { heading: "Failed Transactions", text: "If a payment is debited from your payment method but your wallet is not credited, contact admin@avenirya.com with your Razorpay transaction reference ID for resolution." },

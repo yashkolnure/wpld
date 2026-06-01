@@ -562,7 +562,7 @@ export default function LandingPage() {
                   {icon:"✅", text:"Only approved templates — 100% Meta compliant"},
                   {icon:"⚡", text:"4 messages/second with smart throttling"},
                   {icon:"📊", text:"Live delivery, read & failed tracking per campaign"},
-                  {icon:"💰", text:"Pay only ₹0.90 per message sent — no monthly fee"},
+                  {icon:"💰", text:"Pay only for delivered messages — Meta's rate + 25%, no monthly fee"},
                 ].map((f,i)=>(
                   <div key={i} style={{display:"flex",alignItems:"flex-start",gap:12,fontSize:14.5,color:"rgba(0,0,0,0.65)"}}>
                     <span style={{fontSize:16,flexShrink:0,marginTop:1}}>{f.icon}</span>{f.text}
@@ -655,7 +655,7 @@ export default function LandingPage() {
               Scale without limits
             </h2>
             <p style={{fontSize:16,color:"rgba(0,0,0,0.5)",maxWidth:520,margin:"0 auto 28px",lineHeight:1.7}}>
-              No subscription fees. 25% markup on all plans. Pay only per message sent.
+              No subscription fees. 25% platform fee over Meta's rate. Pay only for delivered messages.
             </p>
             {/* Limited time banner */}
             <div style={{display:"inline-flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,#fef3c7,#fde68a)",border:"1.5px solid #f59e0b",borderRadius:100,padding:"9px 22px",fontSize:12.5,fontWeight:800,color:"#92400e",boxShadow:"0 4px 14px rgba(245,158,11,0.18)"}}>
@@ -871,7 +871,7 @@ export default function LandingPage() {
               <span style={{color:"#4ade80"}}>5 minutes away</span>
             </h2>
             <p style={{fontSize:16,color:"rgba(255,255,255,0.7)",margin:"0 auto 40px",lineHeight:1.7,maxWidth:420}}>
-              Pro plan is free forever. No credit card required. Pay only per message sent.
+              Pro plan is free forever. No credit card required. Pay only for delivered messages.
             </p>
             <div style={{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap"}}>
               <button onClick={()=>navigate("/register")} style={{display:"inline-flex",alignItems:"center",gap:10,background:"#fff",color:"#065f56",border:"none",borderRadius:14,padding:"16px 32px",fontSize:15,fontWeight:800,cursor:"pointer",boxShadow:"0 12px 32px rgba(0,0,0,0.2)",transition:"all 0.2s",fontFamily:"inherit"}}
