@@ -81,8 +81,15 @@ const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, 
 
     // ── Handle message node ──
     if (nextNode.type === 'message') {
-      const msgData = nextNode.data.message; // Declared ONCE here
+      // Convert Mongoose subdocument → plain JS object so nested arrays
+      // (e.g. productSections[].products) serialize correctly in messageBuilder
+      const msgData = nextNode.data.message?.toObject
+        ? nextNode.data.message.toObject()
+        : nextNode.data.message;
       if (!msgData) { currentId = nextNode.id; continue; }
+
+      console.log(`\n🔁 [Workflow] Executing node: ${nextNode.id}`);
+      console.log(`📨 [Workflow] msgData:`, JSON.stringify(msgData, null, 2));
 
       try {
         // 1. Send via Meta API
@@ -146,7 +153,7 @@ const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, 
             type: 'product_list',
             catalogId: msgData.catalogId,
             header: msgData.header,
-            sections: msgData.sections,
+            sections: msgData.productSections || msgData.sections,
           };
         }
 
@@ -166,7 +173,8 @@ const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, 
       currentId = nextNode.id;
 
       // Stop loop if it's an interactive message requiring user input
-      if (msgData.type === 'button' || msgData.type === 'list') {
+      // Fix #5: product and product_list also need user interaction — break here too
+      if (['button', 'list', 'product', 'product_list'].includes(msgData.type)) {
         break;
       }
       continue;
