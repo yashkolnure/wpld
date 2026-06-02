@@ -39,6 +39,7 @@ export default function Header() {
     { name: "Pricing",    id: "pricing"   },
     { name: "Compare",    id: "compare"   },
     { name: "Reviews",    id: "reviews"   },
+    { name: "Partners",   href: "/partners" },
     { name: "Blog",       href: "/blog"   },
   ];
 

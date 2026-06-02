@@ -14,6 +14,7 @@ import ThankYou from "./pages/thankyou";
 import AdminDashboard from "./pages/yashkolnure";
 import ShopPage from "./pages/ShopPage";
 import AboutUs from "./pages/AboutUs";
+import Partners from "./pages/Partners";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import FAQ from "./pages/FAQ";
@@ -41,7 +42,7 @@ const shouldHideLayout = (pathname) => {
   const marketingPaths = [
     "/", "/login", "/register", "/login-success", "/forgot-password",
     "/about", "/privacy", "/terms", "/faq",
-    "/help-center", "/contact", "/api-docs", "/blog",
+    "/help-center", "/contact", "/api-docs", "/blog", "/partners",
   ];
 
   // 1. Hide if it starts with a workspace path
@@ -97,6 +98,7 @@ function App() {
           <Route path="/whatsapp-manager" element={<WhatsAppManager />} />
           <Route path="/shop" element={<ShopPage />} />
           <Route path="/about"       element={<AboutUs />} />
+          <Route path="/partners"    element={<Partners />} />
           <Route path="/privacy"     element={<PrivacyPolicy />} />
           <Route path="/terms"       element={<TermsAndConditions />} />
           <Route path="/faq"         element={<FAQ />} />
