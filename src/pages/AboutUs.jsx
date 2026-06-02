@@ -127,11 +127,11 @@ export default function AboutUs() {
               onMouseOver={e => e.currentTarget.style.background="#1db954"}
               onMouseOut={e => e.currentTarget.style.background="#25d366"}
             >admin@avenirya.com</a>
-            <a href="tel:+918767640530"
+            <a href="tel:+917498869327"
               style={{ background:"rgba(255,255,255,0.08)", color:"#fff", padding:"14px 32px", borderRadius:50, fontSize:14, fontWeight:700, textDecoration:"none", border:"1px solid rgba(255,255,255,0.18)", transition:"background 0.2s" }}
               onMouseOver={e => e.currentTarget.style.background="rgba(255,255,255,0.14)"}
               onMouseOut={e => e.currentTarget.style.background="rgba(255,255,255,0.08)"}
-            >+91 8767640530</a>
+            >+91 7498869327</a>
           </div>
         </div>
       </section>

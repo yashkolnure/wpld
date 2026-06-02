@@ -74,7 +74,7 @@ const sections = [
   },
   {
     n: "13", title: "Contact Us",
-    content: `For questions about these Terms, account issues, billing disputes, or any other matter, please contact:\n\nAvenirya Solutions OPC Pvt Ltd\nEmail: admin@avenirya.com\nPhone: +91 8767640530\nWebsite: avenirya.com`,
+    content: `For questions about these Terms, account issues, billing disputes, or any other matter, please contact:\n\nAvenirya Solutions OPC Pvt Ltd\nEmail: admin@avenirya.com\nPhone: +91 7498869327\nWebsite: avenirya.com`,
   },
 ];
 

@@ -34,8 +34,8 @@ const contactPoints = [
       </svg>
     ),
     label: "Phone",
-    value: "+91 87676 40530",
-    href: "tel:+918767640530",
+    value: "+91 74988 69327",
+    href: "tel:+917498869327",
   },
 ];
 

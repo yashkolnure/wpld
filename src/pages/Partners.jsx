@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 
 // ── Brand contact (reused in CTAs) ──────────────────────────────────────────
-const DEMO_WA = "https://wa.me/918767640530?text=Hi%2C%20I'm%20interested%20in%20the%20WPLeads%20White-Label%20Partner%20Program.%20Please%20book%20me%20a%20free%20demo.";
+const DEMO_WA = "https://wa.me/917498869327?text=Hi%2C%20I'm%20interested%20in%20the%20WPLeads%20White-Label%20Partner%20Program.%20Please%20book%20me%20a%20free%20demo.";
 const EMAIL = "admin@avenirya.com";
-const PHONE = "+918767640530";
+const PHONE = "+917498869327";
 
 // ── Section 1 data ──────────────────────────────────────────────────────────
 const revenueSplit = [

@@ -68,7 +68,7 @@ const sections = [
   },
   {
     n: "10", title: "Contact Us",
-    content: `For any privacy-related queries, data access requests, or deletion requests, please contact:\n\nAvenirya Solutions OPC Pvt Ltd\nEmail: admin@avenirya.com\nPhone: +91 8767640530\nWebsite: avenirya.com`,
+    content: `For any privacy-related queries, data access requests, or deletion requests, please contact:\n\nAvenirya Solutions OPC Pvt Ltd\nEmail: admin@avenirya.com\nPhone: +91 7498869327\nWebsite: avenirya.com`,
   },
 ];
 
