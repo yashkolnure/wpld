@@ -78,8 +78,8 @@ export default function Footer() {
               <Link to="/" className="flex items-center gap-3 no-underline group mb-4">
                           <div className="">
                           <img
-                            src="/wpleads-logo.png"
-                            alt="WhatsApp"
+                            src="/wpleads-Logo.png"
+                            alt="WPLeads"
                             className="h-10 object-contain"
                           />
                         </div>

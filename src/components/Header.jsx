@@ -73,8 +73,8 @@ export default function Header() {
           <Link to="/" className="flex items-center gap-3 no-underline group">
             <div className="">
             <img
-              src="/wpleads-logo.png"
-              alt="WhatsApp"
+              src="/wpleads-Logo.png"
+              alt="WPLeads"
               className="h-10 object-contain"
             />
           </div>
