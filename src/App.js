@@ -69,10 +69,30 @@ function FooterWrapper() {
   return <Footer />;
 }
 
+// Shown app-wide while a super admin is impersonating a user (set in /yashkolnure).
+function ImpersonationBanner() {
+  const email = typeof window !== "undefined" ? localStorage.getItem("wpl_impersonating") : null;
+  const back = typeof window !== "undefined" ? localStorage.getItem("wpl_admin_return") : null;
+  if (!email || !back) return null;
+  const exit = () => {
+    localStorage.setItem("token", back);
+    localStorage.removeItem("wpl_admin_return");
+    localStorage.removeItem("wpl_impersonating");
+    window.location.href = "/yashkolnure";
+  };
+  return (
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 99999, background: "#7c3aed", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, padding: "7px 14px", fontSize: 13, fontWeight: 700, fontFamily: "'DM Sans',system-ui,sans-serif", boxShadow: "0 2px 10px rgba(0,0,0,0.25)" }}>
+      <span>👁️ Viewing as <b>{email}</b></span>
+      <button onClick={exit} style={{ background: "#fff", color: "#7c3aed", border: "none", borderRadius: 8, padding: "5px 12px", fontWeight: 800, cursor: "pointer", fontSize: 12 }}>Exit to Super Admin</button>
+    </div>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <ImpersonationBanner />
       {/* Top Global Navigation - Hidden on Dashboard, Workflows, and Public Forms */}
       <HeaderWrapper />
       
