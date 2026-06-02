@@ -17,7 +17,7 @@ import {
 import MyLeads from "./MyLeads";
 import ShopPage from "./ShopPage";
 
-const API ="http://localhost:5002";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5002";
 const POLL_CHATS_MS     = 8000;   // refresh chat list every 8s
 const POLL_MESSAGES_MS  = 5000;   // refresh active messages every 5s
 const POLL_WA_MS        = 30000;  // refresh WA status every 30s
