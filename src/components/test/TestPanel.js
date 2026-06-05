@@ -315,7 +315,9 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
   const [error, setError]                 = useState('');
   const chatEndRef                        = useRef(null);
 
-  const triggerKw = nodes.find(n => n.type === 'trigger')?.data?.keyword || '';
+  const triggerRaw = nodes.find(n => n.type === 'trigger')?.data?.keyword || '';
+  const triggerKw  = triggerRaw; // kept for compat
+  const triggerKws = triggerRaw.split(',').map(k => k.trim()).filter(Boolean);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -354,11 +356,15 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
     }
 
     const text = inputText.toLowerCase().trim();
-    const kw   = keyword.toLowerCase().trim();
-    const matched = matchType === 'exact' ? text === kw : text.includes(kw);
+    // Support comma-separated keywords — match ANY of them
+    const keywords = keyword.split(',').map(k => k.toLowerCase().trim()).filter(Boolean);
+    const matched  = keywords.some(kw =>
+      matchType === 'exact' ? text === kw : text.includes(kw)
+    );
 
     if (!matched) {
-      setError(`"${inputText}" doesn't match the trigger keyword "${keyword}" (${matchType}).`);
+      const kwList = keywords.map(k => `"${k}"`).join(', ');
+      setError(`"${inputText}" doesn't match any trigger keyword: ${kwList} (${matchType}).`);
       return;
     }
 
@@ -412,8 +418,10 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
         <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#128c7e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🤖</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: '#fff', margin: 0 }}>WPLeads Bot</p>
-          <p style={{ fontSize: 11, color: '#b2dfdb', margin: 0 }}>
-            {triggerKw ? `Trigger: "${triggerKw}"` : 'WhatsApp Business'}
+          <p style={{ fontSize: 11, color: '#b2dfdb', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
+            {triggerKws.length > 0
+              ? `Triggers: ${triggerKws.map(k => `"${k}"`).join(', ')}`
+              : 'WhatsApp Business'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -434,8 +442,8 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
           <div style={{ textAlign: 'center', padding: '50px 24px 20px' }}>
             <div style={{ fontSize: 38, marginBottom: 12 }}>💬</div>
             <p style={{ fontSize: 12, color: '#777', margin: 0, lineHeight: 1.7 }}>
-              {triggerKw
-                ? <>Type <strong>"{triggerKw}"</strong> below to start</>
+              {triggerKws.length > 0
+                ? <>Type any of: {triggerKws.map((k, i) => <strong key={i}>"{k}"{i < triggerKws.length - 1 ? ', ' : ''}</strong>)} to start</>
                 : 'Add a Keyword Trigger node to begin'}
             </p>
           </div>
@@ -513,6 +521,7 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
             placeholder={
               isAwaitingInput ? `Type your ${pendingInput?.data?.inputType || 'answer'}...`
               : started       ? 'Tap a reply button above...'
+              : triggerKws.length > 1 ? `Type "${triggerKws[0]}" or "${triggerKws[1]}" to start...`
               : `Type "${triggerKw || 'keyword'}" to start...`
             }
             disabled={started && !isAwaitingInput}
