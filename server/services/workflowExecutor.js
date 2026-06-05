@@ -77,23 +77,31 @@ export const executeWorkflow = async (userId, incomingText, fromNumber, contactI
   // ── 2. KEYWORD MATCH: find and start a workflow ────────────────────────────
   const workflows = await Workflow.find({ userId, isActive: true });
 
+  let matched       = false;
+  let fallbackFlow  = null;
+
   for (const workflow of workflows) {
     const triggerNode = workflow.nodes.find(n => n.type === 'trigger');
     if (!triggerNode || !triggerNode.data?.keyword) continue;
 
     const { keyword, matchType } = triggerNode.data;
-    const text = (incomingText || '').toLowerCase().trim();
-    const keywordsArray = keyword.split(',').map(k => k.toLowerCase().trim());
 
+    // Store fallback workflow for later — only use it if nothing else matches
+    if (matchType === 'fallback') {
+      fallbackFlow = { workflow, triggerNode };
+      continue;
+    }
+
+    const text          = (incomingText || '').toLowerCase().trim();
+    const keywordsArray = keyword.split(',').map(k => k.toLowerCase().trim());
     const isKeywordMatch = keywordsArray.some(kw =>
       matchType === 'exact' ? text === kw : text.includes(kw)
     );
-
     const continuationEdge = workflow.edges.find(e => e.sourceHandle === incomingText.trim());
 
     if (!isKeywordMatch && !continuationEdge) continue;
 
-    // Reset any stale awaiting-input state when a new keyword fires
+    matched = true;
     if (contact.awaitingInput) {
       contact.awaitingInput    = false;
       contact.awaitingInputVar = null;
@@ -106,6 +114,12 @@ export const executeWorkflow = async (userId, incomingText, fromNumber, contactI
       await executeFromNode(workflow, continuationEdge.source, incomingText, fromNumber, userId, contactId, contact);
     }
     break;
+  }
+
+  // ── 3. FALLBACK: fire default-reply workflow if nothing matched ────────────
+  if (!matched && fallbackFlow) {
+    console.log(`🔁 [Fallback] No keyword matched — firing fallback workflow for ${fromNumber}`);
+    await executeFromNode(fallbackFlow.workflow, fallbackFlow.triggerNode.id, incomingText, fromNumber, userId, contactId, contact);
   }
 };
 

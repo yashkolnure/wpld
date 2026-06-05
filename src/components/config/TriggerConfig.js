@@ -100,34 +100,70 @@ export default function TriggerConfig({ data, onChange }) {
       </div>
 
       {/* Match type */}
-      <div>
-        <label style={labelStyle}>Match type</label>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {[
-            { value: 'contains', label: '≈ Contains', desc: 'Message includes the keyword anywhere' },
-            { value: 'exact',    label: '= Exact',    desc: 'Message is exactly the keyword' },
-          ].map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => onChange({ ...data, matchType: opt.value })}
-              title={opt.desc}
-              style={{
-                flex: 1, padding: '7px 0', borderRadius: 8, fontSize: 12, fontWeight: 700,
-                cursor: 'pointer',
-                border: `1.5px solid ${(data.matchType || 'contains') === opt.value ? '#7c3aed' : '#e5e7eb'}`,
-                background: (data.matchType || 'contains') === opt.value ? '#f5f3ff' : '#fff',
-                color: (data.matchType || 'contains') === opt.value ? '#6d28d9' : '#6b7280',
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
+      {(data.matchType || 'contains') !== 'fallback' && (
+        <div>
+          <label style={labelStyle}>Match type</label>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[
+              { value: 'contains', label: '≈ Contains', desc: 'Message includes the keyword anywhere' },
+              { value: 'exact',    label: '= Exact',    desc: 'Message is exactly the keyword' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => onChange({ ...data, matchType: opt.value })}
+                title={opt.desc}
+                style={{
+                  flex: 1, padding: '7px 0', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                  cursor: 'pointer',
+                  border: `1.5px solid ${(data.matchType || 'contains') === opt.value ? '#7c3aed' : '#e5e7eb'}`,
+                  background: (data.matchType || 'contains') === opt.value ? '#f5f3ff' : '#fff',
+                  color: (data.matchType || 'contains') === opt.value ? '#6d28d9' : '#6b7280',
+                }}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p style={{ fontSize: 10, color: '#9ca3af', margin: '4px 0 0' }}>
+            {(data.matchType || 'contains') === 'contains'
+              ? '"hello world" triggers on keyword "hello"'
+              : '"hello" only triggers if the whole message is exactly "hello"'}
+          </p>
         </div>
-        <p style={{ fontSize: 10, color: '#9ca3af', margin: '4px 0 0' }}>
-          {(data.matchType || 'contains') === 'contains'
-            ? '"hello world" triggers on keyword "hello"'
-            : '"hello" only triggers if the whole message is exactly "hello"'}
-        </p>
+      )}
+
+      {/* Fallback / Default Reply toggle */}
+      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
+        <button
+          onClick={() => onChange({
+            ...data,
+            matchType: data.matchType === 'fallback' ? 'contains' : 'fallback',
+            keyword:   data.matchType === 'fallback' ? (data.keyword || '') : '__fallback__',
+          })}
+          style={{
+            width: '100%', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+            cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8,
+            border: `1.5px solid ${data.matchType === 'fallback' ? '#f59e0b' : '#e5e7eb'}`,
+            background: data.matchType === 'fallback' ? '#fffbeb' : '#fff',
+            color: data.matchType === 'fallback' ? '#92400e' : '#6b7280',
+          }}
+        >
+          <span style={{ fontSize: 16 }}>🔁</span>
+          <div>
+            <div>Default Reply (Fallback)</div>
+            <div style={{ fontSize: 10, fontWeight: 500, opacity: 0.7, marginTop: 1 }}>
+              Fires when no other keyword matches
+            </div>
+          </div>
+          <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 800 }}>
+            {data.matchType === 'fallback' ? 'ON ✓' : 'OFF'}
+          </span>
+        </button>
+        {data.matchType === 'fallback' && (
+          <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8, padding: '8px 10px', fontSize: 11, color: '#92400e', marginTop: 8, lineHeight: 1.5 }}>
+            ⚠️ Only one fallback workflow is allowed. This flow triggers when a user's message matches no active keyword trigger.
+          </div>
+        )}
       </div>
 
     </div>

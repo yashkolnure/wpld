@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import ReactFlow, {
   addEdge, MiniMap, Controls, Background,
   useNodesState, useEdgesState,
@@ -86,6 +86,38 @@ export default function WorkflowBuilder() {
   const [savedId, setSavedId]            = useState(urlId || null);
   const [saveStatus, setSaveStatus]      = useState('idle'); // idle | saving | saved | error
   const [selectedId, setSelectedId]      = useState(null);
+
+  // ── Undo / Redo history ──────────────────────────────────────────────────
+  const history    = useRef([]);   // past snapshots
+  const future     = useRef([]);   // redo snapshots
+  const skipNext   = useRef(false);// skip pushing on restore
+
+  const pushHistory = useCallback((ns, es) => {
+    if (skipNext.current) { skipNext.current = false; return; }
+    history.current.push({ nodes: ns, edges: es });
+    if (history.current.length > 50) history.current.shift();
+    future.current = []; // clear redo on new action
+  }, []);
+
+  const undo = useCallback(() => {
+    if (!history.current.length) return;
+    const prev = history.current.pop();
+    future.current.push({ nodes, edges });
+    skipNext.current = true;
+    setNodes(prev.nodes);
+    setEdges(prev.edges);
+    setSelectedId(null);
+  }, [nodes, edges, setNodes, setEdges]);
+
+  const redo = useCallback(() => {
+    if (!future.current.length) return;
+    const next = future.current.pop();
+    history.current.push({ nodes, edges });
+    skipNext.current = true;
+    setNodes(next.nodes);
+    setEdges(next.edges);
+    setSelectedId(null);
+  }, [nodes, edges, setNodes, setEdges]);
   const [showTest, setShowTest]          = useState(false);
   const [loadError, setLoadError]        = useState('');
   const [loading, setLoading]            = useState(!!urlId);
@@ -126,6 +158,16 @@ export default function WorkflowBuilder() {
       .finally(() => setLoading(false));
   }, [urlId]); // eslint-disable-line
 
+  // ── Keyboard shortcuts: Ctrl+Z undo, Ctrl+Y / Ctrl+Shift+Z redo ────────
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, redo]);
+
   const handleTemplateSelect = useCallback((template) => {
     if (template) {
       const built = template.build();
@@ -137,8 +179,9 @@ export default function WorkflowBuilder() {
   }, [setNodes, setEdges]);
 
   const onConnect = useCallback((params) => {
+    pushHistory(nodes, edges);
     setEdges(eds => addEdge({ ...params, type: 'deletable', animated: true, style: { stroke: '#7c3aed', strokeWidth: 2 } }, eds));
-  }, [setEdges]);
+  }, [nodes, edges, setEdges, pushHistory]);
 
   const onNodeClick  = useCallback((_, node) => setSelectedId(node.id), []);
   const onPaneClick  = useCallback(() => setSelectedId(null), []);
@@ -160,9 +203,10 @@ export default function WorkflowBuilder() {
     const bounds   = reactFlowWrapper.current.getBoundingClientRect();
     const position = rfInstance.screenToFlowPosition({ x: e.clientX - bounds.left, y: e.clientY - bounds.top });
     const id = `${type}-${uuid()}`;
+    pushHistory(nodes, edges);
     setNodes(nds => [...nds, { id, type, position, data: defaultData(type) }]);
     setSelectedId(id);
-  }, [rfInstance, setNodes]);
+  }, [rfInstance, nodes, edges, setNodes, pushHistory]);
 
   const updateNodeData = useCallback((newData) => {
     setNodes(nds => nds.map(n => n.id === selectedId ? { ...n, data: newData } : n));
@@ -170,10 +214,27 @@ export default function WorkflowBuilder() {
   }, [selectedId, setNodes]);
 
   const deleteSelectedNode = useCallback(() => {
+    pushHistory(nodes, edges);
     setNodes(nds => nds.filter(n => n.id !== selectedId));
     setEdges(eds => eds.filter(e => e.source !== selectedId && e.target !== selectedId));
     setSelectedId(null);
-  }, [selectedId, setNodes, setEdges]);
+  }, [selectedId, nodes, edges, setNodes, setEdges, pushHistory]);
+
+  // ── Duplicate selected node ──────────────────────────────────────────────
+  const duplicateSelectedNode = useCallback(() => {
+    if (!selectedNode) return;
+    pushHistory(nodes, edges);
+    const newId   = `${selectedNode.type}-${uuid()}`;
+    const newNode = {
+      ...selectedNode,
+      id:       newId,
+      position: { x: selectedNode.position.x + 40, y: selectedNode.position.y + 40 },
+      data:     JSON.parse(JSON.stringify(selectedNode.data)), // deep clone
+      selected: false,
+    };
+    setNodes(nds => [...nds, newNode]);
+    setSelectedId(newId);
+  }, [selectedNode, nodes, edges, setNodes, pushHistory]);
 
   const saveWorkflow = useCallback(async () => {
     const trigger = nodes.find(n => n.type === 'trigger');
@@ -285,6 +346,22 @@ export default function WorkflowBuilder() {
           </span>
         )}
 
+        {/* Undo / Redo */}
+        <button
+          onClick={undo}
+          disabled={!history.current.length}
+          title="Undo (Ctrl+Z)"
+          style={{ display:'flex', alignItems:'center', justifyContent:'center', width:30, height:30, borderRadius:7, background:'none', border:'1px solid #e5e7eb', color: history.current.length ? '#374151' : '#d1d5db', fontSize:14, cursor: history.current.length ? 'pointer' : 'not-allowed' }}
+        >↩</button>
+        <button
+          onClick={redo}
+          disabled={!future.current.length}
+          title="Redo (Ctrl+Y)"
+          style={{ display:'flex', alignItems:'center', justifyContent:'center', width:30, height:30, borderRadius:7, background:'none', border:'1px solid #e5e7eb', color: future.current.length ? '#374151' : '#d1d5db', fontSize:14, cursor: future.current.length ? 'pointer' : 'not-allowed' }}
+        >↪</button>
+
+        <div style={{ width:1, height:22, background:'#e5e7eb' }} />
+
         {/* Test toggle */}
         <button
           onClick={() => setShowTest(v => !v)}
@@ -343,12 +420,18 @@ export default function WorkflowBuilder() {
                   <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', margin: 0, textTransform: 'uppercase' }}>
                     Configure node
                   </p>
-                  <button
-                    onClick={deleteSelectedNode}
-                    style={{ fontSize: 11, color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontWeight: 600 }}
-                  >
-                    Delete
-                  </button>
+                  <div style={{ display: 'flex', gap: 5 }}>
+                    <button
+                      onClick={duplicateSelectedNode}
+                      title="Duplicate node"
+                      style={{ fontSize: 11, color: '#6366f1', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontWeight: 600 }}
+                    >⧉ Copy</button>
+                    <button
+                      onClick={deleteSelectedNode}
+                      title="Delete node"
+                      style={{ fontSize: 11, color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontWeight: 600 }}
+                    >✕ Del</button>
+                  </div>
                 </div>
                 <ConfigComponent data={selectedNode.data} onChange={updateNodeData} />
               </>
