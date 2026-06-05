@@ -65,11 +65,10 @@ export const executeWorkflow = async (userId, incomingText, fromNumber, contactI
       contact.awaitingInputVar = null;
       await contact.save();
 
-      // Continue workflow from next node after the collect_input node
-      const outgoing = workflow.edges.filter(e => e.source === contact.currentNodeId);
-      if (outgoing.length) {
-        await executeFromNode(workflow, outgoing[0].target, incomingText, fromNumber, userId, contactId, contact);
-      }
+      // Continue from the collect_input node itself as startNodeId.
+      // executeFromNode will find its outgoing edge and execute the next node
+      // (which may itself be another collect_input, a message, condition, etc.)
+      await executeFromNode(workflow, contact.currentNodeId, incomingText, fromNumber, userId, contactId, contact);
       return; // done — don't check other workflows
     }
   }
@@ -92,14 +91,33 @@ export const executeWorkflow = async (userId, incomingText, fromNumber, contactI
       continue;
     }
 
-    const text          = (incomingText || '').toLowerCase().trim();
-    const keywordsArray = keyword.split(',').map(k => k.toLowerCase().trim());
+    // ── Button/list reply: check continuationEdge FIRST ─────────────────────
+    // Button IDs and list row IDs may accidentally contain keywords (e.g.
+    // "w-btn-demo" contains "demo", "row-features" contains "features").
+    // If we find a matching edge handle, treat this as a button/list reply
+    // and follow that edge — never re-trigger the keyword flow.
+    const continuationEdge = workflow.edges.find(e =>
+      e.sourceHandle && e.sourceHandle === incomingText.trim()
+    );
+    if (continuationEdge) {
+      matched = true;
+      if (contact.awaitingInput) {
+        contact.awaitingInput    = false;
+        contact.awaitingInputVar = null;
+        await contact.save();
+      }
+      await executeFromNode(workflow, continuationEdge.source, incomingText, fromNumber, userId, contactId, contact);
+      break;
+    }
+
+    // ── Plain text: keyword match ─────────────────────────────────────────────
+    const text           = (incomingText || '').toLowerCase().trim();
+    const keywordsArray  = keyword.split(',').map(k => k.toLowerCase().trim());
     const isKeywordMatch = keywordsArray.some(kw =>
       matchType === 'exact' ? text === kw : text.includes(kw)
     );
-    const continuationEdge = workflow.edges.find(e => e.sourceHandle === incomingText.trim());
 
-    if (!isKeywordMatch && !continuationEdge) continue;
+    if (!isKeywordMatch) continue;
 
     matched = true;
     if (contact.awaitingInput) {
@@ -107,12 +125,7 @@ export const executeWorkflow = async (userId, incomingText, fromNumber, contactI
       contact.awaitingInputVar = null;
       await contact.save();
     }
-
-    if (isKeywordMatch) {
-      await executeFromNode(workflow, triggerNode.id, incomingText, fromNumber, userId, contactId, contact);
-    } else {
-      await executeFromNode(workflow, continuationEdge.source, incomingText, fromNumber, userId, contactId, contact);
-    }
+    await executeFromNode(workflow, triggerNode.id, incomingText, fromNumber, userId, contactId, contact);
     break;
   }
 

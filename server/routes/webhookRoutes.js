@@ -202,23 +202,26 @@ try {
     if (!trigger || !trigger.data?.keyword) continue;
 
     const { keyword, matchType } = trigger.data;
+
+    // Button/list replies: check edge handles first to avoid false keyword matches
+    // (e.g. button ID "w-btn-demo" contains keyword "demo")
+    const isContinuation = wf.edges.some(e => e.sourceHandle && e.sourceHandle === incomingTextForWorkflow.trim());
+    if (isContinuation) {
+      triggeredWorkflowName = wf.name;
+      break;
+    }
+
+    if (matchType === "fallback") continue; // handled separately
+
     const cleanInput = (incomingTextForWorkflow || "").toLowerCase().trim();
-    
-    // Split keywords by comma and clean them up
     const keywordsArray = keyword.split(",").map(k => k.toLowerCase().trim());
+    const matched = keywordsArray.some(kw =>
+      matchType === "exact" ? cleanInput === kw : cleanInput.includes(kw)
+    );
 
-    // Check if ANY keyword in the array matches
-    const matched = keywordsArray.some(kw => {
-      if (matchType === "exact") {
-        return cleanInput === kw;
-      } else {
-        return cleanInput.includes(kw);
-      }
-    });
-
-    if (matched) { 
-      triggeredWorkflowName = wf.name; 
-      break; 
+    if (matched) {
+      triggeredWorkflowName = wf.name;
+      break;
     }
   }
 } catch (wfErr) {
