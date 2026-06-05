@@ -116,9 +116,48 @@ function Meta({ time = '10:30' }) {
   );
 }
 
+const INPUT_HINT = {
+  phone:  '📱 Type your phone number',
+  email:  '📧 Type your email address',
+  number: '🔢 Type a number',
+  text:   '✏️ Type your reply',
+};
+
 // pendingBranches + onBranchSelect are passed only to the LAST bot bubble
 function BotBubble({ node, pendingBranches, onBranchSelect }) {
   const msg = node?.data?.message;
+
+  // ── Collect Input bubble ──
+  if (node?.type === 'collect_input') {
+    const { question, variableName, inputType = 'text' } = node.data || {};
+    const hint = INPUT_HINT[inputType] || INPUT_HINT.text;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 4 }}>
+        {/* Question bubble */}
+        <div style={{ display: 'flex' }}>
+          <div style={{ background: '#fff', borderRadius: WA.radius, padding: '6px 7px 8px 9px', maxWidth: '80%', boxShadow: WA.shadow, position: 'relative' }}>
+            <svg style={{ position: 'absolute', top: 0, left: -8 }} width="8" height="13" viewBox="0 0 8 13">
+              <path d="M8 0 Q0 0 0 13 L8 8 Z" fill="#fff"/>
+            </svg>
+            <p style={{ margin: '0 0 6px', fontSize: 14, lineHeight: 1.5, color: WA.text, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              {question || `Please type your ${variableName || 'answer'}`}
+            </p>
+            {/* Input type hint chip */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 20, padding: '3px 9px', fontSize: 11, color: '#0369a1', fontWeight: 600 }}>
+              {hint}
+              {variableName && (
+                <span style={{ fontFamily: 'monospace', background: '#e0f2fe', borderRadius: 3, padding: '1px 5px', fontSize: 10 }}>
+                  {`→ {{${variableName}}}`}
+                </span>
+              )}
+            </div>
+            <Meta />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!msg && node?.type !== 'delay') return null;
 
   // ── Delay chip ──

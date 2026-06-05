@@ -184,18 +184,31 @@ const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, 
 
     // ── Handle collect_input node ──
     if (nextNode.type === 'collect_input') {
-      const { question, variableName, inputType, retryMessage } = nextNode.data;
-      if (question) {
-        // Send the question to the user
-        const questionText = interpolate(question, vars);
-        await sendMessage(userId, fromNumber, { type: 'text', text: questionText });
-      }
+      const { question, variableName = 'input', inputType = 'text', retryMessage } = nextNode.data;
+
+      // Build the prompt — always send something so the user knows what to type
+      const inputHints = {
+        phone:  '📱 Please type your phone number below.',
+        email:  '📧 Please type your email address below.',
+        number: '🔢 Please type a number below.',
+        text:   '✏️ Please type your reply below.',
+      };
+      const baseQuestion   = question
+        ? interpolate(question, vars)
+        : `Please enter your ${variableName}.`;
+      const hint           = inputHints[inputType] || inputHints.text;
+      // Append hint only when the question doesn't already end with a "type" instruction
+      const alreadyHasHint = /type|enter|share|write|send|reply|number|email|phone/i.test(baseQuestion);
+      const fullPrompt     = alreadyHasHint ? baseQuestion : `${baseQuestion}\n\n${hint}`;
+
+      await sendMessage(userId, fromNumber, { type: 'text', text: fullPrompt });
+
       // Save awaiting-input state on the contact
       if (contact) {
         contact.awaitingInput     = true;
-        contact.awaitingInputVar  = variableName || 'input';
-        contact.awaitingInputType = inputType || 'text';
-        contact.awaitingRetryMsg  = retryMessage || null;
+        contact.awaitingInputVar  = variableName;
+        contact.awaitingInputType = inputType;
+        contact.awaitingRetryMsg  = retryMessage || `Please enter a valid ${inputType}.`;
         contact.activeWorkflowId  = workflow._id;
         contact.currentNodeId     = nextNode.id;
         await contact.save();
