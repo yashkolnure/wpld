@@ -3,6 +3,26 @@ import Contact  from '../models/Contact.js';
 import { sendMessage } from './messageSender.js';
 import Message from "../models/Message.js";
 
+// ── Condition evaluator ─────────────────────────────────────────────────────
+const evalCondition = (node, variables) => {
+  const { variable = '', operator = 'equals', value = '' } = node.data || {};
+  const actual = (variables?.get?.(variable) || variables?.[variable] || '').toString().toLowerCase().trim();
+  const target = (value || '').toLowerCase().trim();
+  switch (operator) {
+    case 'equals':       return actual === target;
+    case 'not_equals':   return actual !== target;
+    case 'contains':     return actual.includes(target);
+    case 'not_contains': return !actual.includes(target);
+    case 'starts_with':  return actual.startsWith(target);
+    case 'ends_with':    return actual.endsWith(target);
+    case 'greater_than': return parseFloat(actual) > parseFloat(target);
+    case 'less_than':    return parseFloat(actual) < parseFloat(target);
+    case 'is_set':       return actual !== '' && actual !== 'undefined';
+    case 'is_not_set':   return actual === '' || actual === 'undefined';
+    default:             return false;
+  }
+};
+
 // ── Validation helpers ──────────────────────────────────────────────────────
 const validators = {
   phone:  v => /^[\d\s\+\-\(\)]{7,15}$/.test(v.trim()),
@@ -112,6 +132,21 @@ const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, 
 
     const nextNode = nodeMap[nextEdge.target];
     if (!nextNode) break;
+
+    // ── Handle condition node ──
+    if (nextNode.type === 'condition') {
+      const result = evalCondition(nextNode, vars);
+      const handle = result ? 'true' : 'false';
+      console.log(`🔀 [Condition] ${nextNode.data?.variable} ${nextNode.data?.operator} "${nextNode.data?.value}" → ${result ? 'TRUE' : 'FALSE'}`);
+      // Find the edge for this branch (true/false handle)
+      const branchEdge = workflow.edges.find(e => e.source === nextNode.id && e.sourceHandle === handle)
+                      || workflow.edges.find(e => e.source === nextNode.id); // fallback
+      if (!branchEdge) break;
+      const branchNode = nodeMap[branchEdge.target];
+      if (!branchNode) break;
+      currentId = branchNode.id;
+      continue; // don't send condition node as a message
+    }
 
     // ── Handle delay node ──
     if (nextNode.type === 'delay') {

@@ -5,7 +5,8 @@ import ListNode     from './ListNode';
 import MediaNode    from './MediaNode';
 import DelayNode    from './DelayNode';
 import ProductNode  from './ProductNode';
-import InputNode    from './InputNode';
+import InputNode     from './InputNode';
+import ConditionNode from './ConditionNode';
 
 export const nodeTypes = {
   trigger:       TriggerNode,
@@ -16,4 +17,5 @@ export const nodeTypes = {
   delay:         DelayNode,
   product:       ProductNode,
   collect_input: InputNode,
+  condition:     ConditionNode,
 };

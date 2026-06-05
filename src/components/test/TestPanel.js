@@ -30,7 +30,27 @@ const getBranches = (nodes, edges, nodeId) => {
   }));
 };
 
-const collectMessages = (nodes, edges, startNodeId) => {
+// ── Condition evaluator (mirrors backend logic) ───────────────────────────
+const evalCondition = (node, vars) => {
+  const { variable = '', operator = 'equals', value = '' } = node.data || {};
+  const actual = (vars[variable] || '').toString().toLowerCase().trim();
+  const target = value.toLowerCase().trim();
+  switch (operator) {
+    case 'equals':       return actual === target;
+    case 'not_equals':   return actual !== target;
+    case 'contains':     return actual.includes(target);
+    case 'not_contains': return !actual.includes(target);
+    case 'starts_with':  return actual.startsWith(target);
+    case 'ends_with':    return actual.endsWith(target);
+    case 'greater_than': return parseFloat(actual) > parseFloat(target);
+    case 'less_than':    return parseFloat(actual) < parseFloat(target);
+    case 'is_set':       return actual !== '' && actual !== 'undefined';
+    case 'is_not_set':   return actual === '' || actual === 'undefined';
+    default:             return false;
+  }
+};
+
+const collectMessages = (nodes, edges, startNodeId, vars = {}) => {
   const nodeMap     = Object.fromEntries(nodes.map(n => [n.id, n]));
   const nodesToSend = [];
   let currentId     = startNodeId;
@@ -38,10 +58,25 @@ const collectMessages = (nodes, edges, startNodeId) => {
     const node = nodeMap[currentId];
     if (!node) break;
     if (node.type !== 'trigger') nodesToSend.push(node);
+
     // Stop at collect_input — needs user response before continuing
     if (node.type === 'collect_input') {
       return { nodesToSend, pendingBranches: null, pendingNodeId: null, pendingInput: node };
     }
+
+    // Auto-resolve condition nodes using collected vars
+    if (node.type === 'condition') {
+      const outgoing = edges.filter(e => e.source === currentId);
+      const result   = evalCondition(node, vars);
+      const handle   = result ? 'true' : 'false';
+      const edge     = outgoing.find(e => e.sourceHandle === handle) || outgoing[0];
+      if (!edge) break;
+      const nextNode = nodeMap[edge.target];
+      if (!nextNode) break;
+      currentId = nextNode.id;
+      continue; // don't push the condition node itself as a message
+    }
+
     const outgoing = edges.filter(e => e.source === currentId);
     if (!outgoing.length) break;
     if (outgoing.length > 1) {
@@ -373,14 +408,14 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
     setMessages([{ type: 'user', text: inputText }]);
     setPending(null);
 
-    const { nodesToSend, pendingBranches, pendingInput } = collectMessages(nodes, edges, triggerNode.id);
+    const { nodesToSend, pendingBranches, pendingInput } = collectMessages(nodes, edges, triggerNode.id, collectedVars);
     addTypingThenSend(nodesToSend, pendingBranches, pendingInput);
   };
 
   const handleBranchSelect = (branch) => {
     setMessages(prev => [...prev, { type: 'user', text: branch.label }]);
     setPending(null);
-    const { nodesToSend, pendingBranches, pendingInput } = collectMessages(nodes, edges, branch.target);
+    const { nodesToSend, pendingBranches, pendingInput } = collectMessages(nodes, edges, branch.target, collectedVars);
     addTypingThenSend(nodesToSend, pendingBranches, pendingInput);
   };
 
@@ -398,7 +433,7 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
     if (!outgoing.length) return;
     const nextNode = nodes.find(n => n.id === outgoing[0].target);
     if (!nextNode) return;
-    const { nodesToSend, pendingBranches, pendingInput: nextInput } = collectMessages(nodes, edges, nextNode.id);
+    const { nodesToSend, pendingBranches, pendingInput: nextInput } = collectMessages(nodes, edges, nextNode.id, newVars);
     addTypingThenSend([nextNode, ...nodesToSend.filter(n => n.id !== nextNode.id)], pendingBranches, nextInput, newVars);
   };
 
