@@ -12,19 +12,23 @@ import WhatsAppManager from "./pages/WhatsAppManager";
 import ThankYou from "./pages/thankyou";
 import AdminDashboard from "./pages/yashkolnure";
 import ShopPage from "./pages/ShopPage";
+import { BlogIndex, BlogPost } from "./pages/Blog";
 
 // Updated Helper: 
 // We hide the Layout if it's a Workspace (/dashboard, /workflow) 
 // OR if it's a dynamic slug (any path NOT in our marketing list)
 const shouldHideLayout = (pathname) => {
-  const workspacePaths = ["/dashboard", "/workflow"];
-  const marketingPaths = ["/", "/login", "/register", "/login-success"];
+  const workspacePaths = ["/dashboard", "/workflow", "/whatsapp-manager", "/yashkolnure"];
+  // Marketing + blog paths — show Header/Footer on all of these
+  const marketingPaths = ["/", "/login", "/register", "/login-success", "/shop", "/thankyou", "/blog"];
 
-  // 1. Hide if it starts with dashboard or workflow
+  // 1. Hide if it starts with a workspace path
   if (workspacePaths.some(path => pathname.startsWith(path))) return true;
 
-  // 2. Hide if it is NOT one of our main marketing/auth pages
-  // This effectively catches the "/:slug" routes
+  // 2. Show on blog paths (index + individual posts)
+  if (pathname === "/blog" || pathname.startsWith("/blog/")) return false;
+
+  // 3. Hide on dynamic public form slugs (any path NOT in marketing list)
   if (!marketingPaths.includes(pathname)) return true;
 
   return false;
@@ -62,8 +66,12 @@ function App() {
           <Route path="/yashkolnure" element={<AdminDashboard />} />
           <Route path="/whatsapp-manager" element={<WhatsAppManager />} />
           <Route path="/shop" element={<ShopPage />} />
-          
-          {/* Dynamic Catch-all Slug */}
+
+          {/* Blog routes */}
+          <Route path="/blog" element={<BlogIndex />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
+
+          {/* Dynamic Catch-all Slug — must be last */}
           <Route path="/:slug" element={<PublicForm />} />
         </Routes>
       </main>

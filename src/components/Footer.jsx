@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { WaIcon } from "./Icons";
 
 export default function Footer() {
@@ -10,9 +11,35 @@ export default function Footer() {
   }, []);
 
   const sections = [
-    { title: "PRODUCT", links: ["Features", "How it Works", "Pricing", "Use Cases"] },
-    { title: "COMPANY", links: ["About Us", "Privacy", "Terms", "FAQ"] },
-    { title: "SUPPORT", links: ["Help Center", "Contact", "API Docs"] },
+    {
+      title: "PRODUCT",
+      links: [
+        { label: "Features",      href: "/#features"   },
+        { label: "How it Works",  href: "/#how-it-works" },
+        { label: "Pricing",       href: "/#pricing"    },
+        { label: "Use Cases",     href: "/#usecases"   },
+        { label: "Shop",          href: "/shop"         },
+      ]
+    },
+    {
+      title: "COMPANY",
+      links: [
+        { label: "About Us",  href: "/#about"      },
+        { label: "Privacy",   href: "/privacy"     },
+        { label: "Terms",     href: "/terms"       },
+        { label: "FAQ",       href: "/#faq"        },
+        { label: "Blog",      href: "/blog"        },
+      ]
+    },
+    {
+      title: "SUPPORT",
+      links: [
+        { label: "Help Center", href: "https://wa.me/917499835687?text=Hi!%20I%20need%20help%20with%20WPLeads.", },
+        { label: "Contact Us",  href: "https://wa.me/917499835687?text=Hi!%20I%20want%20to%20know%20more%20about%20WPLeads." },
+        { label: "API Docs",    href: "/register"  },
+        { label: "Get Started", href: "/register"  },
+      ]
+    },
   ];
 
   return (
@@ -54,14 +81,28 @@ export default function Footer() {
                 </h4>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
                   {sec.links.map(link => (
-                    <li key={link}>
-                      <a href="#" 
-                         style={{ color: "#64748b", textDecoration: "none", fontSize: "13px", fontWeight: 500, transition: "0.2s" }} 
-                         onMouseOver={e => e.target.style.color = "#0f172a"}
-                         onMouseOut={e => e.target.style.color = "#64748b"}
-                      >
-                        {link}
-                      </a>
+                    <li key={link.label}>
+                      {link.href.startsWith("http") ? (
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#64748b", textDecoration: "none", fontSize: "13px", fontWeight: 500, transition: "0.2s" }}
+                          onMouseOver={e => e.target.style.color = "#0f172a"}
+                          onMouseOut={e => e.target.style.color = "#64748b"}
+                        >
+                          {link.label}
+                        </a>
+                      ) : (
+                        <Link
+                          to={link.href}
+                          style={{ color: "#64748b", textDecoration: "none", fontSize: "13px", fontWeight: 500, transition: "0.2s" }}
+                          onMouseOver={e => e.target.style.color = "#0f172a"}
+                          onMouseOut={e => e.target.style.color = "#64748b"}
+                        >
+                          {link.label}
+                        </Link>
+                      )}
                     </li>
                   ))}
                 </ul>

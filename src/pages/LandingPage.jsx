@@ -179,6 +179,52 @@ const logos = ["QuickKart","Finova","Bolt Co.","Nuvora","ShopFlow","PrimeHub","Z
 
 
 /* ─────────────────────────────
+   FAQ ACCORDION ITEM
+───────────────────────────── */
+function FaqItem({ q, a }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      itemScope
+      itemProp="mainEntity"
+      itemType="https://schema.org/Question"
+      style={{borderBottom:"1px solid rgba(0,0,0,0.07)",padding:"20px 0"}}
+    >
+      <button
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        style={{
+          width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",
+          background:"none",border:"none",cursor:"pointer",textAlign:"left",gap:16,
+          fontFamily:"inherit",padding:0
+        }}
+      >
+        <h3 itemProp="name" style={{fontSize:16,fontWeight:700,color:"#0a0a0a",lineHeight:1.4,margin:0}}>{q}</h3>
+        <div style={{
+          width:28,height:28,borderRadius:"50%",background:"rgba(37,211,102,0.1)",
+          display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
+          transition:"transform 0.25s",transform:open?"rotate(45deg)":"rotate(0deg)"
+        }}>
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <path d="M5.5 1v9M1 5.5h9" stroke="#16a34a" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </div>
+      </button>
+      {open && (
+        <div
+          itemScope
+          itemProp="acceptedAnswer"
+          itemType="https://schema.org/Answer"
+          style={{marginTop:14,paddingRight:44}}
+        >
+          <p itemProp="text" style={{fontSize:14.5,color:"rgba(0,0,0,0.6)",lineHeight:1.7,margin:0}}>{a}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────
    MAIN PAGE
 ───────────────────────────── */
 export default function LandingPage() {
@@ -290,7 +336,7 @@ export default function LandingPage() {
 
       {/* SUBTEXT */}
       <p style={{fontSize: 17, color: "rgba(0,0,0,0.6)", lineHeight: 1.6, marginBottom: 32, maxWidth: 500, fontWeight: 400}}>
-        Experience <strong>Instant Setup</strong> with our self-hosted gateway. No complex approvals, no long waits—start sending messages with your free credits today.
+        Experience <strong>Instant Setup</strong> with our WhatsApp Business API — trusted by businesses across India. No complex approvals, no long waits. Start sending messages with your free credits today.
       </p>
 
       {/* QUICK STATS / FEATURES */}
@@ -850,6 +896,117 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ══ BLOG TEASER ══ */}
+      <section id="blog" aria-label="Latest from the blog" style={{padding:"clamp(70px,7vw,100px) clamp(20px,5vw,60px)",background:"#ffffff",borderTop:"1px solid rgba(0,0,0,0.04)"}}>
+        <div style={{maxWidth:1280,margin:"0 auto"}}>
+          <div style={{display:"flex",alignItems:"flex-end",justifyContent:"space-between",flexWrap:"wrap",gap:16,marginBottom:48}}>
+            <div>
+              <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.2)",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontFamily:"'DM Mono',monospace",fontWeight:500,letterSpacing:2,color:"#16a34a",textTransform:"uppercase",marginBottom:16}}>From the Blog</div>
+              <h2 style={{fontSize:"clamp(28px,3.5vw,44px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.08,color:"#0a0a0a",margin:0}}>WhatsApp Automation Guides</h2>
+            </div>
+            <a href="/blog" style={{fontSize:13,fontWeight:800,color:"#25d366",textDecoration:"none",display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+              View all posts
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:24}}>
+            {[
+              {slug:"how-to-create-whatsapp-bot-free",     cat:"Tutorial",    title:"How to Create a WhatsApp Bot for Free in 5 Minutes (No Code)", date:"May 20, 2026"},
+              {slug:"whatsapp-api-free-india",             cat:"WhatsApp API", title:"Free WhatsApp Business API in India — Instant Setup (2026 Guide)", date:"May 28, 2026"},
+              {slug:"wpleads-vs-aisensy",                  cat:"Comparison",  title:"WPLeads vs AiSensy — Which WhatsApp Platform is Better?", date:"June 1, 2026"},
+              {slug:"whatsapp-automation-for-ecommerce-india", cat:"Use Case", title:"WhatsApp Automation for E-Commerce in India — Complete Guide", date:"June 4, 2026"},
+            ].map(post => (
+              <a key={post.slug} href={`/blog/${post.slug}`} style={{textDecoration:"none",display:"block"}}>
+                <article style={{background:"#fff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:20,padding:"24px 28px",transition:"all 0.25s ease",height:"100%",cursor:"pointer"}}
+                  onMouseOver={e=>{e.currentTarget.style.boxShadow="0 12px 32px rgba(0,0,0,0.07)";e.currentTarget.style.transform="translateY(-3px)";}}
+                  onMouseOut={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="translateY(0)";}}
+                >
+                  <div style={{display:"inline-flex",alignItems:"center",fontSize:10.5,fontWeight:700,background:"rgba(37,211,102,0.1)",color:"#16a34a",padding:"4px 10px",borderRadius:100,fontFamily:"'DM Mono',monospace",letterSpacing:1,marginBottom:14}}>
+                    {post.cat}
+                  </div>
+                  <h3 style={{fontSize:15.5,fontWeight:800,color:"#0a0a0a",lineHeight:1.4,marginBottom:12,letterSpacing:"-0.01em"}}>{post.title}</h3>
+                  <div style={{fontSize:11.5,color:"rgba(0,0,0,0.35)",marginTop:"auto"}}>{post.date}</div>
+                </article>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══ GEO-CITIES — WhatsApp API in India ══ */}
+      <section id="india" aria-label="WhatsApp API across India" style={{padding:"clamp(60px,6vw,90px) clamp(20px,5vw,60px)",background:"#f8fafc",borderTop:"1px solid rgba(0,0,0,0.04)"}}>
+        <div style={{maxWidth:1280,margin:"0 auto",textAlign:"center"}}>
+          <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.2)",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontFamily:"'DM Mono',monospace",fontWeight:500,letterSpacing:2,color:"#16a34a",textTransform:"uppercase",marginBottom:18}}>Across India</div>
+          <h2 style={{fontSize:"clamp(28px,3.5vw,44px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.08,marginBottom:14,color:"#0a0a0a"}}>
+            WhatsApp API Available in Every City
+          </h2>
+          <p style={{fontSize:15,color:"rgba(0,0,0,0.5)",maxWidth:560,margin:"0 auto 44px",lineHeight:1.7}}>
+            WPLeads powers WhatsApp automation for businesses across India — from startups in Pune to enterprises in Bangalore. Free API setup, no paperwork, live in 5 minutes.
+          </p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:12,justifyContent:"center"}}>
+            {[
+              {city:"Pune",        kw:"WhatsApp API in Pune"},
+              {city:"Bangalore",   kw:"WhatsApp API in Bangalore"},
+              {city:"Mumbai",      kw:"WhatsApp API in Mumbai"},
+              {city:"Delhi",       kw:"WhatsApp API in Delhi"},
+              {city:"Hyderabad",   kw:"WhatsApp API in Hyderabad"},
+              {city:"Chennai",     kw:"WhatsApp API in Chennai"},
+              {city:"Ahmedabad",   kw:"WhatsApp API in Ahmedabad"},
+              {city:"Kolkata",     kw:"WhatsApp API in Kolkata"},
+              {city:"Surat",       kw:"WhatsApp API in Surat"},
+              {city:"Jaipur",      kw:"WhatsApp API in Jaipur"},
+              {city:"Nashik",      kw:"WhatsApp API in Nashik"},
+              {city:"Nagpur",      kw:"WhatsApp API in Nagpur"},
+            ].map(({city, kw}) => (
+              <a
+                key={city}
+                href="/register"
+                title={kw}
+                aria-label={`Get free ${kw} — WPLeads`}
+                style={{
+                  display:"inline-flex",alignItems:"center",gap:7,
+                  background:"#fff",border:"1px solid rgba(37,211,102,0.3)",
+                  borderRadius:100,padding:"10px 20px",fontSize:13,fontWeight:700,
+                  color:"#0a0a0a",textDecoration:"none",
+                  boxShadow:"0 2px 8px rgba(0,0,0,0.04)",
+                  transition:"all 0.2s ease"
+                }}
+                onMouseOver={e=>{e.currentTarget.style.background="rgba(37,211,102,0.07)";e.currentTarget.style.borderColor="#25d366";e.currentTarget.style.transform="translateY(-2px)";}}
+                onMouseOut={e=>{e.currentTarget.style.background="#fff";e.currentTarget.style.borderColor="rgba(37,211,102,0.3)";e.currentTarget.style.transform="translateY(0)";}}
+              >
+                <span style={{fontSize:15}}>📍</span>
+                {city}
+              </a>
+            ))}
+          </div>
+          <p style={{marginTop:32,fontSize:13,color:"rgba(0,0,0,0.35)",letterSpacing:0.3}}>
+            🇮🇳 Official Meta Partner · WhatsApp Business API · Free Forever Plan · No Approval Delays
+          </p>
+        </div>
+      </section>
+
+      {/* ══ FAQ SECTION (visible on page + matches JSON-LD schema) ══ */}
+      <section id="faq" aria-label="Frequently asked questions" style={{padding:"clamp(70px,7vw,100px) clamp(20px,5vw,60px)",background:"#ffffff"}}>
+        <div style={{maxWidth:820,margin:"0 auto"}}>
+          <div style={{textAlign:"center",marginBottom:56}}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(37,211,102,0.08)",border:"1px solid rgba(37,211,102,0.2)",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontFamily:"'DM Mono',monospace",fontWeight:500,letterSpacing:2,color:"#16a34a",textTransform:"uppercase",marginBottom:18}}>FAQ</div>
+            <h2 style={{fontSize:"clamp(30px,3.5vw,46px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.08,color:"#0a0a0a"}}>Frequently Asked Questions</h2>
+          </div>
+          {[
+            {q:"Is WPLeads really free forever?", a:"Yes. The Starter plan is free forever with no credit card required. It includes 1 active workflow and 1,000 messages per month. The Pro plan is also currently free — no subscription fees, just a 25% markup on broadcast messages."},
+            {q:"Do I need coding skills to use WPLeads?", a:"No. WPLeads is a fully no-code platform. Drag keyword triggers, message nodes, and branches onto a visual canvas and your bot goes live instantly. Zero developer involvement needed."},
+            {q:"How fast can I go live?", a:"You can be live in under 5 minutes. Connect your WhatsApp via Meta credentials, register the webhook, build your flow, and hit Save. No developer or approval delay needed."},
+            {q:"Which cities in India is WPLeads available in?", a:"WPLeads is available pan-India — Pune, Bangalore, Mumbai, Delhi, Hyderabad, Chennai, Ahmedabad, Kolkata, Surat, Jaipur, Nashik, Nagpur, and every other city. The platform is fully online and accessible anywhere."},
+            {q:"Is WPLeads an official Meta / WhatsApp partner?", a:"Yes. WPLeads is an official Meta Tech Provider. Your WhatsApp Business API is set up through Meta's approved channels — fully compliant and reliable."},
+            {q:"How much does the WhatsApp API cost on WPLeads?", a:"API setup is completely free. You pay a 25% markup only on broadcast messages you send. Workflow replies and incoming conversations are free. No monthly subscription."},
+            {q:"Does WPLeads support interactive WhatsApp messages?", a:"Yes — button menus, image cards, PDF attachments, quick reply buttons, and list messages are all supported natively through WhatsApp's Interactive Message API."},
+            {q:"Can I do bulk WhatsApp messaging?", a:"Yes. The Pro plan includes Bulk Cold Outreach — upload a CSV, pick an approved template, and send at scale. The system throttles to 4 messages/second to stay within Meta's rate limits."},
+          ].map(({q,a},i)=>(
+            <FaqItem key={i} q={q} a={a} />
+          ))}
         </div>
       </section>
 

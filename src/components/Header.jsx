@@ -30,11 +30,16 @@ export default function Header() {
     { name: "Pricing",    id: "pricing"   },
     { name: "Compare",    id: "compare"   },
     { name: "Reviews",    id: "reviews"   },
+    { name: "Blog",       id: null, href: "/blog" },
   ];
 
-  const handleNav = (e, id) => {
+  const handleNav = (e, id, href) => {
     e.preventDefault();
     setMobileMenuOpen(false);
+    if (href) {
+      navigate(href);
+      return;
+    }
     if (location.pathname === "/") {
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -83,8 +88,8 @@ export default function Header() {
             {navLinks.map((link, idx) => (
               <a
                 key={link.name}
-                href={`#${link.id}`}
-                onClick={(e) => handleNav(e, link.id)}
+                href={link.href || `#${link.id}`}
+                onClick={(e) => handleNav(e, link.id, link.href)}
                 onMouseEnter={(e) => {
                   setHoveredIdx(idx);
                   const el = e.currentTarget;
@@ -166,8 +171,8 @@ export default function Header() {
             {navLinks.map((link) => (
               <a
                 key={link.name}
-                href={`#${link.id}`}
-                onClick={(e) => handleNav(e, link.id)}
+                href={link.href || `#${link.id}`}
+                onClick={(e) => handleNav(e, link.id, link.href)}
                 className="text-3xl font-black text-slate-900 tracking-tighter py-3 border-b border-slate-50 hover:text-[#25d366] transition-colors"
               >
                 {link.name}
