@@ -17,6 +17,7 @@ import ListConfig      from '../components/config/ListConfig';
 import MediaConfig     from '../components/config/MediaConfig';
 import DelayConfig     from '../components/config/DelayConfig';
 import ProductConfig   from '../components/config/ProductConfig';
+import InputConfig    from '../components/config/InputConfig';
 import TemplatePicker  from '../components/TemplatePicker';
 import TestPanel       from '../components/test/TestPanel';
 
@@ -30,7 +31,8 @@ const PALETTE = [
   { type: 'list',    label: 'List Message',    emoji: '📋', desc: 'Message with a list menu',   color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
   { type: 'media',   label: 'Media Message',   emoji: '🖼️', desc: 'Image, video or document',   color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
   { type: 'delay',   label: 'Delay',           emoji: '⏱️', desc: 'Wait before the next step',  color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
-  { type: 'product', label: 'Product Message', emoji: '🛍️', desc: 'Send a product or catalog',   color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
+  { type: 'product',       label: 'Product Message', emoji: '🛍️', desc: 'Send a product or catalog',          color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
+  { type: 'collect_input', label: 'Collect Input',   emoji: '📝', desc: 'Ask a question, save user reply',    color: '#0891b2', bg: '#ecfeff', border: '#67e8f9' },
 ];
 
 const defaultData = (type) => {
@@ -40,16 +42,18 @@ const defaultData = (type) => {
   if (type === 'list')    return { message: { type: 'list', listBody: '', listButtonText: 'View options', sections: [{ title: 'Section 1', rows: [{ id: uuid(), title: '', description: '' }] }] } };
   if (type === 'media')   return { message: { type: 'media', mediaType: 'image', mediaUrl: '', mediaCaption: '' } };
   if (type === 'delay')   return { delayMinutes: 5 };
-  if (type === 'product') return { message: { type: 'product', catalogId: '', productRetailerId: '', body: '' } };
+  if (type === 'product')       return { message: { type: 'product', catalogId: '', productRetailerId: '', body: '' } };
+  if (type === 'collect_input') return { question: '', variableName: '', inputType: 'text', retryMessage: '' };
   return {};
 };
 
 const schemaTypeToRfType = (node) => {
-  if (node.type === 'trigger') return 'trigger';
-  if (node.type === 'delay')   return 'delay';
+  if (node.type === 'trigger')       return 'trigger';
+  if (node.type === 'delay')         return 'delay';
+  if (node.type === 'collect_input') return 'collect_input';
   const msgType = node.data?.message?.type;
-  if (msgType === 'button') return 'button';
-  if (msgType === 'list')   return 'list';
+  if (msgType === 'button')       return 'button';
+  if (msgType === 'list')         return 'list';
   if (msgType === 'media')        return 'media';
   if (msgType === 'product')      return 'product';
   if (msgType === 'product_list') return 'product';
@@ -63,7 +67,8 @@ const configMap = {
   list:    ListConfig,
   media:   MediaConfig,
   delay:   DelayConfig,
-  product: ProductConfig,
+  product:       ProductConfig,
+  collect_input: InputConfig,
 };
 
 export default function WorkflowBuilder() {
@@ -100,8 +105,9 @@ export default function WorkflowBuilder() {
         const rfNodes = wf.nodes.map(n => ({
           id: n.id, type: schemaTypeToRfType(n),
           position: n.position || { x: 250, y: 250 },
-          data: n.type === 'trigger' ? { keyword: n.data.keyword, matchType: n.data.matchType }
-              : n.type === 'delay'   ? { delayMinutes: n.data.delayMinutes }
+          data: n.type === 'trigger'       ? { keyword: n.data.keyword, matchType: n.data.matchType }
+              : n.type === 'delay'         ? { delayMinutes: n.data.delayMinutes }
+              : n.type === 'collect_input' ? { question: n.data.question, variableName: n.data.variableName, inputType: n.data.inputType, retryMessage: n.data.retryMessage }
               : { message: n.data.message },
         }));
         const rfEdges = (wf.edges || []).map(e => ({ ...e, type: 'deletable', animated: true, style: { stroke: '#7c3aed', strokeWidth: 2 } }));
@@ -173,10 +179,14 @@ export default function WorkflowBuilder() {
     try {
       const schemaNodes = nodes.map(n => ({
         id: n.id,
-        type: n.type === 'trigger' ? 'trigger' : n.type === 'delay' ? 'delay' : 'message',
+        type: n.type === 'trigger'       ? 'trigger'
+            : n.type === 'delay'         ? 'delay'
+            : n.type === 'collect_input' ? 'collect_input'
+            : 'message',
         position: n.position,
-        data: n.type === 'trigger' ? { keyword: n.data.keyword, matchType: n.data.matchType }
-            : n.type === 'delay'   ? { delayMinutes: n.data.delayMinutes }
+        data: n.type === 'trigger'       ? { keyword: n.data.keyword, matchType: n.data.matchType }
+            : n.type === 'delay'         ? { delayMinutes: n.data.delayMinutes }
+            : n.type === 'collect_input' ? { question: n.data.question, variableName: n.data.variableName, inputType: n.data.inputType, retryMessage: n.data.retryMessage }
             : { message: n.data.message },
       }));
       const schemaEdges = edges.map(e => ({

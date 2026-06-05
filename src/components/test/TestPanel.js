@@ -38,16 +38,20 @@ const collectMessages = (nodes, edges, startNodeId) => {
     const node = nodeMap[currentId];
     if (!node) break;
     if (node.type !== 'trigger') nodesToSend.push(node);
+    // Stop at collect_input — needs user response before continuing
+    if (node.type === 'collect_input') {
+      return { nodesToSend, pendingBranches: null, pendingNodeId: null, pendingInput: node };
+    }
     const outgoing = edges.filter(e => e.source === currentId);
     if (!outgoing.length) break;
     if (outgoing.length > 1) {
-      return { nodesToSend, pendingBranches: getBranches(nodes, edges, currentId), pendingNodeId: currentId };
+      return { nodesToSend, pendingBranches: getBranches(nodes, edges, currentId), pendingNodeId: currentId, pendingInput: null };
     }
     const nextNode = nodeMap[outgoing[0].target];
     if (!nextNode) break;
     currentId = nextNode.id;
   }
-  return { nodesToSend, pendingBranches: null, pendingNodeId: null };
+  return { nodesToSend, pendingBranches: null, pendingNodeId: null, pendingInput: null };
 };
 
 // ── WhatsApp-accurate bubble components ───────────────────────────────────────
@@ -301,13 +305,15 @@ function UserBubble({ text }) {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export default function TestPanel({ workflowId, nodes, edges, onClose }) {
-  const [messages, setMessages]       = useState([]);
-  const [pendingBranches, setPending] = useState(null);
-  const [inputText, setInputText]     = useState('');
-  const [started, setStarted]         = useState(false);
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState('');
-  const chatEndRef                    = useRef(null);
+  const [messages, setMessages]           = useState([]);
+  const [pendingBranches, setPending]     = useState(null);
+  const [pendingInput, setPendingInput]   = useState(null);   // collect_input node awaiting response
+  const [collectedVars, setCollectedVars] = useState({});     // { name: 'John', phone: '...' }
+  const [inputText, setInputText]         = useState('');
+  const [started, setStarted]             = useState(false);
+  const [loading, setLoading]             = useState(false);
+  const [error, setError]                 = useState('');
+  const chatEndRef                        = useRef(null);
 
   const triggerKw = nodes.find(n => n.type === 'trigger')?.data?.keyword || '';
 
@@ -315,11 +321,20 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, pendingBranches]);
 
-  const addTypingThenSend = (nodesToSend, branches) => {
+  // substitute {{var}} placeholders with collected values
+  const interpolate = (node, vars) => {
+    if (!node?.data?.message?.text) return node;
+    const text = node.data.message.text.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? `{{${k}}}`);
+    return { ...node, data: { ...node.data, message: { ...node.data.message, text } } };
+  };
+
+  const addTypingThenSend = (nodesToSend, branches, inputNode, vars = collectedVars) => {
     setMessages(prev => [...prev, { type: 'typing' }]);
     setTimeout(() => {
-      setMessages(prev => [...prev.filter(m => m.type !== 'typing'), ...nodesToSend.map(node => ({ type: 'bot', node }))]);
+      const rendered = nodesToSend.map(n => ({ type: 'bot', node: interpolate(n, vars) }));
+      setMessages(prev => [...prev.filter(m => m.type !== 'typing'), ...rendered]);
       setPending(branches);
+      setPendingInput(inputNode || null);
     }, 600);
   };
 
@@ -352,22 +367,42 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
     setMessages([{ type: 'user', text: inputText }]);
     setPending(null);
 
-    const { nodesToSend, pendingBranches } = collectMessages(nodes, edges, triggerNode.id);
-    addTypingThenSend(nodesToSend, pendingBranches);
+    const { nodesToSend, pendingBranches, pendingInput } = collectMessages(nodes, edges, triggerNode.id);
+    addTypingThenSend(nodesToSend, pendingBranches, pendingInput);
   };
 
   const handleBranchSelect = (branch) => {
     setMessages(prev => [...prev, { type: 'user', text: branch.label }]);
     setPending(null);
-    const { nodesToSend, pendingBranches } = collectMessages(nodes, edges, branch.target);
-    addTypingThenSend(nodesToSend, pendingBranches);
+    const { nodesToSend, pendingBranches, pendingInput } = collectMessages(nodes, edges, branch.target);
+    addTypingThenSend(nodesToSend, pendingBranches, pendingInput);
+  };
+
+  // Called when user submits an answer to a collect_input node
+  const handleInputSubmit = () => {
+    if (!inputText.trim() || !pendingInput) return;
+    const varName = pendingInput.data.variableName || 'input';
+    const newVars = { ...collectedVars, [varName]: inputText.trim() };
+    setCollectedVars(newVars);
+    setMessages(prev => [...prev, { type: 'user', text: inputText.trim() }]);
+    setInputText('');
+    setPendingInput(null);
+    // Find the node after this collect_input node and continue
+    const outgoing = edges.filter(e => e.source === pendingInput.id);
+    if (!outgoing.length) return;
+    const nextNode = nodes.find(n => n.id === outgoing[0].target);
+    if (!nextNode) return;
+    const { nodesToSend, pendingBranches, pendingInput: nextInput } = collectMessages(nodes, edges, nextNode.id);
+    addTypingThenSend([nextNode, ...nodesToSend.filter(n => n.id !== nextNode.id)], pendingBranches, nextInput, newVars);
   };
 
   const reset = () => {
-    setMessages([]); setPending(null); setInputText(''); setStarted(false); setError('');
+    setMessages([]); setPending(null); setPendingInput(null);
+    setCollectedVars({}); setInputText(''); setStarted(false); setError('');
   };
 
-  const isConversationEnd = started && !pendingBranches && messages.length > 0 && messages[messages.length - 1]?.type === 'bot';
+  const isConversationEnd = started && !pendingBranches && !pendingInput && messages.length > 0 && messages[messages.length - 1]?.type === 'bot';
+  const isAwaitingInput   = !!pendingInput;
 
   return (
     <div style={{ width: 350, background: '#fff', borderLeft: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: "'Inter',sans-serif", overflow: 'hidden', flexShrink: 0 }}>
@@ -457,26 +492,42 @@ export default function TestPanel({ workflowId, nodes, edges, onClose }) {
       </div>
 
       {/* Input bar */}
-      <div style={{ background: '#f0f0f0', padding: '10px 12px', display: 'flex', gap: 8, alignItems: 'center', borderTop: '1px solid #ddd', flexShrink: 0 }}>
-        <>
-            <input
-              value={inputText}
-              onChange={e => setInputText(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !started && startConversation()}
-              placeholder={started ? 'Tap a reply button above...' : `Type "${triggerKw || 'keyword'}" to start...`}
-              disabled={started}
-              style={{ flex: 1, border: 'none', borderRadius: 22, padding: '9px 15px', fontSize: 13, outline: 'none', background: '#fff', opacity: started ? 0.5 : 1, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
-            />
-            <button
-              onClick={startConversation}
-              disabled={started || !inputText.trim()}
-              style={{ width: 38, height: 38, borderRadius: '50%', background: (started || !inputText.trim()) ? '#d1d5db' : '#25d366', border: 'none', cursor: started ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-              </svg>
-            </button>
-          </>
+      <div style={{ background: '#f0f0f0', padding: '10px 12px', display: 'flex', gap: 8, alignItems: 'center', borderTop: '1px solid #ddd', flexShrink: 0, flexDirection: 'column' }}>
+        {/* Collect Input hint */}
+        {isAwaitingInput && (
+          <div style={{ width: '100%', background: '#ecfeff', border: '1px solid #67e8f9', borderRadius: 8, padding: '6px 10px', fontSize: 11, color: '#0369a1', fontWeight: 600 }}>
+            📝 Waiting for: <code style={{ background: '#e0f2fe', borderRadius: 3, padding: '1px 4px' }}>{'{{' + (pendingInput?.data?.variableName || 'input') + '}}'}</code>
+            <span style={{ color: '#6b7280', fontWeight: 400 }}> · Type your answer and press Enter</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 8, width: '100%', alignItems: 'center' }}>
+          <input
+            value={inputText}
+            onChange={e => setInputText(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                if (isAwaitingInput) handleInputSubmit();
+                else if (!started) startConversation();
+              }
+            }}
+            placeholder={
+              isAwaitingInput ? `Type your ${pendingInput?.data?.inputType || 'answer'}...`
+              : started       ? 'Tap a reply button above...'
+              : `Type "${triggerKw || 'keyword'}" to start...`
+            }
+            disabled={started && !isAwaitingInput}
+            style={{ flex: 1, border: 'none', borderRadius: 22, padding: '9px 15px', fontSize: 13, outline: 'none', background: '#fff', opacity: (started && !isAwaitingInput) ? 0.5 : 1, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}
+          />
+          <button
+            onClick={isAwaitingInput ? handleInputSubmit : startConversation}
+            disabled={(started && !isAwaitingInput) || !inputText.trim()}
+            style={{ width: 38, height: 38, borderRadius: '50%', background: ((started && !isAwaitingInput) || !inputText.trim()) ? '#d1d5db' : isAwaitingInput ? '#0891b2' : '#25d366', border: 'none', cursor: ((started && !isAwaitingInput) || !inputText.trim()) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <style>{`

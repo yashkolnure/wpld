@@ -1,58 +1,99 @@
 import Workflow from '../models/Workflow.js';
+import Contact  from '../models/Contact.js';
 import { sendMessage } from './messageSender.js';
 import Message from "../models/Message.js";
 
+// ── Validation helpers ──────────────────────────────────────────────────────
+const validators = {
+  phone:  v => /^[\d\s\+\-\(\)]{7,15}$/.test(v.trim()),
+  email:  v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()),
+  number: v => !isNaN(Number(v.trim())) && v.trim() !== '',
+  text:   () => true,
+};
+
+// ── Variable interpolation ──────────────────────────────────────────────────
+const interpolate = (text, variables) => {
+  if (!text || !variables) return text;
+  return text.replace(/\{\{(\w+)\}\}/g, (_, key) => variables.get?.(key) ?? variables[key] ?? `{{${key}}}`);
+};
+
 export const executeWorkflow = async (userId, incomingText, fromNumber, contactId) => {
+  // ── 0. Load contact (needed for pending-input state + variables) ───────────
+  const contact = await Contact.findById(contactId);
+  if (!contact) return;
+
+  // ── 1. RESUME: contact is awaiting collect_input answer ────────────────────
+  if (contact.awaitingInput && contact.activeWorkflowId && contact.currentNodeId) {
+    const workflow = await Workflow.findById(contact.activeWorkflowId);
+    if (workflow) {
+      const varName    = contact.awaitingInputVar || 'input';
+      const inputType  = contact.awaitingInputType || 'text';
+      const retryMsg   = contact.awaitingRetryMsg;
+      const validate   = validators[inputType] || validators.text;
+
+      // Validate the answer
+      if (!validate(incomingText)) {
+        // Send retry message
+        const retryText = retryMsg || `Please enter a valid ${inputType}.`;
+        await sendMessage(userId, fromNumber, { type: 'text', text: retryText });
+        return; // keep awaitingInput = true
+      }
+
+      // Store variable
+      contact.variables.set(varName, incomingText.trim());
+      contact.awaitingInput    = false;
+      contact.awaitingInputVar = null;
+      await contact.save();
+
+      // Continue workflow from next node after the collect_input node
+      const outgoing = workflow.edges.filter(e => e.source === contact.currentNodeId);
+      if (outgoing.length) {
+        await executeFromNode(workflow, outgoing[0].target, incomingText, fromNumber, userId, contactId, contact);
+      }
+      return; // done — don't check other workflows
+    }
+  }
+
+  // ── 2. KEYWORD MATCH: find and start a workflow ────────────────────────────
   const workflows = await Workflow.find({ userId, isActive: true });
 
   for (const workflow of workflows) {
     const triggerNode = workflow.nodes.find(n => n.type === 'trigger');
-    
-    // 1. If there's no trigger node or no keyword, skip this workflow
     if (!triggerNode || !triggerNode.data?.keyword) continue;
 
     const { keyword, matchType } = triggerNode.data;
-    const text = (incomingText || "").toLowerCase().trim();
-
-    // ─── FIX START: Split comma-separated keywords ───
+    const text = (incomingText || '').toLowerCase().trim();
     const keywordsArray = keyword.split(',').map(k => k.toLowerCase().trim());
 
-    // Check if ANY keyword in the list matches the incoming text
-    const isKeywordMatch = keywordsArray.some(kw => {
-      if (matchType === 'exact') {
-        return text === kw;
-      } else if (matchType === 'contains') {
-        // "contains" logic: Does the customer's message contain one of our keywords?
-        return text.includes(kw);
-      }
-      return false;
-    });
-    // ─── FIX END ───
-
-    const continuationEdge = workflow.edges.find(e => 
-      e.sourceHandle === incomingText.trim() 
+    const isKeywordMatch = keywordsArray.some(kw =>
+      matchType === 'exact' ? text === kw : text.includes(kw)
     );
+
+    const continuationEdge = workflow.edges.find(e => e.sourceHandle === incomingText.trim());
 
     if (!isKeywordMatch && !continuationEdge) continue;
 
-    // Trigger the execution
-    if (isKeywordMatch) {
-      await executeFromNode(
-        workflow, triggerNode.id, incomingText, fromNumber, userId, contactId
-      );
-    } else {
-      await executeFromNode(
-        workflow, continuationEdge.source, incomingText, fromNumber, userId, contactId
-      );
+    // Reset any stale awaiting-input state when a new keyword fires
+    if (contact.awaitingInput) {
+      contact.awaitingInput    = false;
+      contact.awaitingInputVar = null;
+      await contact.save();
     }
-    
-    // IMPORTANT: Stop looking for other workflows once one has matched
-    break; 
+
+    if (isKeywordMatch) {
+      await executeFromNode(workflow, triggerNode.id, incomingText, fromNumber, userId, contactId, contact);
+    } else {
+      await executeFromNode(workflow, continuationEdge.source, incomingText, fromNumber, userId, contactId, contact);
+    }
+    break;
   }
 };
 
-const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, userId, contactId) => {
+const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, userId, contactId, contact) => {
   const nodeMap = Object.fromEntries(workflow.nodes.map(n => [n.id, n]));
+  // Re-fetch contact if not passed (keep variables fresh)
+  if (!contact) contact = await Contact.findById(contactId);
+  const vars = contact?.variables || {};
   let currentId = startNodeId;
 
   while (true) {
@@ -79,14 +120,41 @@ const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, 
       continue;
     }
 
+    // ── Handle collect_input node ──
+    if (nextNode.type === 'collect_input') {
+      const { question, variableName, inputType, retryMessage } = nextNode.data;
+      if (question) {
+        // Send the question to the user
+        const questionText = interpolate(question, vars);
+        await sendMessage(userId, fromNumber, { type: 'text', text: questionText });
+      }
+      // Save awaiting-input state on the contact
+      if (contact) {
+        contact.awaitingInput     = true;
+        contact.awaitingInputVar  = variableName || 'input';
+        contact.awaitingInputType = inputType || 'text';
+        contact.awaitingRetryMsg  = retryMessage || null;
+        contact.activeWorkflowId  = workflow._id;
+        contact.currentNodeId     = nextNode.id;
+        await contact.save();
+      }
+      break; // Stop — wait for user's reply
+    }
+
     // ── Handle message node ──
     if (nextNode.type === 'message') {
-      // Convert Mongoose subdocument → plain JS object so nested arrays
-      // (e.g. productSections[].products) serialize correctly in messageBuilder
-      const msgData = nextNode.data.message?.toObject
+      // Convert Mongoose subdocument → plain JS object
+      let msgData = nextNode.data.message?.toObject
         ? nextNode.data.message.toObject()
         : nextNode.data.message;
       if (!msgData) { currentId = nextNode.id; continue; }
+
+      // ── Variable interpolation: replace {{var}} in all text fields ──────────
+      if (msgData.text)        msgData = { ...msgData, text:        interpolate(msgData.text,        vars) };
+      if (msgData.buttonBody)  msgData = { ...msgData, buttonBody:  interpolate(msgData.buttonBody,  vars) };
+      if (msgData.listBody)    msgData = { ...msgData, listBody:    interpolate(msgData.listBody,    vars) };
+      if (msgData.mediaCaption)msgData = { ...msgData, mediaCaption:interpolate(msgData.mediaCaption,vars) };
+      if (msgData.body)        msgData = { ...msgData, body:        interpolate(msgData.body,        vars) };
 
       console.log(`\n🔁 [Workflow] Executing node: ${nextNode.id}`);
       console.log(`📨 [Workflow] msgData:`, JSON.stringify(msgData, null, 2));
