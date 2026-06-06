@@ -19,6 +19,9 @@ import DelayConfig     from '../components/config/DelayConfig';
 import ProductConfig   from '../components/config/ProductConfig';
 import InputConfig     from '../components/config/InputConfig';
 import ConditionConfig from '../components/config/ConditionConfig';
+import CtaUrlConfig    from '../components/config/CtaUrlConfig';
+import FlowConfig      from '../components/config/FlowConfig';
+import { validateWorkflow } from '../utils/metaLimits';
 import TemplatePicker  from '../components/TemplatePicker';
 import TestPanel       from '../components/test/TestPanel';
 
@@ -35,6 +38,8 @@ const PALETTE = [
   { type: 'product',       label: 'Product Message', emoji: '🛍️', desc: 'Send a product or catalog',          color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
   { type: 'collect_input', label: 'Collect Input',   emoji: '📝', desc: 'Ask a question, save user reply',    color: '#0891b2', bg: '#ecfeff', border: '#67e8f9' },
   { type: 'condition',     label: 'Condition',       emoji: '🔀', desc: 'Branch: True path or False path',    color: '#d97706', bg: '#fffbeb', border: '#fcd34d' },
+  { type: 'cta_url',       label: 'Link Button',     emoji: '🔗', desc: 'Native button that opens a URL',      color: '#0d9488', bg: '#f0fdfa', border: '#5eead4' },
+  { type: 'flow',          label: 'Native Form',     emoji: '📋', desc: 'In-app form: appointments, leads',   color: '#7c3aed', bg: '#f5f3ff', border: '#c4b5fd' },
 ];
 
 const defaultData = (type) => {
@@ -47,6 +52,8 @@ const defaultData = (type) => {
   if (type === 'product')       return { message: { type: 'product', catalogId: '', productRetailerId: '', body: '' } };
   if (type === 'collect_input') return { question: '', variableName: '', inputType: 'text', retryMessage: '' };
   if (type === 'condition')     return { variable: '', operator: 'equals', value: '' };
+  if (type === 'cta_url')       return { message: { type: 'cta_url', header: '', body: '', footer: '', buttonText: '', url: '' } };
+  if (type === 'flow')          return { message: { type: 'flow', flowId: '', header: '', body: '', footer: '', flowCta: '', flowScreen: '' } };
   return {};
 };
 
@@ -61,6 +68,8 @@ const schemaTypeToRfType = (node) => {
   if (msgType === 'media')        return 'media';
   if (msgType === 'product')      return 'product';
   if (msgType === 'product_list') return 'product';
+  if (msgType === 'cta_url')      return 'cta_url';
+  if (msgType === 'flow')         return 'flow';
   return 'text';
 };
 
@@ -74,6 +83,8 @@ const configMap = {
   product:       ProductConfig,
   collect_input: InputConfig,
   condition:     ConditionConfig,
+  cta_url:       CtaUrlConfig,
+  flow:          FlowConfig,
 };
 
 export default function WorkflowBuilder() {
@@ -239,7 +250,23 @@ export default function WorkflowBuilder() {
   const saveWorkflow = useCallback(async () => {
     const trigger = nodes.find(n => n.type === 'trigger');
     if (!trigger)              return alert('Add a Keyword Trigger node first.');
-    if (!trigger.data.keyword) return alert('Set a keyword on the Trigger node.');
+    if (trigger.data.matchType !== 'fallback' && !trigger.data.keyword) {
+      return alert('Set a keyword on the Trigger node (or switch it to Default Reply).');
+    }
+
+    // ── Meta-limit + structure validation gate ──────────────────────────────
+    const { ok, issues } = validateWorkflow(nodes, edges);
+    if (!ok) {
+      const summary = issues.slice(0, 8).map(iss =>
+        `• ${iss.label}: ${iss.errors.join('; ')}`
+      ).join('\n');
+      const more = issues.length > 8 ? `\n…and ${issues.length - 8} more.` : '';
+      setSaveStatus('error');
+      alert(`Can't save — please fix these first:\n\n${summary}${more}`);
+      // Select the first problem node so the user lands on it
+      if (issues[0]?.nodeId) setSelectedId(issues[0].nodeId);
+      return;
+    }
 
     setSaving(true);
     setSaveStatus('saving');

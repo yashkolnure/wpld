@@ -235,11 +235,13 @@ const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, 
       if (!msgData) { currentId = nextNode.id; continue; }
 
       // ── Variable interpolation: replace {{var}} in all text fields ──────────
-      if (msgData.text)        msgData = { ...msgData, text:        interpolate(msgData.text,        vars) };
-      if (msgData.buttonBody)  msgData = { ...msgData, buttonBody:  interpolate(msgData.buttonBody,  vars) };
-      if (msgData.listBody)    msgData = { ...msgData, listBody:    interpolate(msgData.listBody,    vars) };
-      if (msgData.mediaCaption)msgData = { ...msgData, mediaCaption:interpolate(msgData.mediaCaption,vars) };
-      if (msgData.body)        msgData = { ...msgData, body:        interpolate(msgData.body,        vars) };
+      if (msgData.text)         msgData = { ...msgData, text:         interpolate(msgData.text,         vars) };
+      if (msgData.buttonBody)   msgData = { ...msgData, buttonBody:   interpolate(msgData.buttonBody,   vars) };
+      if (msgData.listBody)     msgData = { ...msgData, listBody:     interpolate(msgData.listBody,     vars) };
+      if (msgData.mediaCaption) msgData = { ...msgData, mediaCaption: interpolate(msgData.mediaCaption, vars) };
+      if (msgData.body)         msgData = { ...msgData, body:         interpolate(msgData.body,         vars) };
+      if (msgData.header)       msgData = { ...msgData, header:       interpolate(msgData.header,       vars) };
+      if (msgData.footer)       msgData = { ...msgData, footer:       interpolate(msgData.footer,       vars) };
 
       console.log(`\n🔁 [Workflow] Executing node: ${nextNode.id}`);
       console.log(`📨 [Workflow] msgData:`, JSON.stringify(msgData, null, 2));
@@ -307,6 +309,26 @@ const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, 
             catalogId: msgData.catalogId,
             header: msgData.header,
             sections: msgData.productSections || msgData.sections,
+          };
+        }
+        else if (msgData.type === 'cta_url') {
+          messageRecord.text = msgData.body || 'Link Button';
+          messageRecord.metadata = {
+            type: 'cta_url',
+            header: msgData.header || null,
+            footer: msgData.footer || null,
+            buttonText: msgData.buttonText,
+            url: msgData.url,
+          };
+        }
+        else if (msgData.type === 'flow') {
+          messageRecord.text = msgData.body || 'Form';
+          messageRecord.metadata = {
+            type: 'flow',
+            header: msgData.header || null,
+            footer: msgData.footer || null,
+            flowCta: msgData.flowCta,
+            flowId: msgData.flowId,
           };
         }
 

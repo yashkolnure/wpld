@@ -7,6 +7,8 @@ import DelayNode    from './DelayNode';
 import ProductNode  from './ProductNode';
 import InputNode     from './InputNode';
 import ConditionNode from './ConditionNode';
+import CtaUrlNode    from './CtaUrlNode';
+import FlowNode      from './FlowNode';
 
 export const nodeTypes = {
   trigger:       TriggerNode,
@@ -18,4 +20,6 @@ export const nodeTypes = {
   product:       ProductNode,
   collect_input: InputNode,
   condition:     ConditionNode,
+  cta_url:       CtaUrlNode,
+  flow:          FlowNode,
 };

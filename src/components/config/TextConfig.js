@@ -1,32 +1,45 @@
 import React, { useState } from 'react';
 import { Link2, Plus, X, Check } from 'lucide-react';
+import { META, cpLength } from '../../utils/metaLimits';
 
 export default function TextConfig({ data, onChange }) {
   const [link, setLink] = useState('');
   const [showLinkInput, setShowLinkInput] = useState(false);
-  
+
   const msg = data.message || {};
+  const len = cpLength(msg.text || '');
+  const over = len > META.text.body;
 
   const update = (patch) =>
     onChange({ ...data, message: { ...msg, type: 'text', ...patch } });
 
+  const setText = (raw) => {
+    const cps = [...raw];
+    update({ text: cps.length <= META.text.body ? raw : cps.slice(0, META.text.body).join('') });
+  };
+
   const handleInsertLink = () => {
     if (!link.trim()) return;
-    
+
     const currentText = msg.text || '';
     // Append link on a new line if text exists
     const newText = currentText + (currentText ? '\n' : '') + link.trim();
-    
-    update({ text: newText });
+
+    setText(newText);
     setLink('');
     setShowLinkInput(false);
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <label style={labelStyle}>Message text</label>
-      
-      <div style={{ border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <label style={labelStyle}>Message text</label>
+        <span style={{ fontSize: 10, fontWeight: 600, fontFamily: 'monospace', color: over ? '#dc2626' : len >= META.text.body * 0.85 ? '#d97706' : '#9ca3af' }}>
+          {len}/{META.text.body}
+        </span>
+      </div>
+
+      <div style={{ border: `1px solid ${over ? '#fca5a5' : '#e5e7eb'}`, borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
         <textarea
           style={{ 
             width: '100%', 
@@ -40,8 +53,8 @@ export default function TextConfig({ data, onChange }) {
             boxSizing: 'border-box'
           }}
           value={msg.text || ''}
-          onChange={(e) => update({ text: e.target.value })}
-          placeholder="Type your WhatsApp message..."
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Type your WhatsApp message... Use {{variable}} for personalization."
         />
 
         {/* --- Dynamic Toolbar Section --- */}

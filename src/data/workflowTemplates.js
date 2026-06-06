@@ -772,5 +772,117 @@ export const templates = [
       ],
     };
   },
+},
+
+{
+  id: 'appointment_booking',
+  name: 'Appointment Booking',
+  description: 'Collect name, phone, date & time — confirm the booking. No Meta Flow needed.',
+  icon: '📅',
+  color: '#7c3aed',
+  bg: '#f5f3ff',
+  border: '#c4b5fd',
+  build: () => {
+    const triggerId   = `trigger-${uuid()}`;
+    const delayId     = `delay-${uuid()}`;
+    const introId     = `text-${uuid()}`;
+    const askName     = `collect_input-${uuid()}`;
+    const askPhone    = `collect_input-${uuid()}`;
+    const askService  = `button-${uuid()}`;
+    const askDate     = `collect_input-${uuid()}`;
+    const askTime     = `collect_input-${uuid()}`;
+    const condPhone   = `condition-${uuid()}`;
+    const confirmId   = `text-${uuid()}`;
+    const fallbackId  = `text-${uuid()}`;
+
+    const svc1 = uuid(), svc2 = uuid(), svc3 = uuid();
+
+    return {
+      name: 'Appointment Booking',
+      nodes: [
+        {
+          id: triggerId, type: 'trigger',
+          position: { x: 400, y: 0 },
+          data: { keyword: 'book, appointment, booking, schedule, slot, meeting', matchType: 'contains' },
+        },
+        {
+          id: delayId, type: 'delay',
+          position: { x: 400, y: 120 },
+          data: { delayMinutes: 0.05 },
+        },
+        {
+          id: introId, type: 'text',
+          position: { x: 400, y: 240 },
+          data: { message: { type: 'text', text: '📅 *Let\'s book your appointment!*\n\nIt takes less than a minute. I\'ll just need a few details.' } },
+        },
+        {
+          id: askName, type: 'collect_input',
+          position: { x: 400, y: 400 },
+          data: { question: 'What\'s your full name?', variableName: 'name', inputType: 'text', retryMessage: 'Please type your name.' },
+        },
+        {
+          id: askPhone, type: 'collect_input',
+          position: { x: 400, y: 560 },
+          data: { question: 'Thanks {{name}}! 📱 What\'s your contact number?', variableName: 'phone', inputType: 'phone', retryMessage: 'Please enter a valid phone number (e.g. 9876543210).' },
+        },
+        {
+          id: askService, type: 'button',
+          position: { x: 400, y: 720 },
+          data: {
+            message: {
+              type: 'button',
+              buttonHeader: 'Choose a service',
+              buttonBody: 'Which service would you like to book, {{name}}?',
+              buttons: [
+                { id: svc1, title: '💇 Consultation' },
+                { id: svc2, title: '🩺 Check-up' },
+                { id: svc3, title: '📋 Other' },
+              ],
+            },
+          },
+        },
+        {
+          id: askDate, type: 'collect_input',
+          position: { x: 400, y: 900 },
+          data: { question: 'Great choice! 📆 What date works for you?\n\n(e.g. 15 June or 2026-06-15)', variableName: 'date', inputType: 'text', retryMessage: 'Please type your preferred date.' },
+        },
+        {
+          id: askTime, type: 'collect_input',
+          position: { x: 400, y: 1060 },
+          data: { question: '⏰ And what time would you prefer?\n\n(e.g. 4 PM)', variableName: 'time', inputType: 'text', retryMessage: 'Please type your preferred time.' },
+        },
+        {
+          id: condPhone, type: 'condition',
+          position: { x: 400, y: 1220 },
+          data: { variable: 'phone', operator: 'is_set', value: '' },
+        },
+        {
+          id: confirmId, type: 'text',
+          position: { x: 180, y: 1400 },
+          data: { message: { type: 'text', text: '✅ *Booking confirmed, {{name}}!*\n\n📆 Date: {{date}}\n⏰ Time: {{time}}\n📱 Contact: {{phone}}\n\nWe\'ll send a reminder before your appointment. To reschedule, just reply *book* again. See you soon! 🙌' } },
+        },
+        {
+          id: fallbackId, type: 'text',
+          position: { x: 640, y: 1400 },
+          data: { message: { type: 'text', text: 'We couldn\'t confirm your number. Please call us at +91 74988 69327 to finalise your booking. 🙏' } },
+        },
+      ],
+      edges: [
+        { id: uuid(), source: triggerId,  target: delayId,    animated: true },
+        { id: uuid(), source: delayId,    target: introId,    animated: true },
+        { id: uuid(), source: introId,    target: askName,    animated: true },
+        { id: uuid(), source: askName,    target: askPhone,   animated: true },
+        { id: uuid(), source: askPhone,   target: askService, animated: true },
+        // all 3 services continue to date
+        { id: uuid(), source: askService, target: askDate, sourceHandle: svc1, animated: true },
+        { id: uuid(), source: askService, target: askDate, sourceHandle: svc2, animated: true },
+        { id: uuid(), source: askService, target: askDate, sourceHandle: svc3, animated: true },
+        { id: uuid(), source: askDate,    target: askTime,  animated: true },
+        { id: uuid(), source: askTime,    target: condPhone, animated: true },
+        { id: uuid(), source: condPhone,  target: confirmId,  sourceHandle: 'true',  animated: true },
+        { id: uuid(), source: condPhone,  target: fallbackId, sourceHandle: 'false', animated: true },
+      ],
+    };
+  },
 }
 ];

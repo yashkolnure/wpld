@@ -307,6 +307,50 @@ function BotBubble({ node, pendingBranches, onBranchSelect }) {
     );
   }
 
+  // ── CTA URL button ──
+  if (msg.type === 'cta_url') {
+    return (
+      <div style={{ marginBottom: 2, maxWidth: '80%' }}>
+        <div style={{ background: '#fff', borderRadius: WA.radius, overflow: 'hidden', boxShadow: WA.shadow }}>
+          <div style={{ padding: '6px 7px 8px 9px' }}>
+            {msg.header && <p style={{ margin: '0 0 3px', fontSize: 14, fontWeight: 600, color: WA.text }}>{msg.header}</p>}
+            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: WA.text, whiteSpace: 'pre-wrap' }}>{msg.body}</p>
+            {msg.footer && <p style={{ margin: '3px 0 0', fontSize: 12, color: WA.subtext }}>{msg.footer}</p>}
+            <Meta />
+          </div>
+          <a href={msg.url} target="_blank" rel="noreferrer"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '11px 16px', borderTop: `1px solid ${WA.divider}`, color: '#027eb5', fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#027eb5" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            {msg.buttonText || 'Open Link'}
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Flow (native form) ──
+  if (msg.type === 'flow') {
+    return (
+      <div style={{ marginBottom: 2, maxWidth: '80%' }}>
+        <div style={{ background: '#fff', borderRadius: WA.radius, overflow: 'hidden', boxShadow: WA.shadow }}>
+          <div style={{ padding: '6px 7px 8px 9px' }}>
+            {msg.header && <p style={{ margin: '0 0 3px', fontSize: 14, fontWeight: 600, color: WA.text }}>{msg.header}</p>}
+            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: WA.text, whiteSpace: 'pre-wrap' }}>{msg.body}</p>
+            {msg.footer && <p style={{ margin: '3px 0 0', fontSize: 12, color: WA.subtext }}>{msg.footer}</p>}
+            <Meta />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '11px 16px', borderTop: `1px solid ${WA.divider}`, color: WA.teal, fontSize: 14, fontWeight: 500 }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={WA.teal} strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/></svg>
+            {msg.flowCta || 'Open Form'}
+          </div>
+        </div>
+        <p style={{ fontSize: 10, color: WA.subtext, margin: '4px 0 0', textAlign: 'center' }}>
+          📋 Opens a native WhatsApp form (Flow {msg.flowId || '—'})
+        </p>
+      </div>
+    );
+  }
+
   // ── Media message ──
   if (msg.type === 'media') {
     const isVideo    = msg.mediaType === 'video';

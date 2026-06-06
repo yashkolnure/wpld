@@ -1,4 +1,6 @@
 import { v4 as uuid } from 'uuid';
+import { META } from '../../utils/metaLimits';
+import { ValidatedInput, labelStyle, inputStyle } from './ValidatedField';
 
 export default function ButtonConfig({ data, onChange }) {
   const msg = data.message || {};
@@ -6,55 +8,70 @@ export default function ButtonConfig({ data, onChange }) {
   const update = (patch) => onChange({ ...data, message: { ...msg, type: 'button', ...patch } });
 
   const updateBtn = (idx, title) => {
-    const updated = buttons.map((b, i) => i === idx ? { ...b, title } : b);
-    update({ buttons: updated });
+    // code-point-aware clamp to 20
+    const cps = [...title];
+    const clamped = cps.length <= META.button.title ? title : cps.slice(0, META.button.title).join('');
+    update({ buttons: buttons.map((b, i) => i === idx ? { ...b, title: clamped } : b) });
   };
 
   const addBtn = () => {
-    if (buttons.length >= 3) return;
+    if (buttons.length >= META.button.maxButtons) return;
     update({ buttons: [...buttons, { id: uuid(), title: '' }] });
   };
 
   const removeBtn = (idx) => update({ buttons: buttons.filter((_, i) => i !== idx) });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div>
-        <label style={labelStyle}>Header (optional)</label>
-        <input style={inputStyle} value={msg.buttonHeader || ''} onChange={e => update({ buttonHeader: e.target.value })} placeholder="Header text" />
-      </div>
-      <div>
-        <label style={labelStyle}>Body <span style={{ color: '#e53e3e' }}>*</span></label>
-        <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 60 }} value={msg.buttonBody || ''} onChange={e => update({ buttonBody: e.target.value })} placeholder="Main message text" />
-      </div>
-      <div>
-        <label style={labelStyle}>Footer (optional)</label>
-        <input style={inputStyle} value={msg.buttonFooter || ''} onChange={e => update({ buttonFooter: e.target.value })} placeholder="Footer text" />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <ValidatedInput
+        label="Header (optional)" value={msg.buttonHeader || ''} limit={META.button.header}
+        onChange={v => update({ buttonHeader: v })} placeholder="Header text"
+      />
+      <ValidatedInput
+        label="Body" value={msg.buttonBody || ''} limit={META.button.body} required textarea
+        onChange={v => update({ buttonBody: v })} placeholder="Main message text"
+      />
+      <ValidatedInput
+        label="Footer (optional)" value={msg.buttonFooter || ''} limit={META.button.footer}
+        onChange={v => update({ buttonFooter: v })} placeholder="Footer text"
+      />
+
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-          <label style={{ ...labelStyle, margin: 0 }}>Buttons ({buttons.length}/3)</label>
-          {buttons.length < 3 && (
-            <button onClick={addBtn} style={{ fontSize: 11, color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>+ Add</button>
+          <label style={labelStyle}>Buttons ({buttons.length}/{META.button.maxButtons})</label>
+          {buttons.length < META.button.maxButtons && (
+            <button onClick={addBtn} style={addBtnStyle}>+ Add</button>
           )}
         </div>
-        {buttons.map((btn, idx) => (
-          <div key={btn.id} style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-            <input
-              style={{ ...inputStyle, flex: 1 }}
-              value={btn.title}
-              onChange={e => updateBtn(idx, e.target.value)}
-              placeholder={`Button ${idx + 1} title (max 50 chars)`}
-              maxLength={50}
-            />
-            {buttons.length > 1 && (
-              <button onClick={() => removeBtn(idx)} style={{ color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '0 4px' }}>×</button>
-            )}
-          </div>
-        ))}
+        {buttons.map((btn, idx) => {
+          const len = [...(btn.title || '')].length;
+          const over = len > META.button.title; // can't happen due to clamp, but keep for safety
+          return (
+            <div key={btn.id} style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <input
+                  style={{ ...inputStyle, flex: 1, border: `1px solid ${over ? '#fca5a5' : '#e5e7eb'}` }}
+                  value={btn.title}
+                  onChange={e => updateBtn(idx, e.target.value)}
+                  placeholder={`Button ${idx + 1} title`}
+                />
+                <span style={{ fontSize: 10, fontWeight: 600, color: len >= META.button.title ? '#d97706' : '#9ca3af', fontFamily: 'monospace', minWidth: 36, textAlign: 'right' }}>
+                  {len}/{META.button.title}
+                </span>
+                {buttons.length > 1 && (
+                  <button onClick={() => removeBtn(idx)} style={removeBtnStyle}>×</button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        <p style={{ fontSize: 10, color: '#9ca3af', margin: '2px 0 0' }}>
+          Meta allows max {META.button.maxButtons} buttons, {META.button.title} chars each.
+        </p>
       </div>
     </div>
   );
 }
-const labelStyle = { fontSize: 11, fontWeight: 600, color: '#6b7280', display: 'block', marginBottom: 4 };
-const inputStyle = { width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 10px', fontSize: 13, boxSizing: 'border-box', background: '#fff' };
+
+const addBtnStyle = { fontSize: 11, color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 };
+const removeBtnStyle = { color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '0 4px' };

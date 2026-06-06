@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import axios from 'axios';
+import { META, cpLength } from '../../utils/metaLimits';
 
 const API = process.env.REACT_APP_API_URL || 'http://localhost:5005';
 
@@ -127,11 +128,19 @@ export default function MediaConfig({ data, onChange }) {
 
       {/* Caption */}
       <div>
-        <label style={labelStyle}>Caption (optional)</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+          <label style={labelStyle}>Caption (optional)</label>
+          <span style={{ fontSize: 10, fontWeight: 600, fontFamily: 'monospace', color: cpLength(msg.mediaCaption) > META.media.caption ? '#dc2626' : '#9ca3af' }}>
+            {cpLength(msg.mediaCaption)}/{META.media.caption}
+          </span>
+        </div>
         <textarea
           style={{ ...inputStyle, resize: 'vertical', minHeight: 56 }}
           value={msg.mediaCaption || ''}
-          onChange={e => update({ mediaCaption: e.target.value })}
+          onChange={e => {
+            const cps = [...e.target.value];
+            update({ mediaCaption: cps.length <= META.media.caption ? e.target.value : cps.slice(0, META.media.caption).join('') });
+          }}
           placeholder={`Caption text. Supports {{variable}} personalization.`}
         />
       </div>
