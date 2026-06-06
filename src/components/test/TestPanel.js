@@ -116,11 +116,15 @@ function Meta({ time = '10:30' }) {
   );
 }
 
-const INPUT_HINT = {
-  phone:  '📱 Type your phone number',
-  email:  '📧 Type your email address',
-  number: '🔢 Type a number',
-  text:   '✏️ Type your reply',
+const getInputHint = (inputType, varName) => {
+  if (inputType === 'phone')  return '📱 Type your WhatsApp number';
+  if (inputType === 'email')  return '📧 Type your email address';
+  if (inputType === 'number') return '🔢 Type a number';
+  if (varName && varName !== 'input') {
+    const display = varName.charAt(0).toUpperCase() + varName.slice(1);
+    return `✏️ Type your ${display}`;
+  }
+  return '✏️ Type your reply';
 };
 
 // pendingBranches + onBranchSelect are passed only to the LAST bot bubble
@@ -130,7 +134,7 @@ function BotBubble({ node, pendingBranches, onBranchSelect }) {
   // ── Collect Input bubble ──
   if (node?.type === 'collect_input') {
     const { question, variableName, inputType = 'text' } = node.data || {};
-    const hint = INPUT_HINT[inputType] || INPUT_HINT.text;
+    const hint = getInputHint(inputType, variableName);
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 4 }}>
         {/* Question bubble */}

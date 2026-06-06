@@ -123,15 +123,30 @@ export const buildMetaPayload = (to, message) => {
         },
       };
 
-    case 'media':
+    case 'media': {
+      // Meta requires 'filename' for document messages (both id and link paths)
+      const isDoc = message.mediaType === 'document';
+      const docFilename = message.mediaFilename
+        || (message.mediaUrl ? message.mediaUrl.split('/').pop().split('?')[0] : null)
+        || 'document.pdf';
+      const mediaObject = message.mediaId
+        ? {
+            id: message.mediaId,
+            caption: message.mediaCaption || '',
+            ...(isDoc ? { filename: docFilename } : {}),
+          }
+        : {
+            link: message.mediaUrl,
+            caption: message.mediaCaption || '',
+            ...(isDoc ? { filename: docFilename } : {}),
+          };
       return {
         messaging_product: 'whatsapp',
         to,
-        type: message.mediaType,   // 'image' | 'video' | 'document'
-        [message.mediaType]: message.mediaId
-          ? { id: message.mediaId, caption: message.mediaCaption || '', ...(message.mediaType === 'document' ? { filename: message.mediaFilename || 'file' } : {}) }
-          : { link: message.mediaUrl, caption: message.mediaCaption || '' },
+        type: message.mediaType,
+        [message.mediaType]: mediaObject,
       };
+    }
 
     // ── SINGLE PRODUCT — one product card with Buy button ─────────────────────
     case 'product':

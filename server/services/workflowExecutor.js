@@ -186,20 +186,30 @@ const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, 
     if (nextNode.type === 'collect_input') {
       const { question, variableName = 'input', inputType = 'text', retryMessage } = nextNode.data;
 
-      // Build the prompt — always send something so the user knows what to type
-      const inputHints = {
-        phone:  '📱 Please type your phone number below.',
-        email:  '📧 Please type your email address below.',
-        number: '🔢 Please type a number below.',
-        text:   '✏️ Please type your reply below.',
-      };
-      const baseQuestion   = question
+      // Build the prompt — always send something so the user knows exactly what to type
+      const baseQuestion = question
         ? interpolate(question, vars)
-        : `Please enter your ${variableName}.`;
-      const hint           = inputHints[inputType] || inputHints.text;
-      // Append hint only when the question doesn't already end with a "type" instruction
-      const alreadyHasHint = /type|enter|share|write|send|reply|number|email|phone/i.test(baseQuestion);
-      const fullPrompt     = alreadyHasHint ? baseQuestion : `${baseQuestion}\n\n${hint}`;
+        : `Please share your ${variableName || 'answer'}.`;
+
+      // Hint is specific to both inputType AND the variable name
+      let hint;
+      if (inputType === 'phone') {
+        hint = `📱 Please reply with your WhatsApp number (e.g. 9876543210).`;
+      } else if (inputType === 'email') {
+        hint = `📧 Please reply with your email address.`;
+      } else if (inputType === 'number') {
+        hint = `🔢 Please reply with a number.`;
+      } else if (variableName && variableName !== 'input') {
+        // Capitalise first letter of variable name for display: "name" → "Name"
+        const displayVar = variableName.charAt(0).toUpperCase() + variableName.slice(1);
+        hint = `✏️ Please type your ${displayVar} and send.`;
+      } else {
+        hint = `✏️ Please type your reply and send.`;
+      }
+
+      // Don't double-hint if the question already tells the user what to do
+      const alreadyHasHint = /type|enter|share|reply|send|number|email|phone/i.test(baseQuestion);
+      const fullPrompt = alreadyHasHint ? baseQuestion : `${baseQuestion}\n\n${hint}`;
 
       await sendMessage(userId, fromNumber, { type: 'text', text: fullPrompt });
 
