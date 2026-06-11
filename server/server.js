@@ -30,6 +30,7 @@ import templateRoutes  from './routes/templateRoutes.js';
 import bulkRoutes      from './routes/bulkRoutes.js';
 import shopRoutes      from './routes/shopRoutes.js';
 import mediaRoutes     from './routes/mediaRoutes.js';
+import aiRoutes        from './routes/aiRoutes.js';
 import admin from "firebase-admin";
 import fs from "fs";
 import path from "path";
@@ -98,6 +99,7 @@ app.use('/api/shop',      shopRoutes);
 app.use('/api/blogs',        blogRoutes);
 app.use('/api/contact-form', contactFormRoutes);
 app.use('/api/media',        mediaRoutes);
+app.use('/api/ai',           aiRoutes);
 // Serve uploaded files as static assets
 app.use('/uploads', express.static(path.join(__serverDir, 'uploads')));
 

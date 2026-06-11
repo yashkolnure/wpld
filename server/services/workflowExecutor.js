@@ -1,6 +1,7 @@
 import Workflow from '../models/Workflow.js';
 import Contact  from '../models/Contact.js';
 import { sendMessage } from './messageSender.js';
+import { generateAIReply } from './aiService.js';
 import Message from "../models/Message.js";
 
 // ── Condition evaluator ─────────────────────────────────────────────────────
@@ -39,8 +40,10 @@ const interpolate = (text, variables) => {
 
 export const executeWorkflow = async (userId, incomingText, fromNumber, contactId) => {
   // ── 0. Load contact (needed for pending-input state + variables) ───────────
+  // Returns true when a workflow handled the message (resume / keyword / fallback),
+  // false otherwise — the caller uses this to decide whether to hand off to AI.
   const contact = await Contact.findById(contactId);
-  if (!contact) return;
+  if (!contact) return false;
 
   // ── 1. RESUME: contact is awaiting collect_input answer ────────────────────
   if (contact.awaitingInput && contact.activeWorkflowId && contact.currentNodeId) {
@@ -69,7 +72,7 @@ export const executeWorkflow = async (userId, incomingText, fromNumber, contactI
       // executeFromNode will find its outgoing edge and execute the next node
       // (which may itself be another collect_input, a message, condition, etc.)
       await executeFromNode(workflow, contact.currentNodeId, incomingText, fromNumber, userId, contactId, contact);
-      return; // done — don't check other workflows
+      return true; // done — don't check other workflows
     }
   }
 
@@ -133,7 +136,10 @@ export const executeWorkflow = async (userId, incomingText, fromNumber, contactI
   if (!matched && fallbackFlow) {
     console.log(`🔁 [Fallback] No keyword matched — firing fallback workflow for ${fromNumber}`);
     await executeFromNode(fallbackFlow.workflow, fallbackFlow.triggerNode.id, incomingText, fromNumber, userId, contactId, contact);
+    return true;
   }
+
+  return matched;
 };
 
 const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, userId, contactId, contact) => {
@@ -224,6 +230,47 @@ const executeFromNode = async (workflow, startNodeId, incomingText, fromNumber, 
         await contact.save();
       }
       break; // Stop — wait for user's reply
+    }
+
+    // ── Handle AI node ──
+    // Replies using the user's configured LLM. Uses an explicit prompt (with
+    // {{variable}} interpolation) when set, otherwise the customer's last message.
+    if (nextNode.type === 'ai') {
+      const { aiPrompt, aiSystemPrompt, aiSaveAs } = nextNode.data || {};
+      const userContent = (aiPrompt && aiPrompt.trim())
+        ? interpolate(aiPrompt, vars)
+        : (incomingText || 'Hello');
+
+      try {
+        const reply = await generateAIReply(
+          userId,
+          [{ role: 'user', content: userContent }],
+          { systemPrompt: (aiSystemPrompt && aiSystemPrompt.trim()) ? aiSystemPrompt : undefined },
+        );
+
+        if (reply) {
+          await sendMessage(userId, fromNumber, { type: 'text', text: reply });
+          try {
+            await Message.create({
+              userId, contactId, from: 'bot', type: 'text', text: reply,
+              status: 'sent', isReadByAdmin: true, timestamp: new Date(),
+            });
+          } catch (dbErr) { console.error('❌ AI message save error:', dbErr.message); }
+
+          // Make the reply reusable downstream as {{aiSaveAs}}.
+          if (aiSaveAs && contact?.variables) {
+            contact.variables.set(aiSaveAs, reply);
+            await contact.save();
+          }
+        } else {
+          console.warn(`🤖 [Workflow] AI node skipped — AI not configured/enabled for user ${userId}`);
+        }
+      } catch (e) {
+        console.error('🤖 [Workflow] AI node error:', e.response?.data?.error?.message || e.message);
+      }
+
+      currentId = nextNode.id;
+      continue;
     }
 
     // ── Handle message node ──

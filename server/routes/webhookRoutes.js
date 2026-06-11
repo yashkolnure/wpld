@@ -9,6 +9,8 @@ import Campaign from '../models/Campaign.js';
 import BulkCampaign from '../models/BulkCampaign.js';
 import { sendPushNotification } from '../services/notificationService.js';
 import { chargeOnDelivery } from '../services/billing.js';
+import { sendMessage } from '../services/messageSender.js';
+import { generateDirectReply, sanitizeHistory } from '../services/aiService.js';
 
 const router = express.Router();
 const VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN;
@@ -23,7 +25,13 @@ const verifyWebhookSignature = (req) => {
     .createHmac('sha256', appSecret)
     .update(req.rawBody || '')
     .digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
+  const sigBuf = Buffer.from(sig);
+  const expBuf = Buffer.from(expected);
+  // timingSafeEqual throws a RangeError when the buffers differ in length (e.g. a
+  // malformed/forged signature). Fail closed on a mismatch — never let it throw
+  // out of this async handler, which would leave the request hanging.
+  if (sigBuf.length !== expBuf.length) return false;
+  return crypto.timingSafeEqual(sigBuf, expBuf);
 };
 
 // Meta verification handshake
@@ -65,30 +73,30 @@ router.post("/webhook", async (req, res) => {
       console.error(`Message FAILED for WAMID ${wamid}: code=${errors[0].code} — ${errors[0].title}: ${errors[0].message}`);
     }
 
-    const updated = await Message.findOneAndUpdate(
-      { messageId: wamid, status: { $ne: "read" } },
+    // returnDocument:'before' gives us the status PRIOR to this webhook, so we can
+    // tell a real transition apart from a duplicate. Meta retries webhooks, so
+    // without this guard a re-sent `delivered` would inc deliveredCount twice.
+    const before = await Message.findOneAndUpdate(
+      { messageId: wamid, status: { $ne: "read" } }, // never downgrade out of 'read'
       { $set: updateFields },
-      { returnDocument: 'after' }
+      { returnDocument: 'before' }
     );
 
-    // On every status update, increment the matching counter on the campaign doc
-    if (updated?.metadata && ['delivered', 'read', 'failed'].includes(newStatus)) {
-      const { campaignId, bulkCampaignId } = updated.metadata;
-      const prevStatus = updated.status; // status BEFORE this update (returnDocument:'after' gives new, so check what changed)
+    // Increment the matching campaign counter — but only on the FIRST transition
+    // into each state, so duplicate/out-of-order webhooks never over-count.
+    if (before?.metadata) {
+      const prev = before.status;
+      const firstDelivered = newStatus === 'delivered' && prev !== 'delivered' && prev !== 'read';
+      const firstRead      = newStatus === 'read'      && prev !== 'read';
+      const firstFailed    = newStatus === 'failed'    && prev !== 'failed';
 
-      // Meta fires webhooks in order: sent → delivered → read
-      // deliveredCount counts every message that reached the device (delivered OR later read)
-      // readCount counts messages the user opened
-      // 'delivered' webhook always arrives before 'read', so:
-      //   delivered → inc deliveredCount only
-      //   read      → inc readCount only (deliveredCount was already incremented earlier)
-      //   failed    → inc failedCount only
       const inc = {};
-      if (newStatus === 'delivered') inc.deliveredCount = 1;
-      if (newStatus === 'read')      inc.readCount = 1;
-      if (newStatus === 'failed')    inc.failedCount = 1;
+      if (firstDelivered) inc.deliveredCount = 1;
+      if (firstRead)      inc.readCount = 1;
+      if (firstFailed)    inc.failedCount = 1;
 
       if (Object.keys(inc).length > 0) {
+        const { campaignId, bulkCampaignId } = before.metadata;
         if (campaignId) {
           await Campaign.findByIdAndUpdate(campaignId, { $inc: inc });
         } else if (bulkCampaignId) {
@@ -112,7 +120,7 @@ router.post("/webhook", async (req, res) => {
       console.error('Billing-on-delivery error:', billErr.message);
     }
 
-    console.log(`Status update for WAMID ${wamid}: ${newStatus}. DB update result:`, updated ? "Success" : "No matching message found");
+    console.log(`Status update for WAMID ${wamid}: ${newStatus}. DB update result:`, before ? "Success" : "No matching message found");
   } catch (err) {
     console.error("Error updating status:", err.message);
   }
@@ -275,7 +283,36 @@ try {
 } catch (pushErr) {
   console.error("Non-blocking Push Error:", pushErr);
 }
-    await executeWorkflow(wa.userId, incomingTextForWorkflow, fromNumber, contact._id, contact);
+    const handledByWorkflow = await executeWorkflow(wa.userId, incomingTextForWorkflow, fromNumber, contact._id, contact);
+
+    // ── 7. AI DIRECT-CONNECT: reply with the LLM when no workflow matched ──────
+    // Only fires if the user enabled AI + "direct connect". Skips media-only
+    // messages (no text to reason over). Conversation context is the recent
+    // history with this contact, sanitized for every provider.
+    if (!handledByWorkflow && incomingTextForWorkflow && !mediaData) {
+      try {
+        const history = await Message.find({ userId: wa.userId, contactId: contact._id })
+          .sort('-createdAt').limit(10).select('from text').lean();
+        const messages = sanitizeHistory(
+          history.reverse().map(m => ({
+            role: m.from === 'customer' ? 'user' : 'assistant',
+            content: m.text || '',
+          }))
+        );
+
+        const reply = await generateDirectReply(wa.userId, messages);
+        if (reply) {
+          await sendMessage(wa.userId, fromNumber, { type: 'text', text: reply });
+          await Message.create({
+            userId: wa.userId, contactId: contact._id, from: 'bot', type: 'text',
+            text: reply, status: 'sent', isReadByAdmin: true, timestamp: new Date(),
+          });
+          console.log(`🤖 [AI direct] Replied to ${fromNumber}`);
+        }
+      } catch (aiErr) {
+        console.error('🤖 [AI direct] error:', aiErr.response?.data?.error?.message || aiErr.message);
+      }
+    }
 
   } catch (err) {
     console.error("🔥 Critical Webhook Error:", err);

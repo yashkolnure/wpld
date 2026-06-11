@@ -79,7 +79,7 @@ const messageSchema = new mongoose.Schema({
 
 const nodeSchema = new mongoose.Schema({
   id:       { type: String, required: true },
-  type:     { type: String, enum: ['trigger', 'message', 'delay', 'collect_input', 'condition'], required: true },
+  type:     { type: String, enum: ['trigger', 'message', 'delay', 'collect_input', 'condition', 'ai'], required: true },
   position: { x: Number, y: Number },
   data: {
     // trigger fields
@@ -98,6 +98,10 @@ const nodeSchema = new mongoose.Schema({
     variable:     String,
     operator:     String,
     value:        String,
+    // ai fields — replies using the user's configured LLM (see services/aiService.js)
+    aiPrompt:       String,   // what to ask the model; {{vars}} allowed. Empty = use the incoming message
+    aiSystemPrompt: String,   // optional system-prompt override for this node
+    aiSaveAs:       String,   // optional variable name to store the reply for later steps
   },
 }, { _id: false });
 
