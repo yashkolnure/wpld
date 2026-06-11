@@ -1,5 +1,9 @@
 import express from 'express';
 import crypto from 'crypto';
+import axios from 'axios';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { executeWorkflow } from '../services/workflowExecutor.js';
 import WhatsApp from '../models/WhatsApp.js';
 import Contact from '../models/Contact.js';
@@ -11,9 +15,53 @@ import { sendPushNotification } from '../services/notificationService.js';
 import { chargeOnDelivery } from '../services/billing.js';
 import { sendMessage } from '../services/messageSender.js';
 import { generateDirectReply, sanitizeHistory } from '../services/aiService.js';
+import { decrypt } from '../utils/encrypt.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const router = express.Router();
 const VERIFY_TOKEN = process.env.WEBHOOK_VERIFY_TOKEN;
+const GRAPH_VER = () => process.env.GRAPH_VERSION || 'v21.0';
+
+// Download a WhatsApp media file and store it permanently under /uploads.
+// Runs fire-and-forget after the message is saved — updates media.url on the Message.
+async function downloadAndStoreMedia(savedMsgId, userId, mediaId, mimeType, accessToken) {
+  try {
+    const metaRes = await axios.get(
+      `https://graph.facebook.com/${GRAPH_VER()}/${mediaId}`,
+      { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 10000 }
+    );
+    const downloadUrl = metaRes.data?.url;
+    if (!downloadUrl) return;
+
+    const mediaRes = await axios.get(downloadUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      responseType: 'arraybuffer',
+      timeout: 30000,
+    });
+
+    const mimeToExt = {
+      'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png',
+      'image/webp': 'webp', 'image/gif': 'gif',
+      'video/mp4': 'mp4', 'video/3gpp': '3gp',
+      'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a',
+      'application/pdf': 'pdf',
+      'application/msword': 'doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+    };
+    const ext = mimeToExt[mimeType] || (mimeType?.split('/')?.[1]?.split(';')?.[0]) || 'bin';
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const dir = path.join(__dirname, '..', 'uploads', userId.toString());
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, filename), Buffer.from(mediaRes.data));
+
+    const BASE_URL = process.env.API_BASE_URL || 'http://localhost:5002';
+    const publicUrl = `${BASE_URL}/uploads/${userId}/${filename}`;
+    await Message.findByIdAndUpdate(savedMsgId, { 'media.url': publicUrl });
+    console.log(`📎 Media saved for message ${savedMsgId}`);
+  } catch (err) {
+    console.error('📎 Media download error:', err.message);
+  }
+}
 
 // Verify Meta webhook signature (X-Hub-Signature-256)
 const verifyWebhookSignature = (req) => {
@@ -259,7 +307,7 @@ try {
       console.log(`Duplicate webhook ignored for messageId: ${msg.id}`);
       return;
     }
-    await Message.create({
+    const savedMsg = await Message.create({
       userId:        wa.userId,
       contactId:     contact._id,
       from:          "customer",
@@ -272,6 +320,15 @@ try {
       isReadByAdmin: false,    // admin hasn't opened this chat yet
       timestamp:     new Date(),
     });
+
+    // Fire-and-forget: download the media and store it permanently
+    if (mediaData?.mediaId) {
+      const token = wa.connectionType === 'platform'
+        ? process.env.SYSTEM_USER_TOKEN
+        : decrypt(wa.encryptedToken);
+      downloadAndStoreMedia(savedMsg._id, wa.userId, mediaData.mediaId, mediaData.mimeType, token)
+        .catch(e => console.error('Media store error:', e.message));
+    }
 try {
   await sendPushNotification(
     wa.userId,
