@@ -12,10 +12,11 @@ import {
   Phone, StickyNote, Download, MessageSquare, Send, RefreshCw, Layers, Lock,
   Megaphone, QrCode, Tag, CheckCircle2, XCircle, Loader2,
   Wallet, FileText, Upload, BarChart2, Trash, Image, Video, List, MousePointerClick, Paperclip, Info,
-  User, Image as ImageIcon, ShoppingBag,
+  User, Image as ImageIcon, ShoppingBag, Sparkles,
 } from "lucide-react";
 import MyLeads from "./MyLeads";
 import ShopPage from "./ShopPage";
+import AISettings from "../components/AISettings";
 
 const API = process.env.REACT_APP_API_URL || "http://localhost:5002";
 const POLL_CHATS_MS     = 8000;   // refresh chat list every 8s
@@ -40,6 +41,7 @@ const NAV = [
   { key: "chats",      label: "Chats",      Icon: MessageSquare },
   { key: "myleads",    label: "My Leads",   Icon: Layers },
   { key: "workflows",  label: "Workflows",  Icon: Zap },
+  { key: "ai",         label: "AI Assistant", Icon: Sparkles },
   { key: "contacts",   label: "Contacts",   Icon: Users },
   { key: "broadcast",  label: "Broadcast",  Icon: Megaphone },
   { key: "bulk",       label: "Cold Outreach",Icon: Upload },
@@ -420,6 +422,7 @@ export default function Dashboard() {
   const [tagInput,           setTagInput]           = useState('');
   const [tagSaving,          setTagSaving]          = useState(false);
   const [activeChatTagFilter,setActiveChatTagFilter] = useState([]);
+  const [showUnreadOnly,     setShowUnreadOnly]     = useState(false);
 
   // attachments
   const [attachment,    setAttachment]    = useState(null); // { file, previewUrl, mediaType }
@@ -1423,7 +1426,18 @@ const handleUpgrade = async () => {
   };
   // Add this inside the Dashboard component
 const resolveIdToLabel = (text) => {
-  if (!text || text.length < 20 || !text.includes('-')) return text;
+  if (!text) return text;
+  // Anthropic API stores content as [{"type":"text","text":"..."}] — unwrap it
+  if (text.trimStart().startsWith('[{')) {
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) {
+        const unwrapped = parsed.map(b => b.text || '').join('').trim();
+        if (unwrapped) text = unwrapped;
+      }
+    } catch (_) {}
+  }
+  if (text.length < 20 || !text.includes('-')) return text;
 
   // Search through all loaded workflows for a matching ID
   for (const wf of workflows) {
@@ -2027,13 +2041,14 @@ const activeCount = workflows.filter(w => w.isActive).length;
             </button>
             <div>
               <h1 style={{ fontSize: 16, fontWeight: 700, color: S.textPrimary, letterSpacing: "-0.02em", textTransform: "capitalize", lineHeight: 1.2 }}>
-                {activeTab === "upgrade" ? "Upgrade Plan" : activeTab === "qrcode" ? "QR & Links" : activeTab === "myleads" ? "My Leads" : activeTab === "whatsapp" ? "WhatsApp API" : activeTab === "shop" ? "Shop" : activeTab}
+                {activeTab === "upgrade" ? "Upgrade Plan" : activeTab === "qrcode" ? "QR & Links" : activeTab === "myleads" ? "My Leads" : activeTab === "whatsapp" ? "WhatsApp API" : activeTab === "shop" ? "Shop" : activeTab === "ai" ? "AI Assistant" : activeTab}
               </h1>
               <p style={{ fontSize: 11, color: S.textMuted, marginTop: 1 }}>
                 {activeTab === "overview" && "Dashboard overview"}
                 {activeTab === "chats" && "Customer conversations"}
                 {activeTab === "contacts" && "Contact management"}
                 {activeTab === "workflows" && "Automation flows"}
+                {activeTab === "ai" && "Connect your own AI assistant"}
                 {activeTab === "broadcast" && "Send to all contacts"}
                 {activeTab === "bulk" && "Upload & send in bulk"}
                 {activeTab === "templates" && "WhatsApp message templates"}
@@ -2093,17 +2108,26 @@ const activeCount = workflows.filter(w => w.isActive).length;
                   </div>
                 </div>
 
-                {/* Tag filter bar */}
+                {/* Filter bar */}
                 {(() => {
                   const allTags = [...new Set(chats.flatMap(c => c.tags || []))].sort();
-                  if (allTags.length === 0) return null;
+                  const totalUnread = chats.filter(c => (c.unreadCount || 0) > 0).length;
+                  if (allTags.length === 0 && totalUnread === 0) return null;
                   return (
                     <div style={{ padding: "8px 12px", borderBottom: `1px solid ${S.border}`, display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0, background: "#f8fafc" }}>
                       <button
-                        onClick={() => setActiveChatTagFilter([])}
-                        style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 20, border: `1px solid ${activeChatTagFilter.length === 0 ? S.green : S.border}`, background: activeChatTagFilter.length === 0 ? S.greenBg : "#fff", color: activeChatTagFilter.length === 0 ? S.greenDark : S.textMuted, cursor: "pointer", fontFamily: S.font, transition: "all 0.15s" }}>
+                        onClick={() => { setActiveChatTagFilter([]); setShowUnreadOnly(false); }}
+                        style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 20, border: `1px solid ${activeChatTagFilter.length === 0 && !showUnreadOnly ? S.green : S.border}`, background: activeChatTagFilter.length === 0 && !showUnreadOnly ? S.greenBg : "#fff", color: activeChatTagFilter.length === 0 && !showUnreadOnly ? S.greenDark : S.textMuted, cursor: "pointer", fontFamily: S.font, transition: "all 0.15s" }}>
                         All
                       </button>
+                      {totalUnread > 0 && (
+                        <button
+                          onClick={() => setShowUnreadOnly(prev => !prev)}
+                          style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 20, border: `1px solid ${showUnreadOnly ? "#f59e0b" : S.border}`, background: showUnreadOnly ? "#fef3c7" : "#fff", color: showUnreadOnly ? "#b45309" : S.textMuted, cursor: "pointer", fontFamily: S.font, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 4 }}>
+                          Unread
+                          <span style={{ background: showUnreadOnly ? "#b45309" : "#f59e0b", color: "#fff", borderRadius: 10, padding: "0px 5px", fontSize: 9, fontWeight: 800 }}>{totalUnread}</span>
+                        </button>
+                      )}
                       {allTags.map(tag => {
                         const ts = getTagStyle(tag);
                         const active = activeChatTagFilter.includes(tag);
@@ -2126,9 +2150,10 @@ const activeCount = workflows.filter(w => w.isActive).length;
                 <div style={{ flex: 1, overflowY: "auto" }}>
                   {(() => {
                     const base = isFree ? chats.slice(0, 10) : chats;
-                    const filtered = activeChatTagFilter.length === 0
+                    let filtered = activeChatTagFilter.length === 0
                       ? base
                       : base.filter(c => activeChatTagFilter.every(ft => (c.tags || []).map(t => t.toLowerCase()).includes(ft.toLowerCase())));
+                    if (showUnreadOnly) filtered = filtered.filter(c => (c.unreadCount || 0) > 0);
                     return chatsLoading ? (
                     <div style={{ padding: 40, textAlign: "center", color: S.textMuted }}>
                       <Activity size={18} style={{ animation: "wpl-ping 1.5s infinite" }} />
@@ -2136,9 +2161,9 @@ const activeCount = workflows.filter(w => w.isActive).length;
                     ) : filtered.length === 0 ? (
                       <div style={{ padding: 40, textAlign: "center", color: S.textMuted }}>
                         <Tag size={24} color="rgba(37,211,102,0.25)" style={{ marginBottom: 10 }} />
-                        <p style={{ fontSize: 12 }}>{chats.length === 0 ? "No conversations yet" : "No chats match these tags"}</p>
-                        {activeChatTagFilter.length > 0 && (
-                          <button onClick={() => setActiveChatTagFilter([])} style={{ marginTop: 10, fontSize: 11, color: S.greenDark, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 20, padding: "5px 14px", cursor: "pointer", fontFamily: S.font }}>Clear filter</button>
+                        <p style={{ fontSize: 12 }}>{chats.length === 0 ? "No conversations yet" : showUnreadOnly ? "No unread messages" : "No chats match these tags"}</p>
+                        {(activeChatTagFilter.length > 0 || showUnreadOnly) && (
+                          <button onClick={() => { setActiveChatTagFilter([]); setShowUnreadOnly(false); }} style={{ marginTop: 10, fontSize: 11, color: S.greenDark, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 20, padding: "5px 14px", cursor: "pointer", fontFamily: S.font }}>Clear filter</button>
                         )}
                       </div>
                     ) : filtered.map(chat => {
@@ -2444,7 +2469,42 @@ const activeCount = workflows.filter(w => w.isActive).length;
             <div style={{ display: "flex", flexDirection: "column" }}>
               <img src={m.media?.url || "https://placehold.co/400x300?text=Image+Expired"}
                 style={{ width: "100%", borderRadius: 10, display: "block" }} alt="attachment" />
-              {m.text && <p style={{ padding: "8px 10px 4px" }}>{m.text}</p>}
+              {m.text && !/^\[(IMAGE|VIDEO|AUDIO|DOCUMENT)\]$/i.test(m.text) && <p style={{ padding: "8px 10px 4px", margin: 0 }}>{m.text}</p>}
+            </div>
+          )}
+
+          {/* Document */}
+          {m.type === "document" && (
+            <a href={m.media?.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", color: "inherit" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 2px" }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: isMe ? "rgba(255,255,255,0.2)" : "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <FileText size={18} color={isMe ? "#fff" : "#2563eb"} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {m.media?.fileName || "Document"}
+                  </p>
+                  <p style={{ margin: 0, fontSize: 10, opacity: 0.65 }}>Tap to open</p>
+                </div>
+                <Download size={14} style={{ opacity: 0.6, flexShrink: 0 }} />
+              </div>
+              {m.text && <p style={{ margin: "6px 0 0", fontSize: 13 }}>{m.text}</p>}
+            </a>
+          )}
+
+          {/* Video */}
+          {m.type === "video" && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <video src={m.media?.url} controls style={{ width: "100%", maxHeight: 240, borderRadius: 10, display: "block" }} />
+              {m.text && !/^\[(IMAGE|VIDEO|AUDIO|DOCUMENT)\]$/i.test(m.text) && <p style={{ padding: "8px 10px 4px", margin: 0 }}>{m.text}</p>}
+            </div>
+          )}
+
+          {/* Audio */}
+          {m.type === "audio" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "2px 0" }}>
+              <audio src={m.media?.url} controls style={{ width: "100%", minWidth: 220 }} />
+              {m.text && !/^\[(IMAGE|VIDEO|AUDIO|DOCUMENT)\]$/i.test(m.text) && <p style={{ margin: 0, fontSize: 13 }}>{m.text}</p>}
             </div>
           )}
 
@@ -4726,6 +4786,13 @@ const activeCount = workflows.filter(w => w.isActive).length;
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* ─── AI ASSISTANT ─── */}
+              {activeTab === "ai" && (
+                <div style={{ animation: "wpl-fadein 0.4s ease both" }}>
+                  <AISettings />
                 </div>
               )}
 
