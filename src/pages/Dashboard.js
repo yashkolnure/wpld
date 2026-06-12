@@ -1347,7 +1347,7 @@ const handleUpgrade = async () => {
         setUploadingFile(false);
         await axios.post(
           `${API}/api/chats/${selectedChat._id}/messages`,
-          { type: "media", mediaType: pendingAttach.mediaType, mediaId: data.mediaId, mediaCaption: text, mediaFilename: pendingAttach.filename },
+          { type: "media", mediaType: pendingAttach.mediaType, mediaId: data.mediaId, mediaUrl: data.url, mediaCaption: text, mediaFilename: pendingAttach.filename },
           { headers }
         );
       } else {
