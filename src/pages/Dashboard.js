@@ -339,14 +339,19 @@ export default function Dashboard() {
   const [sidebarOpen,   setSidebarOpen]   = useState(false);
 
   // contacts
-  const [contacts,       setContacts]       = useState([]);
-  const [contactStats,   setContactStats]   = useState(null);
-  const [contactsLoading,setContactsLoading]= useState(false);
-  const [contactSearch,  setContactSearch]  = useState("");
-  const [contactPage,    setContactPage]    = useState(1);
-  const [contactTotal,   setContactTotal]   = useState(0);
-  const [selectedContact,setSelectedContact]= useState(null);
-  const [contactNotes,   setContactNotes]   = useState("");
+  const [contacts,         setContacts]         = useState([]);
+  const [contactStats,     setContactStats]     = useState(null);
+  const [contactsLoading,  setContactsLoading]  = useState(false);
+  const [contactSearch,    setContactSearch]    = useState("");
+  const [contactPage,      setContactPage]      = useState(1);
+  const [contactTotal,     setContactTotal]     = useState(0);
+  const [selectedContact,  setSelectedContact]  = useState(null);
+  const [contactNotes,     setContactNotes]     = useState("");
+  const [contactTagFilter, setContactTagFilter] = useState([]);
+  const [contactFilter,    setContactFilter]    = useState("all"); // 'all' | 'active' | 'opted_out'
+  const [allContactTags,   setAllContactTags]   = useState([]);
+  const [contactTagPopover,setContactTagPopover]= useState(null); // contact _id with open tag editor
+  const [contactTagInput,  setContactTagInput]  = useState("");
   const [waConnectMode,     setWaConnectMode]     = useState(null);  // null | 'platform' | 'own' | 'facebook'
   const [platformModalOpen, setPlatformModalOpen] = useState(false);
   const [embeddedLoading,   setEmbeddedLoading]   = useState(false);
@@ -428,6 +433,10 @@ export default function Dashboard() {
   const [attachment,    setAttachment]    = useState(null); // { file, previewUrl, mediaType }
   const [uploadingFile, setUploadingFile] = useState(false);
   const attachInputRef = useRef(null);
+
+  // media URL cache: { [messageId]: url } — populated on demand for old messages
+  const [mediaUrls,    setMediaUrls]    = useState({});
+  const fetchingMedia = useRef(new Set());
 
   // message pagination
   const [hasMoreMessages,    setHasMoreMessages]    = useState(false);
@@ -860,18 +869,24 @@ const fetchWaStatus = useCallback(() => {
     if (activeTab !== "contacts") return;
     setContactsLoading(true);
     const contactLimit = isFree ? 50 : 20;
+    const tagParam = contactTagFilter.length ? `&tags=${encodeURIComponent(contactTagFilter.join(','))}` : '';
+    const filterParam = contactFilter !== 'all' ? `&filter=${contactFilter}` : '';
     Promise.all([
-      axios.get(`${API}/api/contacts?page=${contactPage}&limit=${contactLimit}&search=${contactSearch}`, { headers }),
+      axios.get(`${API}/api/contacts?page=${contactPage}&limit=${contactLimit}&search=${encodeURIComponent(contactSearch)}${tagParam}${filterParam}`, { headers }),
       axios.get(`${API}/api/contacts/stats`, { headers }),
     ])
       .then(([cRes, sRes]) => {
-        setContacts(cRes.data.contacts);
+        const loaded = cRes.data.contacts;
+        setContacts(loaded);
         setContactTotal(cRes.data.total);
         setContactStats(sRes.data);
+        // Accumulate all unique tags seen across pages
+        const newTags = loaded.flatMap(c => c.tags || []);
+        setAllContactTags(prev => [...new Set([...prev, ...newTags])].sort());
       })
       .catch(() => {})
       .finally(() => setContactsLoading(false));
-  }, [activeTab, contactPage, contactSearch]);
+  }, [activeTab, contactPage, contactSearch, contactTagFilter, contactFilter]);
 
   // ─── BROADCAST ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1410,7 +1425,10 @@ const handleUpgrade = async () => {
   // ─── EXPORT ──────────────────────────────────────────────────────────────────
   const handleExport = async () => {
     try {
-      const res = await axios.get(`${API}/api/contacts/export`, {
+      const tagParam    = contactTagFilter.length ? `&tags=${encodeURIComponent(contactTagFilter.join(','))}` : '';
+      const filterParam = contactFilter !== 'all' ? `&filter=${contactFilter}` : '';
+      const searchParam = contactSearch ? `&search=${encodeURIComponent(contactSearch)}` : '';
+      const res = await axios.get(`${API}/api/contacts/export?${searchParam}${tagParam}${filterParam}`, {
         headers,
         responseType: 'blob',
       });
@@ -1469,6 +1487,24 @@ const resolveIdToLabel = (text) => {
 
   return text; // Return original if no match found
 };
+
+  // Fetch and cache a media URL for messages that only have a mediaId stored
+  const fetchMedia = async (messageId) => {
+    if (fetchingMedia.current.has(messageId)) return;
+    fetchingMedia.current.add(messageId);
+    try {
+      const res = await axios.post(`${API}/api/chats/messages/${messageId}/fetch-media`, {}, { headers });
+      if (res.data?.url) {
+        setMediaUrls(prev => ({ ...prev, [messageId]: res.data.url }));
+        setActiveMessages(prev => prev.map(m =>
+          m._id === messageId ? { ...m, media: { ...m.media, url: res.data.url } } : m
+        ));
+      }
+    } catch (e) {
+      console.error("fetchMedia error:", e.message);
+    }
+  };
+
   // ─── SAVE CONTACT NOTES ───────────────────────────────────────────────────────
   const handleSaveNotes = async () => {
     if (!selectedContact) return;
@@ -1483,6 +1519,14 @@ const resolveIdToLabel = (text) => {
       );
     } catch {}
     setSelectedContact(null);
+  };
+
+  const saveContactTags = async (contactId, newTags) => {
+    try {
+      await axios.patch(`${API}/api/contacts/${contactId}`, { tags: newTags }, { headers });
+      setContacts(prev => prev.map(c => c._id === contactId ? { ...c, tags: newTags } : c));
+      setAllContactTags(prev => [...new Set([...prev, ...newTags])].sort());
+    } catch {}
   };
 
   const isFree = false; // all accounts are pro; billing is via wallet balance
@@ -2465,48 +2509,76 @@ const activeCount = workflows.filter(w => w.isActive).length;
           )}
 
           {/* Image */}
-          {m.type === "image" && (
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <img src={m.media?.url || "https://placehold.co/400x300?text=Image+Expired"}
-                style={{ width: "100%", borderRadius: 10, display: "block" }} alt="attachment" />
-              {m.text && !/^\[(IMAGE|VIDEO|AUDIO|DOCUMENT)\]$/i.test(m.text) && <p style={{ padding: "8px 10px 4px", margin: 0 }}>{m.text}</p>}
-            </div>
-          )}
+          {m.type === "image" && (() => {
+            const url = mediaUrls[m._id] || m.media?.url;
+            if (!url && m.media?.mediaId) fetchMedia(m._id);
+            return (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {url
+                  ? <img src={url} style={{ width: "100%", borderRadius: 10, display: "block" }} alt="attachment" />
+                  : <div style={{ width: "100%", minHeight: 80, borderRadius: 10, background: isMe ? "rgba(255,255,255,0.15)" : "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Activity size={16} style={{ opacity: 0.4, animation: "wpl-ping 1.5s infinite" }} />
+                    </div>
+                }
+                {m.text && !/^\[(IMAGE|VIDEO|AUDIO|DOCUMENT)\]$/i.test(m.text) && <p style={{ padding: "8px 10px 4px", margin: 0 }}>{m.text}</p>}
+              </div>
+            );
+          })()}
 
           {/* Document */}
-          {m.type === "document" && (
-            <a href={m.media?.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", color: "inherit" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 2px" }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: isMe ? "rgba(255,255,255,0.2)" : "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <FileText size={18} color={isMe ? "#fff" : "#2563eb"} />
+          {m.type === "document" && (() => {
+            const url = mediaUrls[m._id] || m.media?.url;
+            if (!url && m.media?.mediaId) fetchMedia(m._id);
+            return (
+              <a href={url || undefined} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", color: "inherit", cursor: url ? "pointer" : "default" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 2px" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: isMe ? "rgba(255,255,255,0.2)" : "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <FileText size={18} color={isMe ? "#fff" : "#2563eb"} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {m.media?.fileName || "Document"}
+                    </p>
+                    <p style={{ margin: 0, fontSize: 10, opacity: 0.65 }}>{url ? "Tap to open" : "Loading…"}</p>
+                  </div>
+                  {url && <Download size={14} style={{ opacity: 0.6, flexShrink: 0 }} />}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ margin: 0, fontWeight: 700, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {m.media?.fileName || "Document"}
-                  </p>
-                  <p style={{ margin: 0, fontSize: 10, opacity: 0.65 }}>Tap to open</p>
-                </div>
-                <Download size={14} style={{ opacity: 0.6, flexShrink: 0 }} />
-              </div>
-              {m.text && <p style={{ margin: "6px 0 0", fontSize: 13 }}>{m.text}</p>}
-            </a>
-          )}
+                {m.text && !/^\[(IMAGE|VIDEO|AUDIO|DOCUMENT)\]$/i.test(m.text) && <p style={{ margin: "6px 0 0", fontSize: 13 }}>{m.text}</p>}
+              </a>
+            );
+          })()}
 
           {/* Video */}
-          {m.type === "video" && (
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <video src={m.media?.url} controls style={{ width: "100%", maxHeight: 240, borderRadius: 10, display: "block" }} />
-              {m.text && !/^\[(IMAGE|VIDEO|AUDIO|DOCUMENT)\]$/i.test(m.text) && <p style={{ padding: "8px 10px 4px", margin: 0 }}>{m.text}</p>}
-            </div>
-          )}
+          {m.type === "video" && (() => {
+            const url = mediaUrls[m._id] || m.media?.url;
+            if (!url && m.media?.mediaId) fetchMedia(m._id);
+            return (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {url
+                  ? <video src={url} controls style={{ width: "100%", maxHeight: 240, borderRadius: 10, display: "block" }} />
+                  : <div style={{ width: "100%", height: 80, borderRadius: 10, background: isMe ? "rgba(255,255,255,0.15)" : "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Activity size={16} style={{ opacity: 0.4, animation: "wpl-ping 1.5s infinite" }} />
+                    </div>
+                }
+                {m.text && !/^\[(IMAGE|VIDEO|AUDIO|DOCUMENT)\]$/i.test(m.text) && <p style={{ padding: "8px 10px 4px", margin: 0 }}>{m.text}</p>}
+              </div>
+            );
+          })()}
 
           {/* Audio */}
-          {m.type === "audio" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "2px 0" }}>
-              <audio src={m.media?.url} controls style={{ width: "100%", minWidth: 220 }} />
-              {m.text && !/^\[(IMAGE|VIDEO|AUDIO|DOCUMENT)\]$/i.test(m.text) && <p style={{ margin: 0, fontSize: 13 }}>{m.text}</p>}
-            </div>
-          )}
+          {m.type === "audio" && (() => {
+            const url = mediaUrls[m._id] || m.media?.url;
+            if (!url && m.media?.mediaId) fetchMedia(m._id);
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "2px 0" }}>
+                {url
+                  ? <audio src={url} controls style={{ width: "100%", minWidth: 220 }} />
+                  : <div style={{ fontSize: 11, opacity: 0.6 }}>Loading audio…</div>
+                }
+                {m.text && !/^\[(IMAGE|VIDEO|AUDIO|DOCUMENT)\]$/i.test(m.text) && <p style={{ margin: 0, fontSize: 13 }}>{m.text}</p>}
+              </div>
+            );
+          })()}
 
           {/* Button reply */}
           {(m.type === "button_reply" || m.type === "list_reply") && (
@@ -3947,11 +4019,12 @@ const activeCount = workflows.filter(w => w.isActive).length;
                   </div>
 
                   <div style={{ ...S.card, overflow: "hidden" }}>
-                    <div className="contacts-toolbar" style={{ padding: "14px 20px", borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    {/* Toolbar row 1: search + export */}
+                    <div className="contacts-toolbar" style={{ padding: "14px 20px", borderBottom: `1px solid ${S.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
                       <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
                         <Search size={13} style={{ position: "absolute", left: 12, color: S.textFaint }} />
                         <input className="dinput"
-                          style={{ paddingLeft: 36, paddingRight: 16, paddingTop: 8, paddingBottom: 8, fontSize: 12, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 12, color: S.textPrimary, fontFamily: S.font, width: 260 }}
+                          style={{ paddingLeft: 36, paddingRight: 16, paddingTop: 8, paddingBottom: 8, fontSize: 12, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 12, color: S.textPrimary, fontFamily: S.font, width: 240 }}
                           placeholder="Search contacts…" value={contactSearch}
                           onChange={e => { setContactSearch(e.target.value); setContactPage(1); }} />
                       </div>
@@ -3963,6 +4036,40 @@ const activeCount = workflows.filter(w => w.isActive).length;
                       </button>
                     </div>
 
+                    {/* Toolbar row 2: quick filters */}
+                    <div style={{ padding: "8px 16px", borderBottom: `1px solid ${S.border}`, display: "flex", gap: 6, flexWrap: "wrap", background: "#f8fafc" }}>
+                      {[
+                        { key: "all",       label: "All" },
+                        { key: "active",    label: "Active this week" },
+                        { key: "opted_out", label: "Opted out" },
+                      ].map(({ key, label }) => (
+                        <button key={key} onClick={() => { setContactFilter(key); setContactPage(1); }}
+                          style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 20, border: `1px solid ${contactFilter === key ? S.green : S.border}`, background: contactFilter === key ? S.greenBg : "#fff", color: contactFilter === key ? S.greenDark : S.textMuted, cursor: "pointer", fontFamily: S.font, transition: "all 0.15s" }}>
+                          {label}
+                        </button>
+                      ))}
+                      {allContactTags.length > 0 && (
+                        <>
+                          <span style={{ width: 1, background: S.border, alignSelf: "stretch", margin: "0 4px" }} />
+                          {allContactTags.map(tag => {
+                            const ts = getTagStyle(tag);
+                            const active = contactTagFilter.includes(tag);
+                            return (
+                              <button key={tag} onClick={() => { setContactTagFilter(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]); setContactPage(1); }}
+                                style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 20, border: `1px solid ${active ? ts.color : S.border}`, background: active ? ts.color : ts.bg, color: active ? "#fff" : ts.color, cursor: "pointer", fontFamily: S.font, transition: "all 0.15s" }}>
+                                {tag}
+                              </button>
+                            );
+                          })}
+                          {contactTagFilter.length > 0 && (
+                            <button onClick={() => setContactTagFilter([])} style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 20, border: `1px solid ${S.border}`, background: "#fff", color: S.textMuted, cursor: "pointer", fontFamily: S.font }}>
+                              Clear tags ×
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+
                     {contactsLoading ? (
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "70px 0", color: S.textMuted, fontSize: 13 }}>
                         <Activity size={14} style={{ animation: "wpl-ping 1.5s ease-in-out infinite" }} /> Loading contacts…
@@ -3971,14 +4078,17 @@ const activeCount = workflows.filter(w => w.isActive).length;
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "70px 0" }}>
                         <Users size={26} color="rgba(37,211,102,0.3)" style={{ marginBottom: 10 }} />
                         <p style={{ fontSize: 13, color: S.textMuted }}>No contacts found</p>
+                        {(contactTagFilter.length > 0 || contactFilter !== "all") && (
+                          <button onClick={() => { setContactTagFilter([]); setContactFilter("all"); }} style={{ marginTop: 10, fontSize: 11, color: S.greenDark, background: S.greenBg, border: `1px solid ${S.greenBorder}`, borderRadius: 20, padding: "5px 14px", cursor: "pointer", fontFamily: S.font }}>Clear filters</button>
+                        )}
                       </div>
                     ) : (
                       <div className="table-scroll">
                       <table style={{ width: "100%", borderCollapse: "collapse" }}>
                         <thead>
                           <tr style={{ borderBottom: `1px solid ${S.border}` }}>
-                            {["Contact", "Messages", "Last active", ""].map((h, i) => (
-                              <th key={i} style={{ padding: "12px 20px", fontSize: 9, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", textAlign: i === 3 ? "right" : "left", fontFamily: S.monoFont }}>{h}</th>
+                            {["Contact", "Tags", "Messages", "Last active", ""].map((h, i) => (
+                              <th key={i} style={{ padding: "12px 20px", fontSize: 9, fontWeight: 700, color: S.textFaint, textTransform: "uppercase", letterSpacing: "0.12em", textAlign: i === 4 ? "right" : "left", fontFamily: S.monoFont }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -3996,6 +4106,55 @@ const activeCount = workflows.filter(w => w.isActive).length;
                                   </div>
                                 </div>
                               </td>
+
+                              {/* Tags cell with inline editor */}
+                              <td style={{ padding: "12px 20px", minWidth: 140 }}>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
+                                  {(c.tags || []).map(tag => {
+                                    const ts = getTagStyle(tag);
+                                    return (
+                                      <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: ts.bg, color: ts.color, border: `1px solid ${ts.color}30`, cursor: "pointer" }}
+                                        onClick={() => {
+                                          const updated = (c.tags || []).filter(t => t !== tag);
+                                          saveContactTags(c._id, updated);
+                                        }}
+                                        title="Click to remove">
+                                        {tag} ×
+                                      </span>
+                                    );
+                                  })}
+                                  {/* Add tag button */}
+                                  {contactTagPopover === c._id ? (
+                                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                      <input autoFocus value={contactTagInput} onChange={e => setContactTagInput(e.target.value)}
+                                        onKeyDown={e => {
+                                          if (e.key === "Enter" && contactTagInput.trim()) {
+                                            const t = contactTagInput.trim().toLowerCase();
+                                            const updated = [...new Set([...(c.tags || []), t])];
+                                            saveContactTags(c._id, updated);
+                                            setContactTagInput("");
+                                            setContactTagPopover(null);
+                                          }
+                                          if (e.key === "Escape") { setContactTagPopover(null); setContactTagInput(""); }
+                                        }}
+                                        placeholder="tag…"
+                                        style={{ width: 70, fontSize: 10, padding: "2px 6px", borderRadius: 8, border: `1px solid ${S.greenBorder}`, fontFamily: S.font, outline: "none" }} />
+                                      {allContactTags.filter(t => !(c.tags || []).includes(t)).map(t => (
+                                        <span key={t} onClick={() => {
+                                          const updated = [...new Set([...(c.tags || []), t])];
+                                          saveContactTags(c._id, updated);
+                                          setContactTagPopover(null); setContactTagInput("");
+                                        }} style={{ fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: "#f1f5f9", color: S.textMuted, border: `1px solid ${S.border}`, cursor: "pointer" }}>{t}</span>
+                                      ))}
+                                      <button onClick={() => { setContactTagPopover(null); setContactTagInput(""); }} style={{ fontSize: 9, color: S.textMuted, background: "none", border: "none", cursor: "pointer" }}>✕</button>
+                                    </div>
+                                  ) : (
+                                    <button onClick={() => { setContactTagPopover(c._id); setContactTagInput(""); }}
+                                      style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 20, border: `1px dashed ${S.border}`, background: "none", color: S.textFaint, cursor: "pointer" }}>+ tag</button>
+                                  )}
+                                </div>
+                              </td>
+
                               <td style={{ padding: "12px 20px" }}>
                                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 100, fontSize: 11, fontWeight: 700, background: S.greenBg, color: S.greenDark, border: `1px solid ${S.greenBorder}` }}>
                                   <MessageCircle size={9} /> {c.messageCount}
