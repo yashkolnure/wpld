@@ -11,7 +11,42 @@ const WaIcon = ({ size = 18, color = "currentColor" }) => (
   </svg>
 );
 
-const isMobile = window.innerWidth < 768;
+/* Responsive helper — updates live on resize / device rotation */
+function useIsMobile(bp = 768) {
+  const [mobile, setMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < bp : false
+  );
+  useEffect(() => {
+    const fn = () => setMobile(window.innerWidth < bp);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, [bp]);
+  return mobile;
+}
+
+/* Scroll-reveal wrapper — fades content up as it enters the viewport */
+function Reveal({ children, delay = 0, style }) {
+  const ref = useRef(null);
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") { setShow(true); return; }
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setShow(true); obs.disconnect(); } },
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return (
+    <div ref={ref} style={{
+      opacity: show ? 1 : 0,
+      transform: show ? "none" : "translateY(30px)",
+      transition: `opacity 0.8s cubic-bezier(0.22,1,0.36,1) ${delay}s, transform 0.8s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
+      ...style,
+    }}>{children}</div>
+  );
+}
 
 const CheckIcon = ({ dark }) => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}>
@@ -49,6 +84,7 @@ function HeroIllustration() {
       <img
         src="/images/hero-phone.webp"
         alt="WPLeads WhatsApp automation"
+        style={{ width: "100%", height: "auto", display: "block" }}
       />
 
       {/* messages sent — anchored inside top-left of image */}
@@ -185,6 +221,7 @@ export default function LandingPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [scrolled,   setScrolled]   = useState(false);
   const [pricingTier, setPricingTier] = useState(0);
+  const isMobile = useIsMobile();
   const navigate = (p) => { if(typeof window!=="undefined") window.location.href=p; };
 
   // Sync How It Works Terminal
@@ -219,6 +256,14 @@ export default function LandingPage() {
         html{scroll-behavior:smooth}
         a{text-decoration:none}
         .bento-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08); }
+        img{max-width:100%}
+        /* Decorative floating badges scale down on small screens */
+        @media (max-width:640px){
+          .wpl-float-badge{transform:scale(0.82);transform-origin:center}
+        }
+        @media (prefers-reduced-motion:reduce){
+          *{animation:none!important;transition-duration:0.01ms!important}
+        }
       `}</style>
 
 
@@ -235,22 +280,26 @@ export default function LandingPage() {
   position: "relative",
 }}>
   <div style={{
-    position: "absolute", 
-    inset: 0, 
-    backgroundImage: "linear-gradient(rgba(0,0,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.025) 1px,transparent 1px)", 
-    backgroundSize: "60px 60px", 
+    position: "absolute",
+    inset: 0,
+    backgroundImage: "linear-gradient(rgba(0,0,0,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,0.025) 1px,transparent 1px)",
+    backgroundSize: "60px 60px",
     pointerEvents: "none"
   }}/>
-  
+
+  {/* Soft animated gradient blobs */}
+  <div style={{position:"absolute",top:"-12%",right:"-6%",width:"min(540px,60vw)",height:"min(540px,60vw)",borderRadius:"50%",background:"radial-gradient(circle,rgba(37,211,102,0.16) 0%,transparent 65%)",filter:"blur(30px)",pointerEvents:"none",animation:"wpl-float2 9s ease-in-out infinite"}}/>
+  <div style={{position:"absolute",bottom:"-18%",left:"-10%",width:"min(460px,55vw)",height:"min(460px,55vw)",borderRadius:"50%",background:"radial-gradient(circle,rgba(124,58,237,0.10) 0%,transparent 65%)",filter:"blur(30px)",pointerEvents:"none",animation:"wpl-float3 11s ease-in-out infinite"}}/>
+
   <div style={{
-    width: "100%", 
-    maxWidth: 1280, 
-    margin: "0 auto", 
-    display: "grid", 
-    gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", 
-    gap: 60, 
-    alignItems: "center", 
-    position: "relative", 
+    width: "100%",
+    maxWidth: 1280,
+    margin: "0 auto",
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 400px), 1fr))",
+    gap: isMobile ? 40 : 60,
+    alignItems: "center",
+    position: "relative",
     zIndex: 1
   }}>
     <div style={{animation: "wpl-fadein 0.7s ease both"}}>
@@ -363,12 +412,22 @@ export default function LandingPage() {
             e.currentTarget.style.transform = "translateY(0)";
           }}
         >
-          <WaIcon size={18} color="#075E54" /> 
+          <WaIcon size={18} color="#075E54" />
           Test Demo
         </button>
       </div>
+
+      {/* TRUST STATS */}
+      <div style={{display: "flex", flexWrap: "wrap", gap: "clamp(20px,4vw,44px)", alignItems: "center"}}>
+        {[["10,000+", "Businesses"], ["1M+", "Messages sent"], ["99.9%", "Uptime"]].map(([num, label]) => (
+          <div key={label}>
+            <div style={{fontSize: "clamp(20px,2.4vw,26px)", fontWeight: 900, letterSpacing: "-0.03em", color: "#0a0a0a", lineHeight: 1.1}}>{num}</div>
+            <div style={{fontSize: 11.5, color: "rgba(0,0,0,0.45)", fontWeight: 500, marginTop: 3, letterSpacing: 0.3}}>{label}</div>
+          </div>
+        ))}
+      </div>
     </div>
-    
+
     <div style={{position: "relative", animation: "wpl-fadein 1s ease 0.15s both"}}>
       <HeroIllustration/>
     </div>
@@ -390,14 +449,17 @@ export default function LandingPage() {
       <section id="usecases" style={{ padding: "clamp(80px,8vw,120px) clamp(20px,5vw,60px)", background: "#f8fafc", borderTop: "1px solid rgba(0,0,0,0.04)" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto" }}>
           {/* Header */}
+          <Reveal>
           <div style={{ textAlign: "center", marginBottom: 80 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(37,211,102,0.08)", border: "1px solid rgba(37,211,102,0.2)", borderRadius: 100, padding: "5px 14px", fontSize: 10.5, fontFamily: "'DM Mono',monospace", fontWeight: 500, letterSpacing: 2, color: "#16a34a", textTransform: "uppercase", marginBottom: 18 }}>Real Use Cases</div>
             <h2 style={{ fontSize: "clamp(34px,4vw,52px)", fontWeight: 900, letterSpacing: "-0.03em", lineHeight: 1.08, marginBottom: 16, color: "#0a0a0a" }}>See WP<span style={{ color: "#16a34a" }}>Leads</span> in action</h2>
             <p style={{ fontSize: 16, color: "rgba(0,0,0,0.5)", maxWidth: 500, margin: "0 auto", lineHeight: 1.7 }}>From e-commerce to restaurants — businesses across industries automate WhatsApp with WPLeads.</p>
           </div>
+          </Reveal>
 
           {/* ── Use Case 1: E-commerce ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))", gap: 60, alignItems: "center", marginBottom: 110 }}>
+          <Reveal>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,340px),1fr))", gap: isMobile ? 36 : 60, alignItems: "center", marginBottom: isMobile ? 70 : 110 }}>
             {/* Text */}
             <div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 100, padding: "5px 14px", fontSize: 10.5, fontFamily: "'DM Mono',monospace", fontWeight: 600, letterSpacing: 1.5, color: "#16a34a", textTransform: "uppercase", marginBottom: 20 }}>🛒 E-Commerce</div>
@@ -415,19 +477,19 @@ export default function LandingPage() {
               </div>
             </div>
             {/* Phone + floating elements */}
-            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 520 }}>
+            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: isMobile ? 380 : 520 }}>
               {/* Green ripple circles */}
               {[180, 260, 340].map((s, i) => (
                 <div key={i} style={{ position: "absolute", width: s, height: s, borderRadius: "50%", border: "1.5px solid rgba(37,211,102,0.15)", top: "50%", right: "-5%", transform: "translateY(-50%)", pointerEvents: "none" }} />
               ))}
               {/* Floating stat badge top-left */}
-              <div style={{ position: "absolute", top: 40, left: 0, background: "#fff", borderRadius: 16, padding: "12px 16px", boxShadow: "0 8px 28px rgba(0,0,0,0.09)", border: "1px solid rgba(0,0,0,0.06)", zIndex: 20, animation: "wpl-float2 5s ease-in-out infinite" }}>
+              <div className="wpl-float-badge" style={{ position: "absolute", top: 40, left: 0, background: "#fff", borderRadius: 16, padding: "12px 16px", boxShadow: "0 8px 28px rgba(0,0,0,0.09)", border: "1px solid rgba(0,0,0,0.06)", zIndex: 20, animation: "wpl-float2 5s ease-in-out infinite" }}>
                 <div style={{ fontSize: 8, fontWeight: 700, color: "#16a34a", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4, fontFamily: "'DM Mono',monospace" }}>📈 Conversion Rate</div>
                 <div style={{ fontSize: 22, fontWeight: 900, color: "#0a0a0a", letterSpacing: "-0.03em" }}>3.2x</div>
                 <div style={{ fontSize: 10, color: "rgba(0,0,0,0.4)", marginTop: 2 }}>vs email campaigns</div>
               </div>
               {/* Floating "Bot Active" badge bottom-right */}
-              <div style={{ position: "absolute", bottom: 50, right: 0, background: "#fff", borderRadius: 50, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", border: "1px solid rgba(0,0,0,0.06)", zIndex: 20, animation: "wpl-float3 6s ease-in-out infinite 0.5s" }}>
+              <div className="wpl-float-badge" style={{ position: "absolute", bottom: 50, right: 0, background: "#fff", borderRadius: 50, padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.08)", border: "1px solid rgba(0,0,0,0.06)", zIndex: 20, animation: "wpl-float3 6s ease-in-out infinite 0.5s" }}>
                 <div style={{ width: 30, height: 30, borderRadius: "50%", background: "linear-gradient(135deg,#25d366,#16a34a)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 10px rgba(37,211,102,0.35)" }}>🤖</div>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 900, color: "#0a0a0a", letterSpacing: "-0.02em" }}>Bot Active</div>
@@ -437,23 +499,26 @@ export default function LandingPage() {
               <img
                 src="/images/usecase2.png"
                 alt="E-commerce WhatsApp automation"
+                loading="lazy"
                 style={{ width: "100%", maxWidth: 480, borderRadius: 20, filter: "drop-shadow(0 30px 60px rgba(0,0,0,0.14))", display: "block", margin: "0 auto", zIndex: 10, position: "relative" }}
               />
             </div>
           </div>
+          </Reveal>
 
           {/* ── Use Case 2: Restaurants / Food ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))", gap: 60, alignItems: "center", marginBottom: 110 }}>
+          <Reveal>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,340px),1fr))", gap: isMobile ? 36 : 60, alignItems: "center", marginBottom: isMobile ? 70 : 110 }}>
             {/* Phone + floating elements */}
-            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: 520, order: isMobile ? 2 : 0 }}>
+            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", minHeight: isMobile ? 380 : 520, order: isMobile ? 2 : 0 }}>
               {/* Floating: Food Menu card */}
-              <div style={{ position: "absolute", top: 30, right: 0, background: "#fff", borderRadius: 16, padding: "12px 14px", width: 160, boxShadow: "0 8px 28px rgba(0,0,0,0.09)", border: "1px solid rgba(0,0,0,0.06)", zIndex: 20, animation: "wpl-float2 5.5s ease-in-out infinite 0.3s" }}>
+              <div className="wpl-float-badge" style={{ position: "absolute", top: 30, right: 0, background: "#fff", borderRadius: 16, padding: "12px 14px", width: 160, boxShadow: "0 8px 28px rgba(0,0,0,0.09)", border: "1px solid rgba(0,0,0,0.06)", zIndex: 20, animation: "wpl-float2 5.5s ease-in-out infinite 0.3s" }}>
                 <div style={{ height: 60, background: "linear-gradient(135deg,#f59e0b,#d97706)", borderRadius: 10, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>🍽️</div>
                 <div style={{ fontSize: 9.5, fontWeight: 800, color: "#0a0a0a", marginBottom: 2 }}>Food Menu Proposal</div>
                 <div style={{ fontSize: 9, color: "#16a34a", fontWeight: 700 }}>📎 Order Now</div>
               </div>
               {/* Floating: Send Reminders */}
-              <div style={{ position: "absolute", bottom: 60, right: 0, background: "#fff", borderRadius: 14, padding: "10px 14px", boxShadow: "0 8px 24px rgba(0,0,0,0.08)", border: "1px solid rgba(0,0,0,0.06)", zIndex: 20, animation: "wpl-float3 6s ease-in-out infinite 1s" }}>
+              <div className="wpl-float-badge" style={{ position: "absolute", bottom: 60, right: 0, background: "#fff", borderRadius: 14, padding: "10px 14px", boxShadow: "0 8px 24px rgba(0,0,0,0.08)", border: "1px solid rgba(0,0,0,0.06)", zIndex: 20, animation: "wpl-float3 6s ease-in-out infinite 1s" }}>
                 <div style={{ fontSize: 18, marginBottom: 4 }}>🔔</div>
                 <div style={{ fontSize: 9, fontWeight: 600, color: "rgba(0,0,0,0.5)", lineHeight: 1.4 }}>Send Reminders &<br />Updates on</div>
                 <div style={{ fontSize: 11, fontWeight: 900, color: "#25d366" }}>WhatsApp</div>
@@ -481,6 +546,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+          </Reveal>
 
           {/* ── Use Case 3: Workflow Builder Visualization ── */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(340px,1fr))", gap: 60, alignItems: "center" }}>
