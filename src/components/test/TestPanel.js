@@ -40,6 +40,15 @@ const collectMessages = (nodes, edges, startNodeId) => {
     if (node.type !== 'trigger') nodesToSend.push(node);
     const outgoing = edges.filter(e => e.source === currentId);
     if (!outgoing.length) break;
+    // Condition auto-follows the "Yes" (true) branch in the preview — it's a
+    // logic gate, not a user choice, so we don't stop for a branch pick.
+    if (node.type === 'condition') {
+      const edge = outgoing.find(e => e.sourceHandle === 'true') || outgoing[0];
+      const next = nodeMap[edge.target];
+      if (!next) break;
+      currentId = next.id;
+      continue;
+    }
     if (outgoing.length > 1) {
       return { nodesToSend, pendingBranches: getBranches(nodes, edges, currentId), pendingNodeId: currentId };
     }
@@ -79,8 +88,7 @@ function Meta({ time = '10:30' }) {
 
 // pendingBranches + onBranchSelect are passed only to the LAST bot bubble
 function BotBubble({ node, pendingBranches, onBranchSelect }) {
-  const msg = node?.data?.message;
-  if (!msg && node?.type !== 'delay') return null;
+  if (!node) return null;
 
   // ── Delay chip ──
   if (node.type === 'delay') {
@@ -92,6 +100,49 @@ function BotBubble({ node, pendingBranches, onBranchSelect }) {
       </div>
     );
   }
+
+  // ── Collect Input (question bubble + waiting hint) ──
+  if (node.type === 'input') {
+    const q = node.data?.question || `Please share your ${node.data?.variableName || 'answer'}.`;
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 6 }}>
+        <div style={{ display: 'flex' }}>
+          <div style={{ background: '#fff', borderRadius: WA.radius, padding: '6px 7px 8px 9px', maxWidth: '75%', boxShadow: WA.shadow }}>
+            <p style={{ margin: 0, fontSize: 14, lineHeight: 1.5, color: WA.text, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{q}</p>
+            <Meta />
+          </div>
+        </div>
+        <span style={{ alignSelf: 'flex-start', fontSize: 10, color: WA.subtext, background: 'rgba(255,255,255,0.85)', borderRadius: 20, padding: '2px 10px', boxShadow: WA.shadow }}>
+          ⌨️ waits for reply → saves to {`{{${node.data?.variableName || 'input'}}}`}
+        </span>
+      </div>
+    );
+  }
+
+  // ── Condition (decision chip — preview follows the "Yes" path) ──
+  if (node.type === 'condition') {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '6px 0 10px' }}>
+        <span style={{ fontSize: 11, color: '#4338ca', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: 20, padding: '4px 14px' }}>
+          🔀 If {`{{${node.data?.variable || '…'}}}`} → showing “Yes” path
+        </span>
+      </div>
+    );
+  }
+
+  // ── AI reply (chip — actual text is generated live on WhatsApp) ──
+  if (node.type === 'ai') {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '6px 0 10px' }}>
+        <span style={{ fontSize: 11, color: '#7e22ce', background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 20, padding: '4px 14px' }}>
+          🤖 AI generates a reply here
+        </span>
+      </div>
+    );
+  }
+
+  const msg = node?.data?.message;
+  if (!msg) return null;
 
   // ── Text message ──
   if (msg.type === 'text') {

@@ -17,53 +17,116 @@ import ListConfig      from '../components/config/ListConfig';
 import MediaConfig     from '../components/config/MediaConfig';
 import DelayConfig     from '../components/config/DelayConfig';
 import ProductConfig   from '../components/config/ProductConfig';
+import InputConfig     from '../components/config/InputConfig';
+import ConditionConfig from '../components/config/ConditionConfig';
+import AINodeConfig    from '../components/config/AINodeConfig';
 import TemplatePicker  from '../components/TemplatePicker';
 import TestPanel       from '../components/test/TestPanel';
 
 const API       = process.env.REACT_APP_API_URL || 'http://localhost:5002';
 const edgeTypes = { deletable: DeletableEdge };
 
-const PALETTE = [
-  { type: 'trigger', label: 'Keyword Trigger', emoji: '⚡', desc: 'Start flow on keyword',     color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
-  { type: 'text',    label: 'Text Message',    emoji: '💬', desc: 'Send a plain text reply',    color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
-  { type: 'button',  label: 'Button Message',  emoji: '🔘', desc: 'Message with tap buttons',   color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-  { type: 'list',    label: 'List Message',    emoji: '📋', desc: 'Message with a list menu',   color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
-  { type: 'media',   label: 'Media Message',   emoji: '🖼️', desc: 'Image, video or document',   color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
-  { type: 'delay',   label: 'Delay',           emoji: '⏱️', desc: 'Wait before the next step',  color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
-  { type: 'product', label: 'Product Message', emoji: '🛍️', desc: 'Send a product or catalog',   color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
+// Palette grouped by purpose for a cleaner, scannable sidebar.
+const PALETTE_GROUPS = [
+  {
+    label: 'Start',
+    items: [
+      { type: 'trigger', label: 'Keyword Trigger', emoji: '⚡', desc: 'Start flow on keyword', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' },
+    ],
+  },
+  {
+    label: 'Messages',
+    items: [
+      { type: 'text',    label: 'Text Message',    emoji: '💬', desc: 'Send a plain text reply',  color: '#059669', bg: '#ecfdf5', border: '#a7f3d0' },
+      { type: 'button',  label: 'Button Message',  emoji: '🔘', desc: 'Message with tap buttons', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+      { type: 'list',    label: 'List Message',    emoji: '📋', desc: 'Message with a list menu', color: '#b45309', bg: '#fffbeb', border: '#fde68a' },
+      { type: 'media',   label: 'Media Message',   emoji: '🖼️', desc: 'Image, video or document', color: '#db2777', bg: '#fdf2f8', border: '#fbcfe8' },
+      { type: 'product', label: 'Product Message', emoji: '🛍️', desc: 'Send a product or catalog', color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
+    ],
+  },
+  {
+    label: 'Logic & AI',
+    items: [
+      { type: 'input',     label: 'Collect Input', emoji: '📥', desc: 'Ask & save a reply',        color: '#0d9488', bg: '#f0fdfa', border: '#5eead4' },
+      { type: 'condition', label: 'Condition',     emoji: '🔀', desc: 'Branch on a variable',      color: '#4f46e5', bg: '#eef2ff', border: '#c7d2fe' },
+      { type: 'ai',        label: 'AI Reply',      emoji: '🤖', desc: 'Answer with your LLM',      color: '#9333ea', bg: '#faf5ff', border: '#e9d5ff' },
+      { type: 'delay',     label: 'Delay',         emoji: '⏱️', desc: 'Wait before the next step', color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb' },
+    ],
+  },
 ];
 
 const defaultData = (type) => {
-  if (type === 'trigger') return { keyword: '', matchType: 'contains' };
-  if (type === 'text')    return { message: { type: 'text', text: '' } };
-  if (type === 'button')  return { message: { type: 'button', buttonBody: '', buttons: [{ id: uuid(), title: '' }] } };
-  if (type === 'list')    return { message: { type: 'list', listBody: '', listButtonText: 'View options', sections: [{ title: 'Section 1', rows: [{ id: uuid(), title: '', description: '' }] }] } };
-  if (type === 'media')   return { message: { type: 'media', mediaType: 'image', mediaUrl: '', mediaCaption: '' } };
-  if (type === 'delay')   return { delayMinutes: 5 };
-  if (type === 'product') return { message: { type: 'product', catalogId: '', productRetailerId: '', body: '' } };
+  if (type === 'trigger')   return { keyword: '', matchType: 'contains' };
+  if (type === 'text')      return { message: { type: 'text', text: '' } };
+  if (type === 'button')    return { message: { type: 'button', buttonBody: '', buttons: [{ id: uuid(), title: '' }] } };
+  if (type === 'list')      return { message: { type: 'list', listBody: '', listButtonText: 'View options', sections: [{ title: 'Section 1', rows: [{ id: uuid(), title: '', description: '' }] }] } };
+  if (type === 'media')     return { message: { type: 'media', mediaType: 'image', mediaUrl: '', mediaCaption: '' } };
+  if (type === 'delay')     return { delayMinutes: 5 };
+  if (type === 'product')   return { message: { type: 'product', catalogId: '', productRetailerId: '', body: '' } };
+  if (type === 'input')     return { question: '', variableName: 'name', inputType: 'text', retryMessage: '' };
+  if (type === 'condition') return { variable: '', operator: 'equals', value: '' };
+  if (type === 'ai')        return { aiPrompt: '', aiSystemPrompt: '', aiSaveAs: '' };
   return {};
 };
 
+// ── Schema <-> React Flow mapping ─────────────────────────────────────────────
+// Backend node.type is one of: trigger | message | delay | collect_input | condition
+// React Flow node.type is the concrete visual type (text/button/.../input/condition).
 const schemaTypeToRfType = (node) => {
-  if (node.type === 'trigger') return 'trigger';
-  if (node.type === 'delay')   return 'delay';
+  if (node.type === 'trigger')       return 'trigger';
+  if (node.type === 'delay')         return 'delay';
+  if (node.type === 'collect_input') return 'input';
+  if (node.type === 'condition')     return 'condition';
+  if (node.type === 'ai')            return 'ai';
   const msgType = node.data?.message?.type;
-  if (msgType === 'button') return 'button';
-  if (msgType === 'list')   return 'list';
+  if (msgType === 'button')       return 'button';
+  if (msgType === 'list')         return 'list';
   if (msgType === 'media')        return 'media';
   if (msgType === 'product')      return 'product';
   if (msgType === 'product_list') return 'product';
   return 'text';
 };
 
+// Rebuild React Flow node.data from a stored schema node.
+const schemaDataToRfData = (node) => {
+  if (node.type === 'trigger')       return { keyword: node.data?.keyword, matchType: node.data?.matchType };
+  if (node.type === 'delay')         return { delayMinutes: node.data?.delayMinutes };
+  if (node.type === 'collect_input') return { question: node.data?.question, variableName: node.data?.variableName, inputType: node.data?.inputType, retryMessage: node.data?.retryMessage };
+  if (node.type === 'condition')     return { variable: node.data?.variable, operator: node.data?.operator, value: node.data?.value };
+  if (node.type === 'ai')            return { aiPrompt: node.data?.aiPrompt, aiSystemPrompt: node.data?.aiSystemPrompt, aiSaveAs: node.data?.aiSaveAs };
+  return { message: node.data?.message };
+};
+
+// Convert a React Flow node back into the backend schema shape on save.
+const rfNodeToSchema = (n) => {
+  const base = { id: n.id, position: n.position };
+  if (n.type === 'trigger')   return { ...base, type: 'trigger',       data: { keyword: n.data.keyword, matchType: n.data.matchType } };
+  if (n.type === 'delay')     return { ...base, type: 'delay',         data: { delayMinutes: n.data.delayMinutes } };
+  if (n.type === 'input')     return { ...base, type: 'collect_input', data: { question: n.data.question, variableName: n.data.variableName, inputType: n.data.inputType, retryMessage: n.data.retryMessage } };
+  if (n.type === 'condition') return { ...base, type: 'condition',     data: { variable: n.data.variable, operator: n.data.operator, value: n.data.value } };
+  if (n.type === 'ai')        return { ...base, type: 'ai',            data: { aiPrompt: n.data.aiPrompt, aiSystemPrompt: n.data.aiSystemPrompt, aiSaveAs: n.data.aiSaveAs } };
+  return { ...base, type: 'message', data: { message: n.data.message } };
+};
+
 const configMap = {
-  trigger: TriggerConfig,
-  text:    TextConfig,
-  button:  ButtonConfig,
-  list:    ListConfig,
-  media:   MediaConfig,
-  delay:   DelayConfig,
-  product: ProductConfig,
+  trigger:   TriggerConfig,
+  text:      TextConfig,
+  button:    ButtonConfig,
+  list:      ListConfig,
+  media:     MediaConfig,
+  delay:     DelayConfig,
+  product:   ProductConfig,
+  input:     InputConfig,
+  condition: ConditionConfig,
+  ai:        AINodeConfig,
+};
+
+// Friendly title shown in the config panel header.
+const NODE_TITLE = {
+  trigger: 'Keyword Trigger', text: 'Text Message', button: 'Button Message',
+  list: 'List Message', media: 'Media Message', delay: 'Delay',
+  product: 'Product Message', input: 'Collect Input', condition: 'Condition',
+  ai: 'AI Reply',
 };
 
 export default function WorkflowBuilder() {
@@ -100,9 +163,7 @@ export default function WorkflowBuilder() {
         const rfNodes = wf.nodes.map(n => ({
           id: n.id, type: schemaTypeToRfType(n),
           position: n.position || { x: 250, y: 250 },
-          data: n.type === 'trigger' ? { keyword: n.data.keyword, matchType: n.data.matchType }
-              : n.type === 'delay'   ? { delayMinutes: n.data.delayMinutes }
-              : { message: n.data.message },
+          data: schemaDataToRfData(n),
         }));
         const rfEdges = (wf.edges || []).map(e => ({ ...e, type: 'deletable', animated: true, style: { stroke: '#7c3aed', strokeWidth: 2 } }));
         setNodes(rfNodes);
@@ -171,14 +232,7 @@ export default function WorkflowBuilder() {
     setSaving(true);
     setSaveStatus('saving');
     try {
-      const schemaNodes = nodes.map(n => ({
-        id: n.id,
-        type: n.type === 'trigger' ? 'trigger' : n.type === 'delay' ? 'delay' : 'message',
-        position: n.position,
-        data: n.type === 'trigger' ? { keyword: n.data.keyword, matchType: n.data.matchType }
-            : n.type === 'delay'   ? { delayMinutes: n.data.delayMinutes }
-            : { message: n.data.message },
-      }));
+      const schemaNodes = nodes.map(rfNodeToSchema);
       const schemaEdges = edges.map(e => ({
         id: e.id, source: e.source, target: e.target, sourceHandle: e.sourceHandle || null,
       }));
@@ -288,60 +342,38 @@ export default function WorkflowBuilder() {
       {/* ── BODY ── */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* ── LEFT PANEL ── */}
-        <div style={{ width: 252, background: '#fff', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
-
-          {/* Palette */}
-          <div style={{ padding: '14px 12px 10px', borderBottom: '1px solid #f1f5f9' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', margin: '0 0 10px', textTransform: 'uppercase' }}>
+        {/* ── LEFT PALETTE (slim, full-height scroll) ── */}
+        <div style={{ width: 212, background: '#fff', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{ padding: '12px 12px 6px', flexShrink: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', margin: 0, textTransform: 'uppercase' }}>
               Drag blocks to canvas
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {PALETTE.map(p => (
-                <div
-                  key={p.type}
-                  draggable
-                  onDragStart={e => onDragStart(e, p.type)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 9, border: `1px solid ${p.border}`, background: p.bg, cursor: 'grab', userSelect: 'none', transition: 'transform 0.1s, box-shadow 0.1s' }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 3px 8px rgba(0,0,0,0.08)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
-                >
-                  <span style={{ fontSize: 16, flexShrink: 0 }}>{p.emoji}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: p.color, margin: 0 }}>{p.label}</p>
-                    <p style={{ fontSize: 10, color: '#9ca3af', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.desc}</p>
-                  </div>
-                  <span style={{ fontSize: 10, color: '#cbd5e1' }}>⠿</span>
-                </div>
-              ))}
-            </div>
           </div>
-
-          {/* Config panel */}
-          <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
-            {ConfigComponent && selectedNode ? (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', margin: 0, textTransform: 'uppercase' }}>
-                    Configure node
-                  </p>
-                  <button
-                    onClick={deleteSelectedNode}
-                    style={{ fontSize: 11, color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontWeight: 600 }}
-                  >
-                    Delete
-                  </button>
-                </div>
-                <ConfigComponent data={selectedNode.data} onChange={updateNodeData} />
-              </>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '40px 16px' }}>
-                <div style={{ fontSize: 32, marginBottom: 10 }}>👆</div>
-                <p style={{ fontSize: 12, color: '#9ca3af', margin: 0, lineHeight: 1.6 }}>
-                  Click a node on the canvas to configure it
+          <div style={{ flex: 1, overflow: 'auto', padding: '4px 10px 16px' }}>
+            {PALETTE_GROUPS.map(group => (
+              <div key={group.label} style={{ marginBottom: 14 }}>
+                <p style={{ fontSize: 9, fontWeight: 800, color: '#cbd5e1', letterSpacing: '0.1em', margin: '0 0 6px 2px', textTransform: 'uppercase' }}>
+                  {group.label}
                 </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {group.items.map(p => (
+                    <div
+                      key={p.type}
+                      draggable
+                      onDragStart={e => onDragStart(e, p.type)}
+                      title={p.desc}
+                      style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '7px 9px', borderRadius: 9, border: `1px solid ${p.border}`, background: p.bg, cursor: 'grab', userSelect: 'none', transition: 'transform 0.1s, box-shadow 0.1s' }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 3px 8px rgba(0,0,0,0.08)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+                    >
+                      <span style={{ fontSize: 15, flexShrink: 0 }}>{p.emoji}</span>
+                      <p style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 700, color: p.color, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.label}</p>
+                      <span style={{ fontSize: 10, color: '#cbd5e1' }}>⠿</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
 
@@ -378,11 +410,15 @@ export default function WorkflowBuilder() {
           >
             <MiniMap
               nodeColor={n => {
-                if (n.type === 'trigger') return '#7c3aed';
-                if (n.type === 'text')    return '#059669';
-                if (n.type === 'button')  return '#2563eb';
-                if (n.type === 'list')    return '#b45309';
-                if (n.type === 'media')   return '#db2777';
+                if (n.type === 'trigger')   return '#7c3aed';
+                if (n.type === 'text')      return '#059669';
+                if (n.type === 'button')    return '#2563eb';
+                if (n.type === 'list')      return '#b45309';
+                if (n.type === 'media')     return '#db2777';
+                if (n.type === 'product')   return '#f59e0b';
+                if (n.type === 'input')     return '#0d9488';
+                if (n.type === 'condition') return '#4f46e5';
+                if (n.type === 'ai')        return '#9333ea';
                 return '#6b7280';
               }}
               style={{ borderRadius: 10, border: '1px solid #e5e7eb' }}
@@ -391,6 +427,31 @@ export default function WorkflowBuilder() {
             <Background color="#cbd5e1" gap={24} size={1} />
           </ReactFlow>
         </div>
+
+        {/* ── RIGHT CONFIG PANEL (dedicated full-height editor) ── */}
+        {selectedNode && ConfigComponent && (
+          <div style={{ width: 340, background: '#fff', borderLeft: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
+            <div style={{ height: 48, flexShrink: 0, borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Edit</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {NODE_TITLE[selectedNode.type] || 'Node'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <button onClick={deleteSelectedNode}
+                  style={{ fontSize: 11, color: '#ef4444', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 9px', cursor: 'pointer', fontWeight: 600 }}>
+                  Delete
+                </button>
+                <button onClick={() => setSelectedId(null)} title="Close editor"
+                  style={{ background: 'none', border: 'none', color: '#9ca3af', fontSize: 20, lineHeight: 1, cursor: 'pointer', padding: '0 2px' }}>×</button>
+              </div>
+            </div>
+            <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+              <ConfigComponent data={selectedNode.data} onChange={updateNodeData} />
+            </div>
+          </div>
+        )}
 
         {/* ── TEST PANEL ── */}
         {showTest && (
