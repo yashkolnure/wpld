@@ -2072,6 +2072,28 @@ const activeCount = workflows.filter(w => w.isActive).length;
               </div>
             </div>
           </div>
+
+          {/* ── Get Mobile App card ── */}
+          <div style={{ margin: "0 14px 16px", padding: "14px 16px", borderRadius: 14, background: "#F0F2F5", border: "1px solid #E2E8F0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Phone size={13} color="#fff" />
+              </div>
+              <div>
+                <span style={{ fontSize: 12, fontWeight: 800, color: "#111B21", display: "block" }}>Get Mobile App</span>
+                <span style={{ fontSize: 10, color: "#667781" }}>Manage on the go</span>
+              </div>
+            </div>
+            <a
+              href="https://wpleads.in/wpleads.apk"
+              download
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%", padding: "8px 0", borderRadius: 9, background: "#111B21", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none", transition: "opacity 0.15s" }}
+              onMouseOver={e => e.currentTarget.style.opacity = "0.85"}
+              onMouseOut={e => e.currentTarget.style.opacity = "1"}
+            >
+              <Download size={12} /> Download APK
+            </a>
+          </div>
         </nav>
       </aside>
 

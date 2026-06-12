@@ -853,6 +853,121 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ══ MOBILE APP DOWNLOAD ══ */}
+      <section id="download" style={{
+        padding:"clamp(80px,8vw,120px) clamp(20px,5vw,60px)",
+        background:"#0f172a",
+        overflow:"hidden",
+        position:"relative",
+      }}>
+        {/* Background glow blobs */}
+        <div style={{position:"absolute",top:-120,left:-80,width:420,height:420,borderRadius:"50%",background:"radial-gradient(circle,rgba(37,211,102,0.12) 0%,transparent 70%)",pointerEvents:"none"}}/>
+        <div style={{position:"absolute",bottom:-80,right:-60,width:360,height:360,borderRadius:"50%",background:"radial-gradient(circle,rgba(18,140,126,0.1) 0%,transparent 70%)",pointerEvents:"none"}}/>
+
+        <div style={{maxWidth:1280,margin:"0 auto",display:"flex",alignItems:"center",gap:"clamp(40px,6vw,100px)",flexWrap:"wrap",justifyContent:"center",position:"relative",zIndex:1}}>
+
+          {/* Phone mockup */}
+          <div style={{flexShrink:0,position:"relative"}}>
+            <div style={{
+              width:220,height:440,borderRadius:36,
+              background:"linear-gradient(145deg,#1e293b,#0f172a)",
+              border:"2px solid rgba(255,255,255,0.1)",
+              boxShadow:"0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)",
+              display:"flex",flexDirection:"column",overflow:"hidden",
+              position:"relative",
+            }}>
+              {/* Notch */}
+              <div style={{height:28,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <div style={{width:60,height:7,borderRadius:10,background:"rgba(255,255,255,0.15)"}}/>
+              </div>
+              {/* Fake screen — chat list */}
+              <div style={{flex:1,background:"#111b21",padding:"10px 10px 0",display:"flex",flexDirection:"column",gap:6,overflow:"hidden"}}>
+                <div style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,0.5)",letterSpacing:1,marginBottom:4}}>CHATS</div>
+                {[
+                  {name:"Priya Mehta",   msg:"Order confirmed ✅", time:"2m",  unread:2, color:"#25d366"},
+                  {name:"James Okafor", msg:"Thanks for the help!", time:"15m", unread:0, color:"#3b82f6"},
+                  {name:"Sana Rashid",  msg:"Send me the catalog", time:"1h",  unread:1, color:"#f59e0b"},
+                  {name:"Ravi Kumar",   msg:"When does it ship?",  time:"2h",  unread:0, color:"#8b5cf6"},
+                  {name:"Neha Singh",   msg:"Perfect, thanks 🙏",  time:"3h",  unread:0, color:"#ec4899"},
+                ].map((c,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 6px",borderRadius:8,background:"rgba(255,255,255,0.03)"}}>
+                    <div style={{width:30,height:30,borderRadius:15,background:c.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:"#fff",flexShrink:0}}>{c.name[0]}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:9,fontWeight:700,color:"#e2e8f0",marginBottom:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div>
+                      <div style={{fontSize:8,color:"rgba(255,255,255,0.4)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.msg}</div>
+                    </div>
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3,flexShrink:0}}>
+                      <div style={{fontSize:7,color:"rgba(255,255,255,0.3)"}}>{c.time}</div>
+                      {c.unread>0&&<div style={{width:14,height:14,borderRadius:7,background:"#25d366",display:"flex",alignItems:"center",justifyContent:"center",fontSize:7,fontWeight:800,color:"#fff"}}>{c.unread}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Bottom bar */}
+              <div style={{height:40,background:"#1a2632",display:"flex",alignItems:"center",justifyContent:"space-around",borderTop:"1px solid rgba(255,255,255,0.05)",flexShrink:0}}>
+                {["💬","👥","📊","⚙️"].map((icon,i)=>(
+                  <div key={i} style={{fontSize:14,opacity:i===0?1:0.4}}>{icon}</div>
+                ))}
+              </div>
+            </div>
+            {/* Floating badge */}
+            <div style={{position:"absolute",top:40,right:-24,background:"#25d366",borderRadius:50,padding:"6px 12px",display:"flex",alignItems:"center",gap:6,boxShadow:"0 8px 20px rgba(37,211,102,0.4)",animation:"wpl-float2 6s ease-in-out infinite"}}>
+              <div style={{width:6,height:6,borderRadius:"50%",background:"#fff",animation:"wpl-ping 1.4s ease-in-out infinite"}}/>
+              <span style={{fontSize:9,fontWeight:800,color:"#fff",whiteSpace:"nowrap"}}>Live Chats</span>
+            </div>
+          </div>
+
+          {/* Text content */}
+          <div style={{flex:1,minWidth:280,maxWidth:500}}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:8,background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.25)",borderRadius:100,padding:"5px 14px",fontSize:10.5,fontWeight:700,letterSpacing:2,color:"#4ade80",textTransform:"uppercase",marginBottom:22}}>
+              📱 Mobile App
+            </div>
+            <h2 style={{fontSize:"clamp(32px,4vw,48px)",fontWeight:900,letterSpacing:"-0.03em",lineHeight:1.1,color:"#fff",marginBottom:16}}>
+              Manage your<br/>
+              <span style={{color:"#25d366"}}>WhatsApp leads</span><br/>
+              on the go
+            </h2>
+            <p style={{fontSize:15,color:"rgba(255,255,255,0.55)",lineHeight:1.7,marginBottom:32,maxWidth:400}}>
+              Reply to chats, view contacts, and monitor campaigns — all from your Android phone. Free download, always.
+            </p>
+
+            {/* Feature pills */}
+            <div style={{display:"flex",flexWrap:"wrap",gap:10,marginBottom:36}}>
+              {["💬 Live Chats","👥 Contacts","📊 Analytics","🔔 Push Alerts"].map((f,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:100,padding:"6px 14px",fontSize:12,fontWeight:600,color:"rgba(255,255,255,0.75)"}}>
+                  {f}
+                </div>
+              ))}
+            </div>
+
+            {/* Download button */}
+            <a
+              href="https://wpleads.in/wpleads.apk"
+              download
+              style={{
+                display:"inline-flex",alignItems:"center",gap:12,
+                background:"linear-gradient(135deg,#25d366,#16a34a)",
+                color:"#fff",textDecoration:"none",
+                borderRadius:16,padding:"16px 28px",
+                fontSize:15,fontWeight:800,
+                boxShadow:"0 12px 32px rgba(37,211,102,0.38)",
+                transition:"all 0.2s",
+              }}
+              onMouseOver={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 16px 40px rgba(37,211,102,0.48)";}}
+              onMouseOut={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 12px 32px rgba(37,211,102,0.38)";}}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z"/><path d="M8 12l4 4 4-4M12 8v8"/></svg>
+              Download for Android
+              <div style={{fontSize:11,fontWeight:600,opacity:0.75,background:"rgba(255,255,255,0.15)",borderRadius:6,padding:"3px 8px",whiteSpace:"nowrap"}}>Free • APK</div>
+            </a>
+            <div style={{marginTop:12,fontSize:11,color:"rgba(255,255,255,0.3)"}}>
+              Android 7.0+ · ~30 MB · No Play Store needed
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       {/* ══ UPGRADED CTA (Dark Premium Feel) ══ */}
       <section style={{padding:"clamp(60px,8vw,100px) clamp(20px,5vw,60px)",maxWidth:1280,margin:"0 auto"}}>
         <div style={{
